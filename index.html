@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Calculate your ROI with QuoteIQ - Field Service Management Software for Home Service Contractors">
+    <title>QuoteIQ ROI Calculator | Field Service Management Software</title>
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Google Fonts - Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/styles.css">
+
+    <!-- Tailwind Config -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#f2b148',
+                        secondary: '#0c1014',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="font-sans bg-white text-secondary">
+
+    <!-- Hero Section -->
+    <section id="hero" class="bg-secondary text-white py-16 px-4">
+        <div class="max-w-6xl mx-auto text-center">
+            <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold mb-6">
+                QuoteIQ ROI Calculator
+            </h1>
+            <p class="text-xl md:text-2xl text-gray-300 mb-8 max-w-3xl mx-auto">
+                Discover how much time and money QuoteIQ can save your home service business
+            </p>
+        </div>
+    </section>
+
+    <!-- Calculator Form Section -->
+    <section id="calculator-form" class="py-16 px-4 bg-gray-50">
+        <div class="max-w-4xl mx-auto">
+            <div class="bg-white rounded-lg shadow-lg p-8">
+                <h2 class="text-3xl font-bold text-center mb-8">
+                    Calculate Your Potential ROI
+                </h2>
+
+                <form id="roi-form" class="space-y-6">
+                    <!-- Form inputs will be added here -->
+                    <div class="text-center">
+                        <p class="text-gray-600 italic">Form inputs to be added...</p>
+                    </div>
+
+                    <div class="text-center mt-8">
+                        <button type="submit" class="bg-primary hover:bg-opacity-90 text-secondary font-bold py-4 px-8 rounded-lg text-lg transition-all duration-300 transform hover:scale-105">
+                            Calculate My ROI
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- Results Section (Hidden Initially) -->
+    <section id="results" class="py-16 px-4 bg-white hidden">
+        <div class="max-w-6xl mx-auto">
+            <h2 class="text-3xl md:text-4xl font-bold text-center mb-12">
+                Your ROI Projection
+            </h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- Result cards will be dynamically populated -->
+                <div class="bg-gray-50 rounded-lg p-8 text-center">
+                    <p class="text-gray-600 mb-2">Time Saved</p>
+                    <p class="text-4xl font-bold text-primary" id="time-saved">--</p>
+                    <p class="text-gray-600 mt-2">hours per week</p>
+                </div>
+
+                <div class="bg-gray-50 rounded-lg p-8 text-center">
+                    <p class="text-gray-600 mb-2">Annual Savings</p>
+                    <p class="text-4xl font-bold text-primary" id="annual-savings">--</p>
+                    <p class="text-gray-600 mt-2">per year</p>
+                </div>
+
+                <div class="bg-gray-50 rounded-lg p-8 text-center">
+                    <p class="text-gray-600 mb-2">ROI</p>
+                    <p class="text-4xl font-bold text-primary" id="roi-percentage">--</p>
+                    <p class="text-gray-600 mt-2">return on investment</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials Section -->
+    <section id="testimonials" class="py-16 px-4 bg-gray-50">
+        <div class="max-w-6xl mx-auto">
+            <h2 class="text-3xl md:text-4xl font-bold text-center mb-12">
+                What Our Customers Say
+            </h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Testimonial cards will be added here -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <p class="text-gray-600 italic mb-4">
+                        "Testimonial content to be added..."
+                    </p>
+                    <p class="font-semibold">Customer Name</p>
+                    <p class="text-sm text-gray-500">Company Name</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section id="cta" class="py-16 px-4 bg-secondary text-white">
+        <div class="max-w-4xl mx-auto text-center">
+            <h2 class="text-3xl md:text-4xl font-bold mb-6">
+                Ready to Transform Your Business?
+            </h2>
+            <p class="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
+                Join thousands of home service contractors who have streamlined their operations with QuoteIQ
+            </p>
+            <a href="#" class="inline-block bg-primary hover:bg-opacity-90 text-secondary font-bold py-4 px-8 rounded-lg text-lg transition-all duration-300 transform hover:scale-105">
+                Get Started Today
+            </a>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-secondary text-white py-8 px-4 border-t border-gray-800">
+        <div class="max-w-6xl mx-auto text-center">
+            <p class="text-gray-400">
+                &copy; 2024 QuoteIQ. All rights reserved.
+            </p>
+        </div>
+    </footer>
+
+    <!-- JavaScript Files -->
+    <script src="js/calculator.js"></script>
+    <script src="js/email.js"></script>
+</body>
+</html>

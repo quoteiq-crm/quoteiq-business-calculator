@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Thank you for using the QuoteIQ ROI Calculator">
+    <title>Thank You | QuoteIQ ROI Calculator</title>
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Google Fonts - Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/styles.css">
+
+    <!-- Tailwind Config -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#f2b148',
+                        secondary: '#0c1014',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="font-sans bg-white text-secondary">
+
+    <!-- Thank You Section -->
+    <section class="min-h-screen flex items-center justify-center px-4 py-16">
+        <div class="max-w-2xl mx-auto text-center">
+            <!-- Success Icon -->
+            <div class="mb-8">
+                <svg class="w-20 h-20 mx-auto text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+            </div>
+
+            <h1 class="text-4xl md:text-5xl font-bold mb-6">
+                Thank You!
+            </h1>
+
+            <p class="text-xl text-gray-600 mb-8">
+                We've received your information and will be in touch soon to help you transform your business with QuoteIQ.
+            </p>
+
+            <div class="bg-gray-50 rounded-lg p-8 mb-8">
+                <h2 class="text-2xl font-bold mb-4">What's Next?</h2>
+                <ul class="text-left space-y-3 max-w-md mx-auto">
+                    <li class="flex items-start">
+                        <svg class="w-6 h-6 text-primary mr-3 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                        <span>Check your inbox for your personalized ROI report</span>
+                    </li>
+                    <li class="flex items-start">
+                        <svg class="w-6 h-6 text-primary mr-3 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                        <span>A QuoteIQ specialist will reach out within 24 hours</span>
+                    </li>
+                    <li class="flex items-start">
+                        <svg class="w-6 h-6 text-primary mr-3 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                        <span>Schedule a personalized demo at your convenience</span>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="space-y-4">
+                <a href="index.html" class="inline-block bg-primary hover:bg-opacity-90 text-secondary font-bold py-3 px-8 rounded-lg transition-all duration-300 transform hover:scale-105">
+                    Return to Calculator
+                </a>
+                <br>
+                <a href="#" class="inline-block text-secondary hover:text-primary underline transition-colors duration-300">
+                    Learn More About QuoteIQ
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-secondary text-white py-8 px-4">
+        <div class="max-w-6xl mx-auto text-center">
+            <p class="text-gray-400">
+                &copy; 2024 QuoteIQ. All rights reserved.
+            </p>
+        </div>
+    </footer>
+
+</body>
+</html>
