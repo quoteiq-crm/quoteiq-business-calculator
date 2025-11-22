@@ -296,29 +296,143 @@
     <!-- Results Section (Hidden Initially) -->
     <section id="results" class="py-16 px-4 bg-white hidden">
         <div class="max-w-6xl mx-auto">
-            <h2 class="text-3xl md:text-4xl font-bold text-center mb-12">
-                Your ROI Projection
+            <h2 class="text-3xl md:text-4xl font-bold text-center mb-4">
+                Your ROI Projection with QuoteIQ
             </h2>
+            <p class="text-center text-gray-600 mb-12 text-lg">
+                Here's how much QuoteIQ could save your business annually
+            </p>
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <!-- Result cards will be dynamically populated -->
-                <div class="bg-gray-50 rounded-lg p-8 text-center">
-                    <p class="text-gray-600 mb-2">Time Saved</p>
-                    <p class="text-4xl font-bold text-primary" id="time-saved">--</p>
-                    <p class="text-gray-600 mt-2">hours per week</p>
+            <!-- Top Summary Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+                <div class="bg-gradient-to-br from-primary to-yellow-500 rounded-lg p-8 text-center shadow-lg">
+                    <p class="text-white mb-2 font-semibold">Time Saved Per Week</p>
+                    <p class="text-5xl font-bold text-white" id="timeSavedPerWeek">--</p>
+                    <p class="text-white mt-2 opacity-90">hours</p>
                 </div>
 
-                <div class="bg-gray-50 rounded-lg p-8 text-center">
-                    <p class="text-gray-600 mb-2">Annual Savings</p>
-                    <p class="text-4xl font-bold text-primary" id="annual-savings">--</p>
-                    <p class="text-gray-600 mt-2">per year</p>
+                <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-lg p-8 text-center shadow-lg">
+                    <p class="text-white mb-2 font-semibold">Annual Net Savings</p>
+                    <p class="text-5xl font-bold text-white" id="netSavings">--</p>
+                    <p class="text-white mt-2 opacity-90">after QuoteIQ cost</p>
                 </div>
 
-                <div class="bg-gray-50 rounded-lg p-8 text-center">
-                    <p class="text-gray-600 mb-2">ROI</p>
-                    <p class="text-4xl font-bold text-primary" id="roi-percentage">--</p>
-                    <p class="text-gray-600 mt-2">return on investment</p>
+                <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg p-8 text-center shadow-lg">
+                    <p class="text-white mb-2 font-semibold">Return on Investment</p>
+                    <p class="text-5xl font-bold text-white" id="roiPercentage">--</p>
+                    <p class="text-white mt-2 opacity-90">ROI</p>
                 </div>
+            </div>
+
+            <!-- Detailed Breakdown -->
+            <div class="bg-gray-50 rounded-lg p-8 mb-8">
+                <h3 class="text-2xl font-bold mb-6 text-center">The Full Picture</h3>
+
+                <!-- Breakdown 1: Time Wasted on Quoting -->
+                <div class="mb-8 pb-8 border-b border-gray-300">
+                    <h4 class="text-xl font-semibold text-secondary mb-4">
+                        💼 Time Wasted on Manual Quoting
+                    </h4>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="bg-white rounded-lg p-4">
+                            <p class="text-sm text-gray-600 mb-1">Current Time Per Week</p>
+                            <p class="text-2xl font-bold text-secondary" id="hoursPerWeekQuoting">--</p>
+                            <p class="text-sm text-gray-500">hours</p>
+                        </div>
+                        <div class="bg-white rounded-lg p-4">
+                            <p class="text-sm text-gray-600 mb-1">Annual Hours Lost</p>
+                            <p class="text-2xl font-bold text-secondary" id="hoursPerYearQuoting">--</p>
+                            <p class="text-sm text-gray-500">hours per year</p>
+                        </div>
+                        <div class="bg-white rounded-lg p-4">
+                            <p class="text-sm text-gray-600 mb-1">Cost of Time</p>
+                            <p class="text-2xl font-bold text-red-600" id="costOfQuotingTime">--</p>
+                            <p class="text-sm text-gray-500">annual cost</p>
+                        </div>
+                    </div>
+                    <div class="mt-4 bg-green-50 border-l-4 border-green-500 p-4 rounded">
+                        <p class="text-sm text-gray-700">
+                            <strong>With QuoteIQ:</strong> Create quotes in just <span class="text-green-600 font-bold" id="newQuoteTime">3</span> minutes instead of your current process
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Breakdown 2: Lost Revenue -->
+                <div class="mb-8 pb-8 border-b border-gray-300">
+                    <h4 class="text-xl font-semibold text-secondary mb-4">
+                        📉 Lost Revenue from Slow Follow-Up
+                    </h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-white rounded-lg p-4">
+                            <p class="text-sm text-gray-600 mb-1">Jobs Lost Annually</p>
+                            <p class="text-2xl font-bold text-secondary" id="lostJobs">--</p>
+                            <p class="text-sm text-gray-500">jobs per year</p>
+                        </div>
+                        <div class="bg-white rounded-lg p-4">
+                            <p class="text-sm text-gray-600 mb-1">Lost Revenue</p>
+                            <p class="text-2xl font-bold text-red-600" id="lostRevenue">--</p>
+                            <p class="text-sm text-gray-500">annual revenue lost</p>
+                        </div>
+                    </div>
+                    <div class="mt-4 bg-green-50 border-l-4 border-green-500 p-4 rounded">
+                        <p class="text-sm text-gray-700">
+                            <strong>With QuoteIQ:</strong> Automated follow-ups boost conversion to <span class="text-green-600 font-bold" id="improvedConversionRate">--</span>
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Breakdown 3: Time Wasted on Payments -->
+                <div class="mb-8">
+                    <h4 class="text-xl font-semibold text-secondary mb-4">
+                        💳 Time Wasted on Payment Collection
+                    </h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-white rounded-lg p-4">
+                            <p class="text-sm text-gray-600 mb-1">Annual Hours on Payments</p>
+                            <p class="text-2xl font-bold text-secondary" id="paymentHoursPerYear">--</p>
+                            <p class="text-sm text-gray-500">hours per year</p>
+                        </div>
+                        <div class="bg-white rounded-lg p-4">
+                            <p class="text-sm text-gray-600 mb-1">Cost of Payment Time</p>
+                            <p class="text-2xl font-bold text-red-600" id="costOfPaymentTime">--</p>
+                            <p class="text-sm text-gray-500">annual cost</p>
+                        </div>
+                    </div>
+                    <div class="mt-4 bg-green-50 border-l-4 border-green-500 p-4 rounded">
+                        <p class="text-sm text-gray-700">
+                            <strong>With QuoteIQ:</strong> Automated invoicing and payment reminders reduce admin time by 80%
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Investment Comparison -->
+            <div class="bg-secondary text-white rounded-lg p-8 mb-8">
+                <h3 class="text-2xl font-bold mb-6 text-center">Investment Comparison</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="text-center">
+                        <p class="text-gray-300 mb-2">Total Annual Cost Without QuoteIQ</p>
+                        <p class="text-4xl font-bold text-red-400" id="totalAnnualCost">--</p>
+                    </div>
+                    <div class="text-center">
+                        <p class="text-gray-300 mb-2">QuoteIQ Annual Cost</p>
+                        <p class="text-4xl font-bold text-primary" id="quoteIQAnnualCost">--</p>
+                    </div>
+                    <div class="text-center">
+                        <p class="text-gray-300 mb-2">Your Net Savings</p>
+                        <p class="text-4xl font-bold text-green-400" id="netSavingsBottom">--</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recalculate Button -->
+            <div class="text-center">
+                <button
+                    id="recalculateBtn"
+                    class="bg-primary hover:bg-opacity-90 text-secondary font-bold py-4 px-8 rounded-lg text-lg transition-all duration-300 transform hover:scale-105 shadow-lg"
+                >
+                    📊 Recalculate with Different Numbers
+                </button>
             </div>
         </div>
     </section>
