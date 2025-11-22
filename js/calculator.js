@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('calculatorForm');
     const calculateBtn = document.getElementById('calculateBtn');
     const recalculateBtn = document.getElementById('recalculateBtn');
-    const resultsSection = document.getElementById('results');
+    const resultsSection = document.getElementById('resultsSection');
 
     // Form submission handler
     form.addEventListener('submit', function(e) {
@@ -30,10 +30,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Store results in localStorage
         localStorage.setItem('calculatorResults', JSON.stringify(results));
+        localStorage.setItem('formData', JSON.stringify(formData));
         console.log('Results stored in localStorage');
 
         // Display results
-        displayResults(results);
+        displayResults(results, formData);
 
         // Show results section and scroll to it
         resultsSection.classList.remove('hidden');
@@ -201,45 +202,59 @@ document.addEventListener('DOMContentLoaded', function() {
     /**
      * Display results in the results section
      * @param {object} results - Calculation results
+     * @param {object} formData - Original form data
      */
-    function displayResults(results) {
+    function displayResults(results, formData) {
         console.log('Displaying results');
 
-        // Top Summary Cards
-        animateValue(document.getElementById('timeSavedPerWeek'), 0, parseFloat(results.timeSavedPerWeek), 1000, 1);
-        animateValue(document.getElementById('netSavings'), 0, results.netSavings, 1000, 0, true);
-        animateValue(document.getElementById('roiPercentage'), 0, results.roi, 1000, 0, false, '%');
+        // Breakdown 1: Time Wasted on Quoting
+        animateValue(document.getElementById('hoursPerWeek'), 0, parseFloat(results.hoursPerWeekQuoting), 1000, 1);
+        animateValue(document.getElementById('hoursPerYear'), 0, results.hoursPerYearQuoting, 1000, 0);
+        document.getElementById('hourlyRateDisplay').textContent = formData.hourlyRate.toLocaleString();
+        animateValue(document.getElementById('costOfTime'), 0, results.costOfQuotingTime, 1000, 0, true);
 
-        // Breakdown 1: Quoting
-        animateValue(document.getElementById('hoursPerWeekQuoting'), 0, parseFloat(results.hoursPerWeekQuoting), 1000, 1);
-        animateValue(document.getElementById('hoursPerYearQuoting'), 0, results.hoursPerYearQuoting, 1000, 0);
-        animateValue(document.getElementById('costOfQuotingTime'), 0, results.costOfQuotingTime, 1000, 0, true);
-
-        // Breakdown 2: Revenue
+        // Breakdown 2: Lost Revenue
         animateValue(document.getElementById('lostJobs'), 0, results.lostJobs, 1000, 0);
         animateValue(document.getElementById('lostRevenue'), 0, results.lostRevenue, 1000, 0, true);
 
-        // Breakdown 3: Payments
+        // Breakdown 3: Time Wasted on Payments
+        document.getElementById('hoursOnPaymentsDisplay').textContent = formData.hoursOnPayments;
         animateValue(document.getElementById('paymentHoursPerYear'), 0, results.paymentHoursPerYear, 1000, 0);
+        document.getElementById('hourlyRateDisplay2').textContent = formData.hourlyRate.toLocaleString();
         animateValue(document.getElementById('costOfPaymentTime'), 0, results.costOfPaymentTime, 1000, 0, true);
 
-        // Investment Comparison
-        animateValue(document.getElementById('totalAnnualCost'), 0, results.totalAnnualCost, 1000, 0, true);
-        animateValue(document.getElementById('quoteIQAnnualCost'), 0, results.quoteIQAnnualCost, 1000, 0, true);
-        animateValue(document.getElementById('netSavingsBottom'), 0, results.netSavings, 1000, 0, true);
+        // Total Cost
+        animateValue(document.getElementById('totalCost'), 0, results.totalAnnualCost, 1000, 0, true);
 
-        // With QuoteIQ improvements
+        // With QuoteIQ Section
         document.getElementById('newQuoteTime').textContent = results.newQuoteTime;
-        document.getElementById('improvedConversionRate').textContent = results.improvedConversionRate + '%';
+        document.getElementById('oldQuoteTime').textContent = formData.minutesPerQuote;
+
+        // Calculate payment delay text
+        let paymentDelayText = formData.paymentDelay;
+        if (formData.paymentDelay === 0) paymentDelayText = '0';
+        else if (formData.paymentDelay === 4) paymentDelayText = '4-7';
+        else if (formData.paymentDelay === 11) paymentDelayText = '11-14';
+        else if (formData.paymentDelay === 22) paymentDelayText = '22-30';
+        else paymentDelayText = '45';
+        document.getElementById('paymentDelayDays').textContent = paymentDelayText;
+
+        animateValue(document.getElementById('timeSaved'), 0, parseFloat(results.timeSavedPerWeek), 1000, 1);
+        document.getElementById('improvedRate').textContent = results.improvedConversionRate;
+        document.getElementById('oldRate').textContent = formData.conversionRate;
+
+        // Net Savings Section
+        animateValue(document.getElementById('netSavings'), 0, results.netSavings, 1500, 0, true);
+        animateValue(document.getElementById('roi'), 0, results.roi, 1500, 0, false, '');
     }
 
     /**
-     * Format number as currency
+     * Format number as currency (without $ sign for use in animations)
      * @param {number} number - Number to format
-     * @returns {string} - Formatted currency string
+     * @returns {string} - Formatted number string with commas
      */
     function formatCurrency(number) {
-        return '$' + number.toLocaleString('en-US');
+        return number.toLocaleString('en-US');
     }
 
     /**
@@ -249,7 +264,7 @@ document.addEventListener('DOMContentLoaded', function() {
      * @param {number} end - End value
      * @param {number} duration - Animation duration in milliseconds
      * @param {number} decimals - Number of decimal places
-     * @param {boolean} currency - Format as currency
+     * @param {boolean} currency - Format as currency (adds commas)
      * @param {string} suffix - Suffix to add (e.g., '%')
      */
     function animateValue(element, start, end, duration, decimals = 0, currency = false, suffix = '') {
@@ -267,7 +282,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             if (currency) {
-                element.textContent = formatCurrency(displayValue);
+                element.textContent = formatCurrency(displayValue) + suffix;
             } else {
                 element.textContent = displayValue.toLocaleString('en-US') + suffix;
             }
