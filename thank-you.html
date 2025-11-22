@@ -50,7 +50,8 @@
                 Thank You!
             </h1>
 
-            <p class="text-xl text-gray-600 mb-8">
+            <!-- Dynamic message will be inserted here -->
+            <p id="thankYouMessage" class="text-xl text-gray-600 mb-8">
                 We've received your information and will be in touch soon to help you transform your business with QuoteIQ.
             </p>
 
@@ -61,7 +62,7 @@
                         <svg class="w-6 h-6 text-primary mr-3 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                         </svg>
-                        <span>Check your inbox for your personalized ROI report</span>
+                        <span id="emailMessage">Check your inbox for your personalized ROI report</span>
                     </li>
                     <li class="flex items-start">
                         <svg class="w-6 h-6 text-primary mr-3 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -98,6 +99,36 @@
             </p>
         </div>
     </footer>
+
+    <!-- Email Parameter Handler -->
+    <script>
+        // Get email from URL parameter
+        const urlParams = new URLSearchParams(window.location.search);
+        const email = urlParams.get('email');
+
+        console.log('Thank you page loaded, email:', email);
+
+        // Get message elements
+        const thankYouMessage = document.getElementById('thankYouMessage');
+        const emailMessage = document.getElementById('emailMessage');
+
+        // If email is present, personalize the message
+        if (email && email.trim() !== '') {
+            console.log('Personalizing message for:', email);
+
+            // Update thank you message
+            thankYouMessage.innerHTML = `
+                Check your email! We just sent your personalized ROI report to <strong class="text-primary">${email}</strong>
+            `;
+
+            // Update first bullet point
+            emailMessage.innerHTML = `
+                We just sent your report to <strong>${email}</strong>
+            `;
+        } else {
+            console.log('No email parameter found, using generic message');
+        }
+    </script>
 
 </body>
 </html>
