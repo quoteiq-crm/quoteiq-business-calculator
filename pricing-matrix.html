@@ -1,0 +1,1060 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuoteIQ Pricing Matrix</title>
+</head>
+<body>
+
+<style>
+.qiq-pricing-matrix {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 32px;
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+    color: #0c1014;
+    line-height: 1.5;
+}
+.qiq-pricing-matrix * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+.qiq-pricing-matrix h2 {
+    font-size: 28px;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 8px;
+    color: #0c1014;
+}
+.qiq-pricing-matrix .qiq-subtitle {
+    text-align: center;
+    color: #666;
+    font-size: 16px;
+    margin-bottom: 32px;
+}
+.qiq-pricing-matrix .qiq-section {
+    margin-bottom: 32px;
+}
+.qiq-pricing-matrix .qiq-section-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #0c1014;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #f2b148;
+}
+.qiq-pricing-matrix .qiq-options-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+}
+.qiq-pricing-matrix .qiq-option {
+    position: relative;
+    padding: 20px 16px;
+    background: #f8f9fa;
+    border: 2px solid #e0e0e0;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+}
+.qiq-pricing-matrix .qiq-option:hover {
+    border-color: #f2b148;
+    background: #fffbf5;
+}
+.qiq-pricing-matrix .qiq-option.selected {
+    border-color: #f2b148;
+    background: #fffbf5;
+    box-shadow: 0 0 0 3px rgba(242, 177, 72, 0.2);
+}
+.qiq-pricing-matrix .qiq-option input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+.qiq-pricing-matrix .qiq-option-label {
+    font-size: 16px;
+    font-weight: 600;
+    color: #0c1014;
+    display: block;
+    margin-bottom: 4px;
+}
+.qiq-pricing-matrix .qiq-option-price {
+    font-size: 14px;
+    color: #666;
+}
+.qiq-pricing-matrix .qiq-option-badge {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    background: #f2b148;
+    color: #0c1014;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 8px;
+    border-radius: 20px;
+    text-transform: uppercase;
+}
+.qiq-pricing-matrix .qiq-checkmark {
+    display: none;
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 24px;
+    height: 24px;
+    background: #f2b148;
+    border-radius: 50%;
+    align-items: center;
+    justify-content: center;
+}
+.qiq-pricing-matrix .qiq-option.selected .qiq-checkmark {
+    display: flex;
+}
+.qiq-pricing-matrix .qiq-checkmark svg {
+    width: 14px;
+    height: 14px;
+    fill: #0c1014;
+}
+.qiq-pricing-matrix .qiq-features-container {
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 24px;
+}
+.qiq-pricing-matrix .qiq-features-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    padding-bottom: 16px;
+    border-bottom: 2px solid #e0e0e0;
+}
+.qiq-pricing-matrix .qiq-plan-name {
+    font-size: 22px;
+    font-weight: 700;
+    color: #0c1014;
+}
+.qiq-pricing-matrix .qiq-plan-price-display {
+    font-size: 26px;
+    font-weight: 700;
+    color: #f2b148;
+}
+.qiq-pricing-matrix .qiq-features-instruction {
+    font-size: 13px;
+    color: #666;
+    margin-bottom: 20px;
+    padding: 10px 14px;
+    background: #fff;
+    border-radius: 8px;
+    border-left: 3px solid #f2b148;
+}
+.qiq-pricing-matrix .qiq-feature-category {
+    font-size: 13px;
+    font-weight: 700;
+    color: #0c1014;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 20px;
+    margin-bottom: 12px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #ddd;
+}
+.qiq-pricing-matrix .qiq-feature-category:first-child {
+    margin-top: 0;
+}
+/* FIXED: Grid-based feature layout for consistent alignment */
+.qiq-pricing-matrix .qiq-features-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-bottom: 8px;
+}
+.qiq-pricing-matrix .qiq-feature-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: #333;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    min-height: 44px;
+}
+.qiq-pricing-matrix .qiq-feature-item:hover {
+    border-color: #f2b148;
+    background: #fffbf5;
+}
+.qiq-pricing-matrix .qiq-feature-item.selected {
+    border-color: #f2b148;
+    background: #f2b148;
+    color: #0c1014;
+}
+.qiq-pricing-matrix .qiq-feature-item input {
+    display: none;
+}
+.qiq-pricing-matrix .qiq-feature-checkbox {
+    width: 18px;
+    height: 18px;
+    min-width: 18px;
+    border: 2px solid #ccc;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+    background: #fff;
+    flex-shrink: 0;
+}
+.qiq-pricing-matrix .qiq-feature-item.selected .qiq-feature-checkbox {
+    background: #0c1014;
+    border-color: #0c1014;
+}
+.qiq-pricing-matrix .qiq-feature-checkbox svg {
+    width: 10px;
+    height: 10px;
+    fill: #fff;
+    opacity: 0;
+}
+.qiq-pricing-matrix .qiq-feature-item.selected .qiq-feature-checkbox svg {
+    opacity: 1;
+}
+.qiq-pricing-matrix .qiq-feature-name {
+    font-weight: 500;
+    flex: 1;
+    line-height: 1.3;
+}
+.qiq-pricing-matrix .qiq-feature-tier {
+    font-size: 9px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    flex-shrink: 0;
+}
+.qiq-pricing-matrix .qiq-feature-item.selected .qiq-feature-tier {
+    background: rgba(0,0,0,0.15);
+    color: #0c1014;
+}
+.qiq-pricing-matrix .qiq-tier-beginner {
+    background: #d4edda;
+    color: #155724;
+}
+.qiq-pricing-matrix .qiq-tier-pro {
+    background: #cce5ff;
+    color: #004085;
+}
+.qiq-pricing-matrix .qiq-tier-elite {
+    background: #fff3cd;
+    color: #856404;
+}
+.qiq-pricing-matrix .qiq-tier-unlimited {
+    background: #e2d5f1;
+    color: #5a3d8a;
+}
+.qiq-pricing-matrix .qiq-category-section {
+    margin-bottom: 20px;
+}
+.qiq-pricing-matrix .qiq-addons-section {
+    margin-top: 32px;
+}
+.qiq-pricing-matrix .qiq-addons-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+}
+.qiq-pricing-matrix .qiq-addon-card {
+    position: relative;
+    padding: 20px;
+    background: #f8f9fa;
+    border: 2px solid #e0e0e0;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.qiq-pricing-matrix .qiq-addon-card:hover {
+    border-color: #f2b148;
+    background: #fffbf5;
+}
+.qiq-pricing-matrix .qiq-addon-card.selected {
+    border-color: #f2b148;
+    background: #fffbf5;
+    box-shadow: 0 0 0 3px rgba(242, 177, 72, 0.2);
+}
+.qiq-pricing-matrix .qiq-addon-card.included {
+    border-color: #28a745;
+    background: #f0fff4;
+    cursor: default;
+}
+.qiq-pricing-matrix .qiq-addon-card input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+.qiq-pricing-matrix .qiq-addon-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 8px;
+}
+.qiq-pricing-matrix .qiq-addon-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: #0c1014;
+}
+.qiq-pricing-matrix .qiq-addon-price {
+    font-size: 14px;
+    font-weight: 600;
+    color: #f2b148;
+    white-space: nowrap;
+}
+.qiq-pricing-matrix .qiq-addon-desc {
+    font-size: 13px;
+    color: #666;
+    line-height: 1.4;
+}
+.qiq-pricing-matrix .qiq-included-badge {
+    display: inline-block;
+    background: #28a745;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 4px;
+    text-transform: uppercase;
+}
+.qiq-pricing-matrix .qiq-addon-card .qiq-checkmark {
+    top: 10px;
+    right: 10px;
+}
+.qiq-pricing-matrix .qiq-addon-card.selected .qiq-checkmark {
+    display: flex;
+}
+.qiq-pricing-matrix .qiq-ai-package-section {
+    margin-top: 24px;
+}
+.qiq-pricing-matrix .qiq-ai-package-info {
+    font-size: 13px;
+    color: #666;
+    margin-bottom: 12px;
+    padding: 12px;
+    background: #fff;
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+}
+.qiq-pricing-matrix .qiq-ai-package-info strong {
+    color: #0c1014;
+}
+.qiq-pricing-matrix .qiq-ai-options {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+}
+.qiq-pricing-matrix .qiq-ai-option {
+    position: relative;
+    padding: 16px;
+    background: #f8f9fa;
+    border: 2px solid #e0e0e0;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+}
+.qiq-pricing-matrix .qiq-ai-option:hover {
+    border-color: #f2b148;
+    background: #fffbf5;
+}
+.qiq-pricing-matrix .qiq-ai-option.selected {
+    border-color: #f2b148;
+    background: #fffbf5;
+    box-shadow: 0 0 0 3px rgba(242, 177, 72, 0.2);
+}
+.qiq-pricing-matrix .qiq-ai-option.included {
+    border-color: #28a745;
+    background: #f0fff4;
+    cursor: default;
+}
+.qiq-pricing-matrix .qiq-ai-option.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+.qiq-pricing-matrix .qiq-ai-option input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+.qiq-pricing-matrix .qiq-ai-option .qiq-checkmark {
+    top: 8px;
+    right: 8px;
+}
+.qiq-pricing-matrix .qiq-ai-option.selected .qiq-checkmark {
+    display: flex;
+}
+.qiq-pricing-matrix .qiq-summary-container {
+    margin-top: 32px;
+    padding: 24px;
+    background: linear-gradient(135deg, #0c1014 0%, #1a1a2e 100%);
+    border-radius: 16px;
+    color: #fff;
+}
+.qiq-pricing-matrix .qiq-summary-title {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 20px;
+    color: #fff;
+    text-align: center;
+}
+.qiq-pricing-matrix .qiq-summary-items {
+    margin-bottom: 20px;
+}
+.qiq-pricing-matrix .qiq-summary-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+.qiq-pricing-matrix .qiq-summary-item:last-child {
+    border-bottom: none;
+}
+.qiq-pricing-matrix .qiq-summary-item-name {
+    font-size: 15px;
+    color: rgba(255, 255, 255, 0.9);
+}
+.qiq-pricing-matrix .qiq-summary-item-price {
+    font-size: 15px;
+    font-weight: 600;
+    color: #f2b148;
+}
+.qiq-pricing-matrix .qiq-summary-item-included {
+    font-size: 13px;
+    color: #28a745;
+    font-weight: 600;
+}
+.qiq-pricing-matrix .qiq-summary-total {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 20px;
+    border-top: 2px solid #f2b148;
+    margin-top: 8px;
+}
+.qiq-pricing-matrix .qiq-summary-total-label {
+    font-size: 18px;
+    font-weight: 600;
+    color: #fff;
+}
+.qiq-pricing-matrix .qiq-summary-total-price {
+    font-size: 32px;
+    font-weight: 700;
+    color: #f2b148;
+}
+.qiq-pricing-matrix .qiq-summary-total-period {
+    font-size: 14px;
+    font-weight: 400;
+    color: rgba(255, 255, 255, 0.7);
+}
+.qiq-pricing-matrix .qiq-cta-btn {
+    display: block;
+    width: 100%;
+    padding: 16px 24px;
+    margin-top: 20px;
+    font-size: 18px;
+    font-weight: 700;
+    text-align: center;
+    color: #0c1014;
+    background: #f2b148;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+}
+.qiq-pricing-matrix .qiq-cta-btn:hover {
+    background: #e5a43d;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(242, 177, 72, 0.4);
+}
+.qiq-pricing-matrix .qiq-selected-features-list {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255,255,255,0.1);
+}
+.qiq-pricing-matrix .qiq-selected-features-title {
+    font-size: 12px;
+    color: rgba(255,255,255,0.5);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.qiq-pricing-matrix .qiq-selected-feature-tag {
+    display: inline-block;
+    font-size: 11px;
+    padding: 4px 10px;
+    margin: 3px;
+    background: rgba(242, 177, 72, 0.2);
+    border-radius: 12px;
+    color: #f2b148;
+}
+
+/* Responsive breakpoints */
+@media (max-width: 900px) {
+    .qiq-pricing-matrix .qiq-features-grid {
+        grid-template-columns: 1fr;
+    }
+}
+@media (max-width: 768px) {
+    .qiq-pricing-matrix {
+        padding: 20px;
+        margin: 0 12px;
+    }
+    .qiq-pricing-matrix h2 {
+        font-size: 24px;
+    }
+    .qiq-pricing-matrix .qiq-options-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .qiq-pricing-matrix .qiq-addons-grid {
+        grid-template-columns: 1fr;
+    }
+    .qiq-pricing-matrix .qiq-ai-options {
+        grid-template-columns: 1fr;
+    }
+    .qiq-pricing-matrix .qiq-summary-total-price {
+        font-size: 28px;
+    }
+    .qiq-pricing-matrix .qiq-features-header {
+        flex-direction: column;
+        gap: 8px;
+        text-align: center;
+    }
+    .qiq-pricing-matrix .qiq-feature-item {
+        font-size: 13px;
+        padding: 10px 12px;
+    }
+}
+@media (max-width: 480px) {
+    .qiq-pricing-matrix .qiq-options-grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+
+<div class="qiq-pricing-matrix">
+    <h2>QuoteIQ Pricing Matrix</h2>
+    <p class="qiq-subtitle">Build your perfect plan based on your team size and features</p>
+
+    <div class="qiq-section">
+        <div class="qiq-section-title">Select Your Team Size</div>
+        <div class="qiq-options-grid">
+            <label class="qiq-option selected">
+                <input type="radio" name="qiq-team-size" value="1" data-price="29.99" data-name="Beginner" data-tier="beginner" checked>
+                <span class="qiq-checkmark"><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></span>
+                <span class="qiq-option-label">1 User</span>
+                <span class="qiq-option-price">$29.99/mo</span>
+            </label>
+            <label class="qiq-option">
+                <input type="radio" name="qiq-team-size" value="3" data-price="99.99" data-name="Pro" data-tier="pro">
+                <span class="qiq-checkmark"><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></span>
+                <span class="qiq-option-label">3 Users</span>
+                <span class="qiq-option-price">$99.99/mo</span>
+            </label>
+            <label class="qiq-option">
+                <input type="radio" name="qiq-team-size" value="7" data-price="189.99" data-name="Elite" data-tier="elite">
+                <span class="qiq-checkmark"><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></span>
+                <span class="qiq-option-label">7 Users</span>
+                <span class="qiq-option-price">$189.99/mo</span>
+            </label>
+            <label class="qiq-option">
+                <input type="radio" name="qiq-team-size" value="unlimited" data-price="349.99" data-name="Unlimited" data-tier="unlimited">
+                <span class="qiq-checkmark"><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></span>
+                <span class="qiq-option-badge">Best Value</span>
+                <span class="qiq-option-label">Unlimited</span>
+                <span class="qiq-option-price">$349.99/mo</span>
+            </label>
+        </div>
+    </div>
+
+    <div class="qiq-section">
+        <div class="qiq-section-title">Select The Features You Need</div>
+        <div class="qiq-features-container">
+            <div class="qiq-features-header">
+                <span class="qiq-plan-name" id="qiq-plan-name-display">Beginner Plan</span>
+                <span class="qiq-plan-price-display" id="qiq-plan-price-display">$29.99/mo</span>
+            </div>
+            <div class="qiq-features-instruction">
+                Click features to add them. Your plan auto-upgrades to include all selected features.
+            </div>
+            <div id="qiq-features-list">
+                <!-- Dynamically populated -->
+            </div>
+        </div>
+    </div>
+
+    <div class="qiq-section qiq-addons-section">
+        <div class="qiq-section-title">Add-On Features</div>
+        <div class="qiq-addons-grid">
+            <label class="qiq-addon-card" id="qiq-card-website">
+                <input type="checkbox" id="qiq-addon-website" data-price="34.99" data-name="AI Website Builder">
+                <span class="qiq-checkmark"><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></span>
+                <div class="qiq-addon-header">
+                    <span class="qiq-addon-name">AI Website Builder</span>
+                    <span class="qiq-addon-price" id="qiq-price-website">+$34.99/mo</span>
+                </div>
+                <div class="qiq-addon-desc">Create a professional website for your business with AI-powered design and content generation.</div>
+            </label>
+            <label class="qiq-addon-card" id="qiq-card-callteam">
+                <input type="checkbox" id="qiq-addon-callteam" data-price="25.00" data-name="AI Virtual Call Team">
+                <span class="qiq-checkmark"><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></span>
+                <div class="qiq-addon-header">
+                    <span class="qiq-addon-name">AI Virtual Call Team</span>
+                    <span class="qiq-addon-price" id="qiq-price-callteam">+$25.00/mo</span>
+                </div>
+                <div class="qiq-addon-desc">AI-powered call answering service that handles customer inquiries 24/7.</div>
+            </label>
+        </div>
+
+        <div class="qiq-ai-package-section">
+            <div class="qiq-section-title" style="margin-top: 24px;">AI Package</div>
+            <div class="qiq-ai-package-info">
+                <strong>Includes:</strong> AI Before & After Image Generator, AI Text Field Generation, AI Job Estimator (usage-based pricing)
+            </div>
+            <div class="qiq-ai-options" id="qiq-ai-options">
+                <label class="qiq-ai-option selected" id="qiq-ai-none-option">
+                    <input type="radio" name="qiq-ai-package" value="none" data-price="0" data-name="" checked>
+                    <span class="qiq-checkmark"><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></span>
+                    <span class="qiq-option-label">No AI Package</span>
+                    <span class="qiq-option-price">$0/mo</span>
+                </label>
+                <label class="qiq-ai-option" id="qiq-ai-beginner-option">
+                    <input type="radio" name="qiq-ai-package" value="beginner" data-price="29.99" data-name="AI Package Beginner">
+                    <span class="qiq-checkmark"><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></span>
+                    <span class="qiq-option-label">AI Beginner</span>
+                    <span class="qiq-option-price" id="qiq-price-ai-beginner">$29.99/mo</span>
+                </label>
+                <label class="qiq-ai-option" id="qiq-ai-pro-option">
+                    <input type="radio" name="qiq-ai-package" value="pro" data-price="99.99" data-name="AI Package Pro">
+                    <span class="qiq-checkmark"><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></span>
+                    <span class="qiq-option-label">AI Pro</span>
+                    <span class="qiq-option-price" id="qiq-price-ai-pro">$99.99/mo</span>
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <div class="qiq-summary-container">
+        <div class="qiq-summary-title">Your Custom Plan</div>
+        <div class="qiq-summary-items" id="qiq-summary-items">
+            <!-- Dynamically populated -->
+        </div>
+        <div class="qiq-selected-features-list" id="qiq-selected-features-list" style="display:none;">
+            <div class="qiq-selected-features-title">Selected Features</div>
+            <div id="qiq-selected-features-tags"></div>
+        </div>
+        <div class="qiq-summary-total">
+            <span class="qiq-summary-total-label">Total</span>
+            <span class="qiq-summary-total-price">$<span id="qiq-total-price">29.99</span><span class="qiq-summary-total-period">/mo</span></span>
+        </div>
+        <a href="https://myquoteiq.com/pricing/" class="qiq-cta-btn">Start Your 14-Day Free Trial</a>
+    </div>
+</div>
+
+<script>
+(function() {
+    var checkIcon = '<svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>';
+
+    var tierOrder = ['beginner', 'pro', 'elite', 'unlimited'];
+    var tierPrices = { beginner: 29.99, pro: 99.99, elite: 189.99, unlimited: 349.99 };
+    var tierNames = { beginner: 'Beginner', pro: 'Pro', elite: 'Elite', unlimited: 'Unlimited' };
+
+    var featuresByCategory = {
+        'Quoting & Estimates': [
+            { name: 'Create/Send Estimates', minTier: 'beginner' },
+            { name: 'Standard, Quick, Options & Package Estimates', minTier: 'beginner' },
+            { name: 'Electronic Proposals with E-Signature', minTier: 'beginner' },
+            { name: 'Attach Documents & Licenses', minTier: 'beginner' }
+        ],
+        'Invoicing & Payments': [
+            { name: 'Create/Send Invoices', minTier: 'beginner' },
+            { name: 'Online Payments (Card, ACH)', minTier: 'beginner' },
+            { name: 'Recurring Billing', minTier: 'beginner' },
+            { name: 'Tip Collection', minTier: 'beginner' }
+        ],
+        'Scheduling': [
+            { name: 'Calendar & Scheduling', minTier: 'beginner' },
+            { name: 'GEO-Schedule Map View', minTier: 'beginner' },
+            { name: 'Job Time Tracker', minTier: 'beginner' },
+            { name: 'Route Optimization', minTier: 'elite' },
+            { name: 'InstaSchedule (Self-Scheduling)', minTier: 'elite' }
+        ],
+        'CRM & Customers': [
+            { name: 'Client Database', minTier: 'beginner' },
+            { name: 'Lead Management', minTier: 'beginner' },
+            { name: 'Price Book & Service Catalog', minTier: 'beginner' },
+            { name: 'InstaQuote (Self-Quoting)', minTier: 'elite' },
+            { name: 'Pipelines / Deals', minTier: 'elite' }
+        ],
+        'Communication': [
+            { name: 'ClientHub (Texting & Calling)', minTier: 'pro' },
+            { name: 'SMS/Email Automation', minTier: 'pro' },
+            { name: 'Mass SMS/Email Blasts', minTier: 'elite' },
+            { name: 'Contact & Schedule Forms', minTier: 'elite' }
+        ],
+        'QuoteIQ Cam': [
+            { name: 'QuoteIQ Cam', minTier: 'pro' },
+            { name: 'Before & After Editor', minTier: 'pro' },
+            { name: 'Inspection & Job Forms', minTier: 'pro' },
+            { name: '4K Image/Video Upload', minTier: 'pro' }
+        ],
+        'Measurement Tools': [
+            { name: 'MapMeasure Pro', minTier: 'beginner' },
+            { name: 'Property Street View', minTier: 'beginner' },
+            { name: 'Zillow Quick Access', minTier: 'beginner' }
+        ],
+        'Employee Management': [
+            { name: 'Multi-User Access', minTier: 'pro' },
+            { name: 'Roles & Permissions', minTier: 'elite' },
+            { name: 'EmployeeHub', minTier: 'elite' },
+            { name: 'Live GPS Tracking', minTier: 'elite' },
+            { name: 'Labor/Time Tracker', minTier: 'elite' },
+            { name: 'Employee Messaging', minTier: 'elite' },
+            { name: 'Crew Assignment', minTier: 'elite' }
+        ],
+        'Business Management': [
+            { name: 'Job Costing', minTier: 'beginner' },
+            { name: 'Expense Tracking', minTier: 'beginner' },
+            { name: 'Analytics Dashboard', minTier: 'beginner' },
+            { name: 'Review Multiplier', minTier: 'beginner' },
+            { name: 'Job Lists Hub', minTier: 'beginner' },
+            { name: 'Inventory Management', minTier: 'elite' }
+        ],
+        'Platform': [
+            { name: 'Mobile App (iOS & Android)', minTier: 'beginner' },
+            { name: 'Web Access', minTier: 'beginner' },
+            { name: 'Google Reserve', minTier: 'beginner' }
+        ]
+    };
+
+    var selectedFeatures = [];
+
+    var teamSizeInputs = document.querySelectorAll('input[name="qiq-team-size"]');
+    var aiPackageInputs = document.querySelectorAll('input[name="qiq-ai-package"]');
+    var websiteCheckbox = document.getElementById('qiq-addon-website');
+    var callteamCheckbox = document.getElementById('qiq-addon-callteam');
+    var summaryItems = document.getElementById('qiq-summary-items');
+    var totalPriceEl = document.getElementById('qiq-total-price');
+    var featuresListEl = document.getElementById('qiq-features-list');
+    var planNameDisplay = document.getElementById('qiq-plan-name-display');
+    var planPriceDisplay = document.getElementById('qiq-plan-price-display');
+    var selectedFeaturesListEl = document.getElementById('qiq-selected-features-list');
+    var selectedFeaturesTagsEl = document.getElementById('qiq-selected-features-tags');
+
+    var websiteCard = document.getElementById('qiq-card-website');
+    var callteamCard = document.getElementById('qiq-card-callteam');
+    var aiNoneOption = document.getElementById('qiq-ai-none-option');
+    var aiBeginnerOption = document.getElementById('qiq-ai-beginner-option');
+    var aiProOption = document.getElementById('qiq-ai-pro-option');
+
+    var priceWebsite = document.getElementById('qiq-price-website');
+    var priceCallteam = document.getElementById('qiq-price-callteam');
+    var priceAiBeginner = document.getElementById('qiq-price-ai-beginner');
+    var priceAiPro = document.getElementById('qiq-price-ai-pro');
+
+    function getTierIndex(tier) {
+        return tierOrder.indexOf(tier);
+    }
+
+    function getHighestTier(tiers) {
+        var highest = 'beginner';
+        tiers.forEach(function(t) {
+            if (getTierIndex(t) > getTierIndex(highest)) {
+                highest = t;
+            }
+        });
+        return highest;
+    }
+
+    function updateOptionStyles() {
+        var allOptions = document.querySelectorAll('.qiq-pricing-matrix .qiq-option, .qiq-pricing-matrix .qiq-ai-option');
+        allOptions.forEach(function(opt) {
+            var input = opt.querySelector('input');
+            if (input && input.checked) {
+                opt.classList.add('selected');
+            } else {
+                opt.classList.remove('selected');
+            }
+        });
+
+        var allAddonCards = document.querySelectorAll('.qiq-pricing-matrix .qiq-addon-card');
+        allAddonCards.forEach(function(card) {
+            var input = card.querySelector('input[type="checkbox"]');
+            if (input && input.checked && !card.classList.contains('included')) {
+                card.classList.add('selected');
+            } else if (!card.classList.contains('included')) {
+                card.classList.remove('selected');
+            }
+        });
+    }
+
+    function getSelectedTeamSize() {
+        var selected = document.querySelector('input[name="qiq-team-size"]:checked');
+        return {
+            value: selected.value,
+            price: parseFloat(selected.dataset.price),
+            name: selected.dataset.name,
+            tier: selected.dataset.tier
+        };
+    }
+
+    function setTeamSizeByTier(tier) {
+        var input = document.querySelector('input[name="qiq-team-size"][data-tier="' + tier + '"]');
+        if (input) {
+            input.checked = true;
+            updateOptionStyles();
+        }
+    }
+
+    function isUnlimited() {
+        return getSelectedTeamSize().tier === 'unlimited';
+    }
+
+    function getRequiredTierFromFeatures() {
+        if (selectedFeatures.length === 0) return 'beginner';
+        var tiers = selectedFeatures.map(function(f) { return f.minTier; });
+        return getHighestTier(tiers);
+    }
+
+    function renderFeaturesList() {
+        var html = '';
+        var featureIndex = 0;
+
+        for (var category in featuresByCategory) {
+            html += '<div class="qiq-category-section">';
+            html += '<div class="qiq-feature-category">' + category + '</div>';
+            html += '<div class="qiq-features-grid">';
+
+            featuresByCategory[category].forEach(function(feature) {
+                var isSelected = selectedFeatures.some(function(f) { return f.name === feature.name; });
+                var itemClass = 'qiq-feature-item' + (isSelected ? ' selected' : '');
+                var tierClass = 'qiq-tier-' + feature.minTier;
+
+                html += '<label class="' + itemClass + '" data-feature-name="' + feature.name + '" data-feature-tier="' + feature.minTier + '">';
+                html += '<input type="checkbox" ' + (isSelected ? 'checked' : '') + '>';
+                html += '<span class="qiq-feature-checkbox">' + checkIcon + '</span>';
+                html += '<span class="qiq-feature-name">' + feature.name + '</span>';
+                html += '<span class="qiq-feature-tier ' + tierClass + '">' + tierNames[feature.minTier] + '</span>';
+                html += '</label>';
+
+                featureIndex++;
+            });
+
+            html += '</div></div>';
+        }
+
+        featuresListEl.innerHTML = html;
+
+        var featureItems = featuresListEl.querySelectorAll('.qiq-feature-item');
+        featureItems.forEach(function(item) {
+            item.addEventListener('click', function(e) {
+                e.preventDefault();
+                var featureName = item.dataset.featureName;
+                var featureTier = item.dataset.featureTier;
+                var checkbox = item.querySelector('input');
+
+                if (checkbox.checked) {
+                    checkbox.checked = false;
+                    item.classList.remove('selected');
+                    selectedFeatures = selectedFeatures.filter(function(f) { return f.name !== featureName; });
+                } else {
+                    checkbox.checked = true;
+                    item.classList.add('selected');
+                    selectedFeatures.push({ name: featureName, minTier: featureTier });
+                }
+
+                var requiredTier = getRequiredTierFromFeatures();
+                var currentTier = getSelectedTeamSize().tier;
+
+                if (getTierIndex(requiredTier) > getTierIndex(currentTier)) {
+                    setTeamSizeByTier(requiredTier);
+                }
+
+                updatePlanDisplay();
+                updateAddonsState();
+                renderSummary();
+            });
+        });
+    }
+
+    function updatePlanDisplay() {
+        var team = getSelectedTeamSize();
+        planNameDisplay.textContent = team.name + ' Plan';
+        planPriceDisplay.textContent = '$' + team.price.toFixed(2) + '/mo';
+    }
+
+    function updateAddonsState() {
+        var unlimited = isUnlimited();
+
+        if (unlimited) {
+            websiteCard.classList.add('included');
+            websiteCard.classList.remove('selected');
+            websiteCard.style.pointerEvents = 'none';
+            websiteCheckbox.checked = false;
+            priceWebsite.innerHTML = '<span class="qiq-included-badge">Included</span>';
+
+            callteamCard.classList.add('included');
+            callteamCard.classList.remove('selected');
+            callteamCard.style.pointerEvents = 'none';
+            callteamCheckbox.checked = false;
+            priceCallteam.innerHTML = '<span class="qiq-included-badge">Included</span>';
+
+            aiNoneOption.style.display = 'none';
+            aiBeginnerOption.classList.add('disabled');
+            aiBeginnerOption.style.pointerEvents = 'none';
+
+            aiProOption.classList.add('included');
+            aiProOption.classList.remove('selected');
+            aiProOption.style.pointerEvents = 'none';
+            priceAiPro.innerHTML = '<span class="qiq-included-badge">Included</span>';
+
+            var noneRadio = document.querySelector('input[name="qiq-ai-package"][value="none"]');
+            noneRadio.checked = true;
+
+        } else {
+            websiteCard.classList.remove('included');
+            websiteCard.classList.remove('selected');
+            websiteCard.style.pointerEvents = 'auto';
+            priceWebsite.textContent = '+$34.99/mo';
+
+            callteamCard.classList.remove('included');
+            callteamCard.classList.remove('selected');
+            callteamCard.style.pointerEvents = 'auto';
+            priceCallteam.textContent = '+$25.00/mo';
+
+            aiNoneOption.style.display = '';
+            aiBeginnerOption.classList.remove('disabled');
+            aiBeginnerOption.style.pointerEvents = 'auto';
+            priceAiBeginner.textContent = '$29.99/mo';
+
+            aiProOption.classList.remove('included');
+            aiProOption.style.pointerEvents = 'auto';
+            priceAiPro.textContent = '$99.99/mo';
+        }
+
+        updateOptionStyles();
+    }
+
+    function calculateTotal() {
+        var team = getSelectedTeamSize();
+        var total = team.price;
+        var items = [];
+
+        var userLabel = team.value === 'unlimited' ? 'Unlimited Users' : team.value + ' User' + (parseInt(team.value) > 1 ? 's' : '');
+        items.push({
+            name: team.name + ' Plan (' + userLabel + ')',
+            price: team.price,
+            included: false
+        });
+
+        if (isUnlimited()) {
+            items.push({ name: 'AI Website Builder', price: 0, included: true });
+            items.push({ name: 'AI Virtual Call Team', price: 0, included: true });
+            items.push({ name: 'AI Package Pro', price: 0, included: true });
+        } else {
+            if (websiteCheckbox.checked) {
+                var websitePrice = parseFloat(websiteCheckbox.dataset.price);
+                total += websitePrice;
+                items.push({ name: websiteCheckbox.dataset.name, price: websitePrice, included: false });
+            }
+
+            if (callteamCheckbox.checked) {
+                var callteamPrice = parseFloat(callteamCheckbox.dataset.price);
+                total += callteamPrice;
+                items.push({ name: callteamCheckbox.dataset.name, price: callteamPrice, included: false });
+            }
+
+            var aiPackage = document.querySelector('input[name="qiq-ai-package"]:checked');
+            if (aiPackage && aiPackage.value !== 'none') {
+                var aiPrice = parseFloat(aiPackage.dataset.price);
+                total += aiPrice;
+                items.push({ name: aiPackage.dataset.name, price: aiPrice, included: false });
+            }
+        }
+
+        return { total: total, items: items };
+    }
+
+    function renderSummary() {
+        var result = calculateTotal();
+        var html = '';
+
+        result.items.forEach(function(item) {
+            html += '<div class="qiq-summary-item">';
+            html += '<span class="qiq-summary-item-name">' + item.name + '</span>';
+            if (item.included) {
+                html += '<span class="qiq-summary-item-included">Included</span>';
+            } else {
+                html += '<span class="qiq-summary-item-price">$' + item.price.toFixed(2) + '</span>';
+            }
+            html += '</div>';
+        });
+
+        summaryItems.innerHTML = html;
+        totalPriceEl.textContent = result.total.toFixed(2);
+
+        if (selectedFeatures.length > 0) {
+            selectedFeaturesListEl.style.display = 'block';
+            var tagsHtml = '';
+            selectedFeatures.forEach(function(f) {
+                tagsHtml += '<span class="qiq-selected-feature-tag">' + f.name + '</span>';
+            });
+            selectedFeaturesTagsEl.innerHTML = tagsHtml;
+        } else {
+            selectedFeaturesListEl.style.display = 'none';
+        }
+    }
+
+    function handleTeamSizeChange() {
+        updatePlanDisplay();
+        updateAddonsState();
+        renderSummary();
+    }
+
+    teamSizeInputs.forEach(function(input) {
+        input.addEventListener('change', handleTeamSizeChange);
+    });
+
+    aiPackageInputs.forEach(function(input) {
+        input.addEventListener('change', function() {
+            updateOptionStyles();
+            renderSummary();
+        });
+    });
+
+    websiteCheckbox.addEventListener('change', function() {
+        updateOptionStyles();
+        renderSummary();
+    });
+
+    callteamCheckbox.addEventListener('change', function() {
+        updateOptionStyles();
+        renderSummary();
+    });
+
+    renderFeaturesList();
+    updatePlanDisplay();
+    updateAddonsState();
+    renderSummary();
+})();
+</script>
+
+</body>
+</html>
