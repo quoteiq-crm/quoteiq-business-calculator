@@ -154,57 +154,53 @@
     border-left: 3px solid #f2b148;
 }
 .qiq-pricing-matrix .qiq-feature-category {
-    font-size: 13px;
-    font-weight: 700;
-    color: #0c1014;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-top: 20px;
-    margin-bottom: 12px;
-    padding-bottom: 6px;
-    border-bottom: 1px solid #ddd;
+    font-size: 14px;
+    font-weight: 600;
+    color: #fff;
+    background: #0c1014;
+    padding: 10px 16px;
+    margin: 0;
+    border-radius: 8px 8px 0 0;
 }
-.qiq-pricing-matrix .qiq-feature-category:first-child {
-    margin-top: 0;
-}
-/* FIXED: Grid-based feature layout for consistent alignment */
 .qiq-pricing-matrix .qiq-features-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
-    margin-bottom: 8px;
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-top: none;
+    border-radius: 0 0 8px 8px;
+    margin-bottom: 16px;
+    overflow: hidden;
 }
 .qiq-pricing-matrix .qiq-feature-item {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 10px 14px;
-    font-size: 13px;
+    gap: 12px;
+    padding: 12px 16px;
+    font-size: 14px;
     color: #333;
     background: #fff;
-    border: 1px solid #ddd;
-    border-radius: 8px;
+    border-bottom: 1px solid #f0f0f0;
     cursor: pointer;
     transition: all 0.15s ease;
-    min-height: 44px;
+}
+.qiq-pricing-matrix .qiq-feature-item:last-child {
+    border-bottom: none;
 }
 .qiq-pricing-matrix .qiq-feature-item:hover {
-    border-color: #f2b148;
     background: #fffbf5;
 }
 .qiq-pricing-matrix .qiq-feature-item.selected {
-    border-color: #f2b148;
-    background: #f2b148;
-    color: #0c1014;
+    background: #fff8eb;
 }
 .qiq-pricing-matrix .qiq-feature-item input {
     display: none;
 }
 .qiq-pricing-matrix .qiq-feature-checkbox {
-    width: 18px;
-    height: 18px;
-    min-width: 18px;
-    border: 2px solid #ccc;
+    width: 20px;
+    height: 20px;
+    min-width: 20px;
+    border: 2px solid #ddd;
     border-radius: 4px;
     display: flex;
     align-items: center;
@@ -214,13 +210,13 @@
     flex-shrink: 0;
 }
 .qiq-pricing-matrix .qiq-feature-item.selected .qiq-feature-checkbox {
-    background: #0c1014;
-    border-color: #0c1014;
+    background: #f2b148;
+    border-color: #f2b148;
 }
 .qiq-pricing-matrix .qiq-feature-checkbox svg {
-    width: 10px;
-    height: 10px;
-    fill: #fff;
+    width: 12px;
+    height: 12px;
+    fill: #0c1014;
     opacity: 0;
 }
 .qiq-pricing-matrix .qiq-feature-item.selected .qiq-feature-checkbox svg {
@@ -229,39 +225,35 @@
 .qiq-pricing-matrix .qiq-feature-name {
     font-weight: 500;
     flex: 1;
-    line-height: 1.3;
+    line-height: 1.4;
 }
 .qiq-pricing-matrix .qiq-feature-tier {
-    font-size: 9px;
-    font-weight: 700;
-    padding: 3px 8px;
-    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 12px;
     text-transform: uppercase;
     letter-spacing: 0.3px;
     flex-shrink: 0;
 }
-.qiq-pricing-matrix .qiq-feature-item.selected .qiq-feature-tier {
-    background: rgba(0,0,0,0.15);
-    color: #0c1014;
-}
 .qiq-pricing-matrix .qiq-tier-beginner {
-    background: #d4edda;
-    color: #155724;
+    background: #e8f5e9;
+    color: #2e7d32;
 }
 .qiq-pricing-matrix .qiq-tier-pro {
-    background: #cce5ff;
-    color: #004085;
+    background: #e3f2fd;
+    color: #1565c0;
 }
 .qiq-pricing-matrix .qiq-tier-elite {
-    background: #fff3cd;
-    color: #856404;
+    background: #fff8e1;
+    color: #f57c00;
 }
 .qiq-pricing-matrix .qiq-tier-unlimited {
-    background: #e2d5f1;
-    color: #5a3d8a;
+    background: #f3e5f5;
+    color: #7b1fa2;
 }
 .qiq-pricing-matrix .qiq-category-section {
-    margin-bottom: 20px;
+    margin-bottom: 0;
 }
 .qiq-pricing-matrix .qiq-addons-section {
     margin-top: 32px;
@@ -507,11 +499,6 @@
 }
 
 /* Responsive breakpoints */
-@media (max-width: 900px) {
-    .qiq-pricing-matrix .qiq-features-grid {
-        grid-template-columns: 1fr;
-    }
-}
 @media (max-width: 768px) {
     .qiq-pricing-matrix {
         padding: 20px;
@@ -538,8 +525,11 @@
         text-align: center;
     }
     .qiq-pricing-matrix .qiq-feature-item {
-        font-size: 13px;
         padding: 10px 12px;
+    }
+    .qiq-pricing-matrix .qiq-feature-tier {
+        font-size: 9px;
+        padding: 3px 8px;
     }
 }
 @media (max-width: 480px) {
