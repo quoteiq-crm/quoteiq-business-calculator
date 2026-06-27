@@ -855,9 +855,9 @@ footer{background:var(--color-fog);padding:64px 0 40px}
         var a=trail[i-1],b=trail[i];
         var life=1-(ts-b.t)/TRAIL_LIFE;        // 1 at head → 0 at tail
         if(life<=0)continue;
-        var fade=Math.min(1,life*1.5);          // stays soft, only the tail dissolves (snake)
-        ctx.strokeStyle='rgba(198,193,189,'+(fade*0.38)+')';
-        ctx.lineWidth=2+5.5*life;               // soft near the rocket, tapering to the tail
+        var fade=Math.min(1,life*1.5);          // stays solid, only the tail dissolves (snake)
+        ctx.strokeStyle='rgba(150,142,138,'+(fade*0.7)+')';
+        ctx.lineWidth=2.5+6.5*life;             // prominent near the rocket, tapering to the tail
         ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
       }
       rkt.style.transform='translate('+(p.x-rkt.offsetWidth/2)+'px,'+(p.y-(rkt.offsetHeight||14)/2)+'px) rotate('+heading+'rad)';
