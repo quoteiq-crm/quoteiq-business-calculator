@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Rocket Docket — The morning legal briefing, built around your practice.</title>
+<meta name="description" content="Every morning, Rocket Docket scans 200+ legal sources, curates the developments that touch your practice and jurisdiction, and delivers a fully personalized, voiced briefing — with every citation checked before you hear it." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400..600&family=Source+Serif+4:opsz,wght@8..60,400..600&display=swap" rel="stylesheet" />
+<style>
+:root{
+  /* ── Steep tokens ── */
+  --color-ink:#17191c;
+  --color-pure-white:#ffffff;
+  --color-fog:#f7f7f8;
+  --color-ash:#4c4c4c;
+  --color-graphite:#777b86;
+  --color-dove:#a3a6af;
+  --color-slate:#8b8c8d;
+  --color-rust:#5d2a1a;
+  --color-apricot-wash:#fbe1d1;
+  --color-sky-wash:#d3e3fc;
+  --color-data-blue:#4a90e2;
+
+  --font-signifier:'Source Serif 4', Georgia, 'Times New Roman', serif;
+  --font-sohne:'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
+  --tracking-sohne:-0.009em;
+
+  --radius-cards:24px;
+  --radius-images:12px;
+  --radius-inputs:16px;
+  --radius-pill:9999px;
+
+  --page-max:1200px;
+  --section-gap:96px;
+
+  --shadow-subtle:rgba(4,23,43,.05) 0px 0px 0px 1px, rgba(0,0,0,.10) 0px 20px 25px -5px, rgba(0,0,0,.10) 0px 8px 10px -6px;
+  --shadow-float:rgba(4,23,43,.05) 0px 0px 0px 1px, rgba(0,0,0,.10) 0px 24px 30px -6px, rgba(0,0,0,.08) 0px 8px 10px -6px;
+}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{
+  font-family:var(--font-sohne);
+  font-size:16px;line-height:1.38;letter-spacing:var(--tracking-sohne);
+  color:var(--color-ink);
+  background:var(--color-pure-white);
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+}
+a{color:inherit;text-decoration:none}
+img{max-width:100%;display:block}
+::selection{background:var(--color-apricot-wash);color:var(--color-ink)}
+
+/* ── Layout ── */
+.wrap{width:100%;max-width:var(--page-max);margin:0 auto;padding:0 24px}
+section{position:relative}
+
+/* ── Typography helpers ── */
+.serif{font-family:var(--font-signifier);font-weight:400}
+.h-hero{font-family:var(--font-signifier);font-weight:400;font-size:clamp(42px,7.2vw,72px);line-height:1.04;letter-spacing:-0.03em;color:var(--color-ink)}
+.h-sec{font-family:var(--font-signifier);font-weight:400;font-size:clamp(34px,4.6vw,48px);line-height:1.08;letter-spacing:-0.025em;color:var(--color-ink)}
+.rust-text{color:var(--color-rust)}
+.lead{font-size:18px;line-height:1.5;letter-spacing:-0.16px;color:var(--color-ash)}
+
+.eyebrow{font-family:var(--font-sohne);font-size:13px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:var(--color-rust);display:inline-flex;align-items:center;gap:12px}
+.eyebrow::before{content:"";width:24px;height:1px;background:var(--color-rust);opacity:.8}
+.eyebrow.center{justify-content:center}
+.eyebrow.center::after{content:"";width:24px;height:1px;background:var(--color-rust);opacity:.8}
+
+/* ── Buttons ── */
+.btn{font-family:var(--font-sohne);font-size:15px;font-weight:450;letter-spacing:var(--tracking-sohne);cursor:pointer;border:none;border-radius:var(--radius-pill);display:inline-flex;align-items:center;justify-content:center;gap:8px;transition:transform .18s ease, box-shadow .18s ease, background .18s ease, color .18s ease;white-space:nowrap}
+.btn-ink{background:var(--color-ink);color:#fff;padding:11px 22px}
+.btn-ink:hover{transform:translateY(-1px);box-shadow:0 10px 24px -8px rgba(23,25,28,.5)}
+.btn-link{background:transparent;color:var(--color-ink);padding:11px 10px}
+.btn-link:hover{color:var(--color-rust)}
+.btn-lg{padding:14px 28px;font-size:16px}
+.btn-paper{background:var(--color-pure-white);color:var(--color-ink);padding:14px 28px;font-size:16px}
+.btn-paper:hover{transform:translateY(-1px);box-shadow:0 12px 30px -10px rgba(0,0,0,.5)}
+.btn-on-dark-link{background:transparent;color:rgba(255,255,255,.78);padding:14px 12px;font-size:16px}
+.btn-on-dark-link:hover{color:#fff}
+.btn-arrow svg{width:15px;height:15px}
+
+/* ── Pills / tags ── */
+.tag{display:inline-flex;align-items:center;gap:7px;border-radius:var(--radius-pill);border:1px solid var(--color-dove);background:var(--color-pure-white);color:var(--color-ash);font-size:13px;font-weight:450;padding:6px 14px;white-space:nowrap}
+
+/* ── Card ── */
+.card{background:var(--color-pure-white);border-radius:var(--radius-cards);padding:24px;box-shadow:var(--shadow-subtle)}
+
+/* ═══════════ NAV ═══════════ */
+.nav-outer{position:sticky;top:0;z-index:100;background:rgba(255,255,255,.82);backdrop-filter:saturate(180%) blur(16px);border-bottom:1px solid #ececee}
+nav{display:flex;align-items:center;justify-content:space-between;height:68px;max-width:var(--page-max);margin:0 auto;padding:0 24px;gap:24px}
+.logo{display:flex;align-items:center;gap:11px;flex-shrink:0;cursor:pointer}
+.logo-mark{width:34px;height:34px;border-radius:10px;background:var(--color-ink);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.logo-mark svg{width:18px;height:18px;stroke:#fff;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.logo-word{font-family:var(--font-sohne);font-size:17px;font-weight:500;letter-spacing:-0.02em;color:var(--color-ink)}
+.nav-links{display:flex;align-items:center;gap:4px;flex:1;justify-content:center}
+.nav-link{font-size:15px;font-weight:430;color:var(--color-ash);padding:8px 14px;border-radius:var(--radius-pill);transition:color .15s, background .15s;cursor:pointer}
+.nav-link:hover{color:var(--color-ink);background:var(--color-fog)}
+.nav-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.nav-signin{font-size:15px;font-weight:430;color:var(--color-ink);padding:8px 10px;cursor:pointer}
+.nav-signin:hover{color:var(--color-rust)}
+.nav-burger{display:none;width:40px;height:40px;border-radius:12px;border:1px solid #e7e7ea;background:#fff;cursor:pointer;align-items:center;justify-content:center}
+.nav-burger svg{width:18px;height:18px;stroke:var(--color-ink);stroke-width:1.8;stroke-linecap:round}
+.mobile-panel{display:none;flex-direction:column;gap:4px;padding:8px 16px 18px;background:#fff;border-bottom:1px solid #ececee}
+.mobile-panel.open{display:flex}
+.mobile-panel a{padding:12px 8px;font-size:16px;font-weight:450;color:var(--color-ink);border-bottom:1px solid var(--color-fog)}
+.mobile-panel .btn{margin-top:10px}
+
+/* ═══════════ HERO ═══════════ */
+.hero{padding:72px 0 0;text-align:center;overflow:hidden}
+.hero-glow{position:absolute;top:-160px;left:50%;transform:translateX(-50%);width:1100px;max-width:130vw;height:760px;
+  background:radial-gradient(ellipse 52% 60% at 50% 38%, rgba(251,225,209,.85), rgba(251,225,209,.28) 45%, transparent 70%);
+  z-index:0;pointer-events:none;filter:blur(6px)}
+.hero .wrap{position:relative;z-index:1}
+.hero-badge{display:inline-flex;align-items:center;gap:9px;background:rgba(255,255,255,.7);border:1px solid #ececec;border-radius:var(--radius-pill);padding:6px 14px 6px 8px;font-size:13px;font-weight:450;color:var(--color-ash);margin-bottom:26px}
+.hero-badge .dot{width:7px;height:7px;border-radius:50%;background:var(--color-rust)}
+.hero h1{max-width:14ch;margin:0 auto}
+.hero-explain{max-width:600px;margin:24px auto 0;font-size:18px;line-height:1.5;letter-spacing:-0.16px;color:var(--color-ash)}
+.hero-cta{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:32px;flex-wrap:wrap}
+.hero-trust{display:inline-flex;align-items:center;gap:9px;margin-top:26px;font-size:14px;color:var(--color-graphite)}
+.hero-trust svg{width:16px;height:16px;stroke:var(--color-rust);fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+
+/* ── Hero floating product stage ── */
+.hero-stage{position:relative;max-width:1060px;margin:64px auto 0;padding-bottom:20px;display:flex;flex-direction:column;gap:16px}
+.fcard{background:var(--color-pure-white);border-radius:var(--radius-cards);box-shadow:var(--shadow-float);padding:20px;text-align:left}
+.fcard-label{font-size:13px;font-weight:450;color:var(--color-graphite);letter-spacing:.01em}
+
+/* central player */
+.player{position:relative;display:flex;align-items:center;gap:16px;padding:20px}
+.player-btn{width:54px;height:54px;border-radius:var(--radius-pill);background:var(--color-ink);border:none;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:transform .15s}
+.player-btn:hover{transform:scale(1.05)}
+.player-btn svg{width:18px;height:18px;fill:#fff;margin-left:2px}
+.player-info{flex:1;min-width:0}
+.player-title{font-size:16px;font-weight:480;color:var(--color-ink)}
+.player-sub{font-size:13px;color:var(--color-graphite);margin-top:3px}
+.wave{display:flex;align-items:flex-end;gap:3px;height:34px;margin-top:12px}
+.wave span{flex:1;background:var(--color-apricot-wash);border-radius:2px;min-height:5px}
+.wave span:nth-child(3n){background:var(--color-rust);opacity:.55}
+.player-badge{position:absolute;top:-14px;right:-12px;width:38px;height:38px;border-radius:var(--radius-pill);background:var(--color-apricot-wash);color:var(--color-rust);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;box-shadow:var(--shadow-subtle);border:2px solid #fff}
+
+/* donut card (warm) */
+.fcard.warm{background:var(--color-apricot-wash);box-shadow:rgba(4,23,43,.04) 0 0 0 1px, rgba(0,0,0,.07) 0 18px 24px -10px}
+.donut{width:84px;height:84px;border-radius:50%;background:conic-gradient(var(--color-rust) 0 100%);position:relative;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.donut::after{content:"";position:absolute;inset:11px;border-radius:50%;background:var(--color-apricot-wash)}
+.donut svg{position:relative;z-index:1;width:26px;height:26px;stroke:var(--color-rust);fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.warm-row{display:flex;align-items:center;gap:16px}
+.warm-val{font-family:var(--font-sohne);font-size:26px;font-weight:480;color:var(--color-rust);line-height:1}
+.warm-cap{font-size:13px;color:#8a5a45;margin-top:6px;max-width:13ch}
+
+/* bar card (cool) */
+.fcard.cool{background:var(--color-sky-wash);box-shadow:rgba(4,23,43,.04) 0 0 0 1px, rgba(0,0,0,.07) 0 18px 24px -10px}
+.bars{display:flex;align-items:flex-end;gap:8px;height:70px;margin-top:14px}
+.bars span{flex:1;background:var(--color-data-blue);border-radius:4px 4px 0 0;opacity:.85}
+.bars span:nth-child(even){opacity:.5}
+.cool-val{font-family:var(--font-sohne);font-size:26px;font-weight:480;color:#1f3a5f;line-height:1;margin-top:14px}
+.cool-cap{font-size:13px;color:#42648c}
+
+/* docket list card */
+.dlist{display:flex;flex-direction:column;gap:12px;margin-top:14px}
+.dlist-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.dlist-name{font-size:14px;color:var(--color-graphite)}
+.seal{display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:26px;padding:0 6px;border-radius:8px;background:var(--color-fog);border:1px solid #eceef0;font-size:12px;font-weight:500;color:var(--color-ink);margin-right:9px}
+.dlist-count{font-size:14px;font-weight:480;color:var(--color-ink)}
+
+/* ═══════════ STATS BAND ═══════════ */
+.stats{margin-top:var(--section-gap)}
+.stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.stat-card{background:var(--color-pure-white);border-radius:var(--radius-cards);padding:24px;box-shadow:var(--shadow-subtle);display:flex;flex-direction:column;gap:18px}
+.stat-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.stat-title{font-size:14px;color:var(--color-graphite);max-width:20ch}
+.stat-ico{width:34px;height:34px;border-radius:10px;background:var(--color-fog);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.stat-ico svg{width:17px;height:17px;stroke:var(--color-ash);fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.stat-num{font-family:var(--font-sohne);font-size:46px;font-weight:480;letter-spacing:-0.03em;color:var(--color-ink);line-height:1}
+.stat-num .suffix{color:var(--color-rust)}
+.stat-rule{height:1px;background:#eeeef0;margin:16px 0 14px}
+.stat-secondary{display:flex;align-items:baseline;gap:8px}
+.stat-secondary .v{font-size:17px;font-weight:480;color:var(--color-ink)}
+.stat-secondary .l{font-size:13px;color:var(--color-graphite)}
+.stats-foot{margin-top:22px;text-align:center;font-size:15px;color:var(--color-graphite);max-width:680px;margin-left:auto;margin-right:auto}
+.stats-foot strong{color:var(--color-ash);font-weight:480}
+
+/* ═══════════ SOURCES MARQUEE ═══════════ */
+.sources{margin-top:var(--section-gap);text-align:center}
+.sources-label{font-size:13px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--color-graphite)}
+.marquee{position:relative;overflow:hidden;margin:28px 0 22px;-webkit-mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent);mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent)}
+.marquee-track{display:inline-flex;gap:14px;white-space:nowrap;animation:marquee 38s linear infinite;will-change:transform}
+.marquee:hover .marquee-track{animation-play-state:paused}
+.src-item{display:inline-flex;align-items:center;border-radius:var(--radius-pill);border:1px solid #eceef0;background:var(--color-fog);color:var(--color-ash);font-size:14px;font-weight:430;padding:9px 18px}
+@keyframes marquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.sources-trust{font-size:15px;color:var(--color-graphite);max-width:620px;margin:0 auto}
+
+/* ═══════════ HOW IT WORKS ═══════════ */
+.band-fog{background:var(--color-fog);margin-top:var(--section-gap);padding:96px 0}
+.how-head{text-align:center;max-width:680px;margin:0 auto 56px}
+.how-head .h-sec{margin-top:18px}
+.how-head .sub{margin-top:18px;font-size:17px;line-height:1.5;color:var(--color-ash)}
+.how-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.how-card{background:var(--color-pure-white);border-radius:var(--radius-cards);padding:28px;box-shadow:var(--shadow-subtle)}
+.how-num{font-family:var(--font-signifier);font-size:40px;font-weight:400;color:var(--color-rust);line-height:1;letter-spacing:-0.02em}
+.how-card h3{font-size:20px;font-weight:500;color:var(--color-ink);margin:18px 0 10px;letter-spacing:-0.01em}
+.how-card p{font-size:15px;line-height:1.55;color:var(--color-ash)}
+
+/* ═══════════ INSIDE THIS EDITION ═══════════ */
+.edition{margin-top:var(--section-gap)}
+.edition-head{display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:end;margin-bottom:36px}
+.edition-head .h-sec{margin-top:16px}
+.edition-head .sub{font-size:16px;line-height:1.55;color:var(--color-ash)}
+.big-player{display:flex;align-items:center;gap:18px;background:var(--color-ink);border-radius:var(--radius-cards);padding:22px 24px;margin-bottom:28px}
+.big-player .player-btn{background:#fff}
+.big-player .player-btn svg{fill:var(--color-ink)}
+.big-player .player-title{color:#fff;font-size:17px}
+.big-player .player-sub{color:rgba(255,255,255,.6)}
+.big-player .bp-wave{display:flex;align-items:center;gap:3px;height:30px;flex:1;justify-content:flex-end;max-width:240px}
+.big-player .bp-wave span{width:3px;background:rgba(255,255,255,.3);border-radius:2px}
+.big-player .bp-wave span:nth-child(3n){background:var(--color-apricot-wash)}
+
+.story-list{display:flex;flex-direction:column;gap:20px}
+.story{display:grid;grid-template-columns:200px 1fr;gap:28px;background:var(--color-pure-white);border-radius:var(--radius-cards);padding:26px;box-shadow:var(--shadow-subtle)}
+.story-rail{display:flex;flex-direction:column;gap:12px}
+.src-badge{display:inline-flex;align-items:center;gap:9px;font-size:14px;font-weight:480;color:var(--color-ink)}
+.src-badge .seal{margin-right:0;background:var(--color-apricot-wash);border:none;color:var(--color-rust);font-weight:600}
+.story-meta{font-size:13px;line-height:1.5;color:var(--color-graphite)}
+.story-body h3{font-size:22px;font-weight:500;line-height:1.22;letter-spacing:-0.01em;color:var(--color-ink)}
+.summary-tag{display:inline-flex;align-items:center;gap:8px;margin:16px 0 10px;font-size:12px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--color-rust)}
+.summary-tag .bar{width:18px;height:2px;background:var(--color-rust);border-radius:2px}
+.summary-list{list-style:none;display:flex;flex-direction:column;gap:10px;padding-left:0}
+.summary-list li{position:relative;padding-left:20px;font-size:15px;line-height:1.55;color:var(--color-ash)}
+.summary-list li::before{content:"";position:absolute;left:2px;top:9px;width:6px;height:6px;border-radius:50%;background:var(--color-rust);opacity:.65}
+.story-listen{display:inline-flex;align-items:center;gap:9px;margin-top:18px;font-size:14px;font-weight:480;color:var(--color-ink);cursor:pointer}
+.story-listen .pm{width:30px;height:30px;border-radius:50%;background:var(--color-fog);display:flex;align-items:center;justify-content:center;transition:background .15s}
+.story-listen:hover .pm{background:var(--color-apricot-wash)}
+.story-listen .pm svg{width:12px;height:12px;fill:var(--color-rust);margin-left:1px}
+
+/* ═══════════ TESTIMONIALS ═══════════ */
+.voices{margin-top:var(--section-gap)}
+.voices-head{text-align:center;margin-bottom:48px}
+.voices-head .h-sec{margin-top:18px}
+.voices-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.voice-card{background:var(--color-pure-white);border-radius:var(--radius-cards);padding:28px;box-shadow:var(--shadow-subtle);display:flex;flex-direction:column}
+.voice-card.tint-warm{background:var(--color-apricot-wash);box-shadow:rgba(4,23,43,.04) 0 0 0 1px}
+.voice-card.tint-cool{background:var(--color-sky-wash);box-shadow:rgba(4,23,43,.04) 0 0 0 1px}
+.qmark{font-family:var(--font-signifier);font-size:64px;line-height:.5;color:var(--color-rust);opacity:.4;height:34px}
+.voice-quote{font-size:19px;line-height:1.42;letter-spacing:-0.01em;color:var(--color-ink);font-weight:450;margin:16px 0 22px;flex:1}
+.voice-author{display:flex;align-items:center;gap:12px}
+.voice-avatar{width:38px;height:38px;border-radius:var(--radius-pill);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:var(--color-rust);background:rgba(255,255,255,.7);flex-shrink:0}
+.voice-card .voice-avatar{background:var(--color-apricot-wash)}
+.voice-card.tint-warm .voice-avatar{background:rgba(255,255,255,.6)}
+.voice-card.tint-cool .voice-avatar{background:rgba(255,255,255,.6);color:#1f3a5f}
+.voice-name{font-size:14px;font-weight:480;color:var(--color-ink)}
+.voice-role{font-size:13px;color:var(--color-graphite)}
+
+/* ═══════════ FAQ ═══════════ */
+.faq{margin-top:var(--section-gap);padding-bottom:8px}
+.faq-grid{display:grid;grid-template-columns:.85fr 1.15fr;gap:64px;align-items:start}
+.faq-aside .h-sec{margin:18px 0 16px}
+.faq-aside p{font-size:15.5px;line-height:1.6;color:var(--color-ash);max-width:320px}
+.faq-list{border-top:1px solid #ececee}
+.faq-item{border-bottom:1px solid #ececee}
+.faq-q{width:100%;text-align:left;background:none;border:none;cursor:pointer;padding:22px 0;display:flex;align-items:center;justify-content:space-between;gap:20px}
+.faq-q span.q{font-size:18px;font-weight:480;color:var(--color-ink);letter-spacing:-0.01em}
+.faq-ico{position:relative;width:22px;height:22px;flex-shrink:0}
+.faq-ico::before,.faq-ico::after{content:"";position:absolute;left:50%;top:50%;background:var(--color-rust);transition:transform .25s, opacity .25s}
+.faq-ico::before{width:13px;height:1.6px;transform:translate(-50%,-50%)}
+.faq-ico::after{width:1.6px;height:13px;transform:translate(-50%,-50%)}
+.faq-item.open .faq-ico::after{transform:translate(-50%,-50%) rotate(90deg);opacity:0}
+.faq-a{max-height:0;overflow:hidden;transition:max-height .3s ease}
+.faq-a p{font-size:15px;line-height:1.65;color:var(--color-ash);padding:0 0 24px}
+.faq-a a{color:var(--color-data-blue);text-decoration:underline;text-underline-offset:2px}
+.faq-a strong{color:var(--color-ink);font-weight:500}
+
+/* ═══════════ CTA (dark) ═══════════ */
+.cta{margin-top:var(--section-gap);padding-bottom:var(--section-gap)}
+.cta-inner{background:var(--color-ink);border-radius:32px;padding:80px 40px;text-align:center;position:relative;overflow:hidden}
+.cta-inner::before{content:"";position:absolute;top:-40%;left:50%;transform:translateX(-50%);width:680px;height:520px;background:radial-gradient(ellipse 50% 60% at 50% 50%, rgba(251,225,209,.16), transparent 70%);pointer-events:none}
+.cta-inner .eyebrow{color:var(--color-apricot-wash)}
+.cta-inner .eyebrow::before,.cta-inner .eyebrow::after{background:var(--color-apricot-wash);opacity:.7}
+.cta-inner h2{font-family:var(--font-signifier);font-weight:400;font-size:clamp(32px,4.4vw,52px);line-height:1.08;letter-spacing:-0.025em;color:#fff;max-width:18ch;margin:22px auto 0;position:relative}
+.cta-inner h2 em{font-style:italic;color:var(--color-apricot-wash)}
+.cta-inner p{font-size:17px;line-height:1.5;color:rgba(255,255,255,.66);max-width:440px;margin:20px auto 0;position:relative}
+.cta-actions{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:34px;flex-wrap:wrap;position:relative}
+.cta-note{margin-top:22px;font-size:13.5px;color:rgba(255,255,255,.45);position:relative}
+
+/* ═══════════ FOOTER ═══════════ */
+footer{background:var(--color-fog);padding:64px 0 40px}
+.foot-top{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:40px;padding-bottom:48px;border-bottom:1px solid #e7e7ea}
+.foot-brand .logo{margin-bottom:18px}
+.foot-brand p{font-size:14.5px;line-height:1.6;color:var(--color-graphite);max-width:300px}
+.foot-col h4{font-size:13px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--color-graphite);margin-bottom:18px}
+.foot-col a{display:block;font-size:15px;color:var(--color-ash);padding:7px 0;transition:color .15s;cursor:pointer}
+.foot-col a:hover{color:var(--color-rust)}
+.foot-bottom{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-top:28px;flex-wrap:wrap}
+.foot-bottom .tag-line{font-family:var(--font-signifier);font-size:17px;font-style:italic;color:var(--color-ash)}
+.foot-bottom .copy{font-size:13.5px;color:var(--color-graphite)}
+
+/* ═══════════ RESPONSIVE ═══════════ */
+@media(min-width:900px){
+  .hero-stage{height:480px;display:block;margin-top:72px}
+  .hero-stage .fcard{position:absolute}
+  .player{width:392px;left:50%;top:50%;transform:translate(-50%,-50%)}
+  .float-tl{width:236px;left:0;top:24px}
+  .float-tr{width:212px;right:0;top:0}
+  .float-bl{width:212px;left:28px;bottom:8px}
+  .float-br{width:248px;right:0;bottom:18px}
+}
+@media(max-width:899px){
+  :root{--section-gap:72px}
+  .nav-links{display:none}
+  .nav-right .nav-signin,.nav-right .btn{display:none}
+  .nav-burger{display:flex}
+  .hero-stage{max-width:440px}
+  .float-tl{display:none}
+  .float-bl{display:none}
+  .stats-grid{grid-template-columns:1fr;gap:16px}
+  .how-grid{grid-template-columns:1fr;gap:16px}
+  .edition-head{grid-template-columns:1fr;gap:18px;align-items:start}
+  .story{grid-template-columns:1fr;gap:18px}
+  .voices-grid{grid-template-columns:1fr;gap:16px}
+  .faq-grid{grid-template-columns:1fr;gap:32px}
+  .band-fog{padding:72px 0}
+  .cta-inner{padding:56px 24px}
+  .foot-top{grid-template-columns:1fr 1fr;gap:32px}
+  .foot-brand{grid-column:1/-1}
+}
+@media(max-width:520px){
+  .foot-top{grid-template-columns:1fr}
+  .hero-cta{flex-direction:column}
+  .hero-cta .btn{width:100%}
+}
+@media(prefers-reduced-motion:reduce){
+  *{animation:none!important;scroll-behavior:auto!important}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════ NAV ═══════════ -->
+<div class="nav-outer">
+  <nav>
+    <a class="logo" href="#top">
+      <span class="logo-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M5 13c0-5 3-9 7-11 4 2 7 6 7 11 0 1.5-.3 3-1 4l-2-2H8l-2 2c-.7-1-1-2.5-1-4z"/><circle cx="12" cy="9" r="2"/><path d="M9 18c-1 1.5-1.2 3.5-1 5 1.3-.4 2.3-1.2 3-2.3"/><path d="M15 18c1 1.5 1.2 3.5 1 5-1.3-.4-2.3-1.2-3-2.3"/></svg>
+      </span>
+      <span class="logo-word">Rocket Docket</span>
+    </a>
+    <div class="nav-links">
+      <a class="nav-link" href="#how">How it works</a>
+      <a class="nav-link" href="#edition">Sample briefing</a>
+      <a class="nav-link" href="#faq">FAQ</a>
+      <a class="nav-link" href="#cta">Pricing</a>
+    </div>
+    <div class="nav-right">
+      <span class="nav-signin">Sign in</span>
+      <a class="btn btn-ink" href="#cta">Start free trial</a>
+      <button class="nav-burger" id="burger" aria-label="Open menu">
+        <svg viewBox="0 0 24 24" fill="none"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+    </div>
+  </nav>
+  <div class="mobile-panel" id="mobilePanel">
+    <a href="#how">How it works</a>
+    <a href="#edition">Sample briefing</a>
+    <a href="#faq">FAQ</a>
+    <a href="#cta">Pricing</a>
+    <a class="btn btn-ink btn-lg" href="#cta">Start free trial</a>
+  </div>
+</div>
+
+<span id="top"></span>
+
+<!-- ═══════════ HERO ═══════════ -->
+<section class="hero">
+  <div class="hero-glow" aria-hidden="true"></div>
+  <div class="wrap">
+    <span class="hero-badge"><span class="dot"></span>Personalized legal intelligence · Built by lawyers</span>
+    <h1 class="h-hero">Your time is important.<br/><span class="rust-text">Let us give you some back.</span></h1>
+    <p class="hero-explain">Every morning, Rocket Docket scans over 200 legal sources, curates a feed built around your practice area, your jurisdiction, and the matters that touch your clients — then delivers a fully personalized, voiced briefing straight to your inbox.</p>
+    <div class="hero-cta">
+      <a class="btn btn-ink btn-lg" href="#cta">Get started</a>
+      <a class="btn btn-link btn-arrow" href="#edition">Hear a sample
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+      </a>
+    </div>
+    <div class="hero-trust">
+      <svg viewBox="0 0 24 24"><path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6l8-4z"/><path d="M9 12l2 2 4-4"/></svg>
+      Built from primary sources. Every citation checked before you hear it.
+    </div>
+
+    <!-- floating product stage -->
+    <div class="hero-stage">
+      <div class="fcard warm float-tl">
+        <div class="warm-row">
+          <div class="donut" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div>
+          <div>
+            <div class="warm-val">100%</div>
+            <div class="warm-cap">citations checked against the source</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="fcard float-tr">
+        <div class="fcard-label">Minutes saved</div>
+        <div style="display:flex;align-items:baseline;gap:6px;margin-top:8px">
+          <span style="font-size:34px;font-weight:480;letter-spacing:-.03em;color:var(--color-ink)">150</span>
+          <span style="font-size:14px;color:var(--color-graphite)">/ week</span>
+        </div>
+        <div class="fcard-label" style="margin-top:6px">vs. ~30 min a day, the old way</div>
+      </div>
+
+      <div class="fcard player">
+        <span class="player-badge" aria-hidden="true">RD</span>
+        <button class="player-btn" aria-label="Play sample briefing"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg></button>
+        <div class="player-info">
+          <div class="player-title">Today's Edition · Full Briefing</div>
+          <div class="player-sub">6 min · Tailored to your practice &amp; jurisdiction</div>
+          <div class="wave" aria-hidden="true">
+            <span style="height:40%"></span><span style="height:70%"></span><span style="height:95%"></span><span style="height:55%"></span><span style="height:80%"></span><span style="height:35%"></span><span style="height:65%"></span><span style="height:90%"></span><span style="height:50%"></span><span style="height:75%"></span><span style="height:45%"></span><span style="height:85%"></span><span style="height:60%"></span><span style="height:30%"></span><span style="height:70%"></span><span style="height:50%"></span><span style="height:88%"></span><span style="height:42%"></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="fcard cool float-bl">
+        <div class="cool-cap">Sources scanned today</div>
+        <div class="bars" aria-hidden="true"><span style="height:55%"></span><span style="height:80%"></span><span style="height:40%"></span><span style="height:95%"></span><span style="height:65%"></span><span style="height:85%"></span></div>
+        <div class="cool-val">200+</div>
+      </div>
+
+      <div class="fcard float-br">
+        <div class="fcard-label">On today's docket</div>
+        <div class="dlist">
+          <div class="dlist-row"><span class="dlist-name"><span class="seal">5</span>5th Circuit</span><span class="dlist-count">2</span></div>
+          <div class="dlist-row"><span class="dlist-name"><span class="seal">FL</span>Fla. Supreme Ct.</span><span class="dlist-count">1</span></div>
+          <div class="dlist-row"><span class="dlist-name"><span class="seal">7</span>7th Circuit</span><span class="dlist-count">1</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ STATS ═══════════ -->
+<section class="stats">
+  <div class="wrap">
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-top">
+          <span class="stat-title">Attorneys briefed each morning</span>
+          <span class="stat-ico"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+        </div>
+        <div>
+          <div class="stat-num"><span class="count" data-target="2400">0</span><span class="suffix">+</span></div>
+          <div class="stat-rule"></div>
+          <div class="stat-secondary"><span class="v">38</span><span class="l">practice areas covered</span></div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-top">
+          <span class="stat-title">Sources monitored daily</span>
+          <span class="stat-ico"><svg viewBox="0 0 24 24"><path d="M3 21h18"/><path d="M5 21V9l7-5 7 5v12"/><path d="M9 21v-6h6v6"/></svg></span>
+        </div>
+        <div>
+          <div class="stat-num"><span class="count" data-target="200">0</span><span class="suffix">+</span></div>
+          <div class="stat-rule"></div>
+          <div class="stat-secondary"><span class="v">50</span><span class="l">courts &amp; agencies tracked</span></div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-top">
+          <span class="stat-title">Minutes saved every week</span>
+          <span class="stat-ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>
+        </div>
+        <div>
+          <div class="stat-num"><span class="count" data-target="150">0</span></div>
+          <div class="stat-rule"></div>
+          <div class="stat-secondary"><span class="v">30</span><span class="l">minutes a day, the old way</span></div>
+        </div>
+      </div>
+    </div>
+    <p class="stats-foot">Skim past the wrong headline and you can miss the ruling that changes your case. <strong>Rocket Docket watches so you don't have to.</strong></p>
+  </div>
+</section>
+
+<!-- ═══════════ SOURCES ═══════════ -->
+<section class="sources">
+  <div class="wrap">
+    <div class="sources-label">The record we read, so you don't have to</div>
+  </div>
+  <div class="marquee">
+    <div class="marquee-track" id="srcTrack"></div>
+  </div>
+  <div class="wrap">
+    <p class="sources-trust">The only briefing built around one rule: every citation gets checked before you hear it.</p>
+  </div>
+</section>
+
+<!-- ═══════════ HOW IT WORKS ═══════════ -->
+<section class="band-fog" id="how">
+  <div class="wrap">
+    <div class="how-head">
+      <span class="eyebrow center">How it works</span>
+      <h2 class="h-sec">Set it up once.<br/>Then it simply arrives.</h2>
+      <p class="sub">No prompts, no settings to tune, no dashboard to manage. You tell us where you practice; we handle the reading.</p>
+    </div>
+    <div class="how-grid">
+      <div class="how-card">
+        <div class="how-num">01</div>
+        <h3>Tell us your practice</h3>
+        <p>Your circuit, jurisdictions, practice areas, and the matters you're watching. It takes about a minute, and it's the whole setup.</p>
+      </div>
+      <div class="how-card">
+        <div class="how-num">02</div>
+        <h3>We read the record</h3>
+        <p>Each morning we review decisions, filings, and regulatory actions from trusted sources — then verify every holding and citation against the original.</p>
+      </div>
+      <div class="how-card">
+        <div class="how-num">03</div>
+        <h3>Your briefing arrives</h3>
+        <p>A concise audio edition lands in your inbox before the workday — and waits in your archive whenever you want to hear it again.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ INSIDE THIS EDITION ═══════════ -->
+<section class="edition" id="edition">
+  <div class="wrap">
+    <div class="edition-head">
+      <div>
+        <span class="eyebrow">Inside this morning's edition</span>
+        <h2 class="h-sec">What a briefing<br/>actually sounds like.</h2>
+      </div>
+      <p class="sub">Three developments from three different practices. Each one summarized, sourced, and read aloud — built around your circuit and practice area, not someone else's.</p>
+    </div>
+
+    <div class="big-player">
+      <button class="player-btn" aria-label="Play full briefing"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg></button>
+      <div class="player-info">
+        <div class="player-title">Today's Edition · Full Briefing</div>
+        <div class="player-sub">6 min · Tailored to your practice and jurisdiction</div>
+      </div>
+      <div class="bp-wave" aria-hidden="true">
+        <span style="height:30%"></span><span style="height:60%"></span><span style="height:90%"></span><span style="height:45%"></span><span style="height:75%"></span><span style="height:55%"></span><span style="height:85%"></span><span style="height:40%"></span><span style="height:70%"></span><span style="height:50%"></span><span style="height:95%"></span><span style="height:35%"></span><span style="height:65%"></span><span style="height:80%"></span><span style="height:48%"></span><span style="height:72%"></span><span style="height:58%"></span><span style="height:88%"></span>
+      </div>
+    </div>
+
+    <div class="story-list">
+      <article class="story">
+        <div class="story-rail">
+          <span class="src-badge"><span class="seal">5</span>5th Circuit</span>
+          <span class="story-meta">Personal Injury · Auto<br/>4 min · Verified</span>
+        </div>
+        <div class="story-body">
+          <h3>Fifth Circuit revives wrongful-death claim against trucking carrier over black-box data dispute</h3>
+          <div class="summary-tag"><span class="bar"></span>Docket Summary</div>
+          <ul class="summary-list">
+            <li>The panel held that a carrier's failure to preserve event-data-recorder logs after notice of a claim can support an adverse-inference instruction at trial.</li>
+            <li>Practical effect: plaintiffs in pending auto cases gain new leverage on spoliation motions — worth raising in any open discovery dispute.</li>
+          </ul>
+          <div class="story-listen"><span class="pm"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg></span> Listen · 4 min</div>
+        </div>
+      </article>
+
+      <article class="story">
+        <div class="story-rail">
+          <span class="src-badge"><span class="seal">FL</span>Fla. Supreme Ct.</span>
+          <span class="story-meta">Premises Liability<br/>3 min · Verified</span>
+        </div>
+        <div class="story-body">
+          <h3>Florida Supreme Court narrows landowner defenses in slip-and-fall apportionment dispute</h3>
+          <div class="summary-tag"><span class="bar"></span>Docket Summary</div>
+          <ul class="summary-list">
+            <li>The Court held that a property manager's internal maintenance logs are discoverable even absent a prior notice claim, resolving a split among district courts of appeal.</li>
+            <li>Defense takeaway: the ruling broadens discovery exposure on maintenance history — relevant to any open premises matter you're carrying.</li>
+          </ul>
+          <div class="story-listen"><span class="pm"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg></span> Listen · 3 min</div>
+        </div>
+      </article>
+
+      <article class="story">
+        <div class="story-rail">
+          <span class="src-badge"><span class="seal">7</span>7th Circuit</span>
+          <span class="story-meta">Employment · Retaliation<br/>2 min · Verified</span>
+        </div>
+        <div class="story-body">
+          <h3>Seventh Circuit lowers bar for retaliation claims tied to internal HR complaints</h3>
+          <div class="summary-tag"><span class="bar"></span>Docket Summary</div>
+          <ul class="summary-list">
+            <li>The panel held that an informal complaint to HR, without invoking a specific statute, can still count as protected activity under Title VII.</li>
+            <li>If you handle employment matters, expect more retaliation claims to survive summary judgment — clients should be briefed on documentation practices.</li>
+          </ul>
+          <div class="story-listen"><span class="pm"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg></span> Listen · 2 min</div>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ TESTIMONIALS ═══════════ -->
+<section class="voices">
+  <div class="wrap">
+    <div class="voices-head">
+      <span class="eyebrow center">From the bar</span>
+      <h2 class="h-sec">Lawyers who made it<br/>part of the morning.</h2>
+    </div>
+    <div class="voices-grid">
+      <div class="voice-card">
+        <div class="qmark">&ldquo;</div>
+        <p class="voice-quote">Instead of scanning five legal newsletters before work, I spend six minutes with Rocket Docket and I'm done.</p>
+        <div class="voice-author">
+          <span class="voice-avatar">MP</span>
+          <div><div class="voice-name">Managing Partner</div><div class="voice-role">Litigation · Atlanta</div></div>
+        </div>
+      </div>
+      <div class="voice-card tint-warm">
+        <div class="qmark">&ldquo;</div>
+        <p class="voice-quote">The story selection feels like it was written specifically for my practice. It knows my circuit better than most associates.</p>
+        <div class="voice-author">
+          <span class="voice-avatar">CA</span>
+          <div><div class="voice-name">Coverage Attorney</div><div class="voice-role">Insurance Defense</div></div>
+        </div>
+      </div>
+      <div class="voice-card tint-cool">
+        <div class="qmark">&ldquo;</div>
+        <p class="voice-quote">The first legal product I've kept in my routine — and the only briefing I trust to have checked its sources.</p>
+        <div class="voice-author">
+          <span class="voice-avatar">GC</span>
+          <div><div class="voice-name">General Counsel</div><div class="voice-role">Healthcare</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ FAQ ═══════════ -->
+<section class="faq" id="faq">
+  <div class="wrap faq-grid">
+    <div class="faq-aside">
+      <span class="eyebrow">Questions</span>
+      <h2 class="h-sec">Before you<br/>subscribe.</h2>
+      <p>Everything you'd want to know about how Rocket Docket sources, verifies, and delivers your morning edition.</p>
+    </div>
+    <div class="faq-list" id="faqList"></div>
+  </div>
+</section>
+
+<!-- ═══════════ CTA ═══════════ -->
+<section class="cta" id="cta">
+  <div class="wrap">
+    <div class="cta-inner">
+      <span class="eyebrow center">Tomorrow morning</span>
+      <h2>Start the day already <em>knowing what matters.</em></h2>
+      <p>Set up your practice profile in a minute. Your first briefing arrives with tomorrow's edition.</p>
+      <div class="cta-actions">
+        <a class="btn btn-paper" href="#top">Start your free trial</a>
+        <a class="btn btn-on-dark-link btn-arrow" href="#edition">See a sample briefing
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </a>
+      </div>
+      <div class="cta-note">No credit card required to start · Cancel anytime</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ FOOTER ═══════════ -->
+<footer>
+  <div class="wrap">
+    <div class="foot-top">
+      <div class="foot-brand">
+        <a class="logo" href="#top">
+          <span class="logo-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M5 13c0-5 3-9 7-11 4 2 7 6 7 11 0 1.5-.3 3-1 4l-2-2H8l-2 2c-.7-1-1-2.5-1-4z"/><circle cx="12" cy="9" r="2"/><path d="M9 18c-1 1.5-1.2 3.5-1 5 1.3-.4 2.3-1.2 3-2.3"/><path d="M15 18c1 1.5 1.2 3.5 1 5-1.3-.4-2.3-1.2-3-2.3"/></svg>
+          </span>
+          <span class="logo-word">Rocket Docket</span>
+        </a>
+        <p>Personalized legal intelligence. Built by lawyers, for lawyers — to keep you ahead of the developments that touch your practice.</p>
+      </div>
+      <div class="foot-col">
+        <h4>Product</h4>
+        <a href="#how">How it works</a>
+        <a href="#edition">Sample briefing</a>
+        <a href="#cta">Pricing</a>
+        <a href="#top">Sign in</a>
+      </div>
+      <div class="foot-col">
+        <h4>Company</h4>
+        <a>About</a>
+        <a>Sources</a>
+        <a>Contact</a>
+      </div>
+      <div class="foot-col">
+        <h4>Legal</h4>
+        <a>Terms of Service</a>
+        <a>Privacy Policy</a>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      <span class="tag-line">The law, read to you by morning.</span>
+      <span class="copy">© 2026 Rocket Docket. All rights reserved.</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function(){
+  /* mobile menu */
+  var burger=document.getElementById('burger'),panel=document.getElementById('mobilePanel');
+  if(burger){burger.addEventListener('click',function(){panel.classList.toggle('open');});}
+  if(panel){panel.querySelectorAll('a').forEach(function(a){a.addEventListener('click',function(){panel.classList.remove('open');});});}
+
+  /* source marquee */
+  var SOURCES=["Law360","CourtListener","SCOTUSblog","Federal Register","Reuters Legal","Associated Press","Dept. of Justice","SEC","FTC","Congress.gov","Bloomberg Law","PACER","U.S. Courts","American Bar Assn."];
+  var track=document.getElementById('srcTrack');
+  if(track){
+    var make=function(){return SOURCES.map(function(s){return '<span class="src-item">'+s+'</span>';}).join('');};
+    track.innerHTML=make()+make();
+  }
+
+  /* FAQ accordion */
+  var FAQ=[
+    ["What is the best legal news briefing for attorneys?",
+     "<strong>Rocket Docket is a personalized alternative to the traditional legal newsletter</strong> — instead of one email sent to everyone, it delivers a short daily audio briefing built around your circuit, jurisdictions, and practice areas. Most newsletters cover everything and leave the filtering to you; Rocket Docket starts from your practice and surfaces only the developments that touch your work. It draws on primary sources like the <a href=\"https://www.federalregister.gov/\" target=\"_blank\" rel=\"noopener\">Federal Register</a> and the courts, and every citation is checked before you hear it."],
+    ["How do lawyers stay up to date on case law?",
+     "<strong>Most attorneys stay current through a mix of court opinions, agency actions, and legal news</strong> — a routine that can take 30 to 60 minutes a day. Rocket Docket condenses that into one personalized audio briefing each morning, drawn from primary sources including the <a href=\"https://www.uscourts.gov/\" target=\"_blank\" rel=\"noopener\">U.S. Courts</a> and the <a href=\"https://www.supremecourt.gov/\" target=\"_blank\" rel=\"noopener\">Supreme Court</a>. Instead of scanning several feeds, you hear only the decisions and rule changes relevant to your circuit and practice."],
+    ["What is the best way to keep up with legal news?",
+     "<strong>The most efficient way is a personalized briefing rather than a general feed.</strong> Rocket Docket monitors more than 200 courts, agencies, and legal publications — including the <a href=\"https://www.americanbar.org/\" target=\"_blank\" rel=\"noopener\">American Bar Association</a> and the <a href=\"https://www.federalregister.gov/\" target=\"_blank\" rel=\"noopener\">Federal Register</a> — then delivers a five-to-seven-minute edition tailored to your jurisdictions and practice areas."],
+    ["Is AI-generated legal news accurate?",
+     "<strong>It can be — but only with verification, which is central to how Rocket Docket works.</strong> AI helps identify and organize relevant developments, but every holding and citation is checked against the original source — such as the published opinion or the agency filing on <a href=\"https://www.congress.gov/\" target=\"_blank\" rel=\"noopener\">Congress.gov</a> — before it reaches your briefing."],
+    ["Is there a daily legal news podcast for lawyers?",
+     "<strong>Yes — Rocket Docket is a daily audio legal briefing made specifically for practicing attorneys.</strong> Each weekday morning it delivers a short, personalized edition you can hear on the commute or over coffee, covering the decisions, filings, and regulatory actions that match your circuit, jurisdictions, and practice areas."],
+    ["How much does a daily legal briefing cost?",
+     "<strong>Rocket Docket begins with a free trial, then continues as a paid subscription</strong> — with no long-term commitment, and you can cancel anytime from your account. The trial sends real, personalized editions so you can judge the value before you pay."]
+  ];
+  var list=document.getElementById('faqList');
+  if(list){
+    list.innerHTML=FAQ.map(function(p){
+      return '<div class="faq-item"><button class="faq-q" aria-expanded="false"><span class="q">'+p[0]+'</span><span class="faq-ico"></span></button><div class="faq-a"><p>'+p[1]+'</p></div></div>';
+    }).join('');
+    list.querySelectorAll('.faq-q').forEach(function(btn){
+      btn.addEventListener('click',function(){
+        var item=btn.parentNode,ans=item.querySelector('.faq-a'),isOpen=item.classList.contains('open');
+        list.querySelectorAll('.faq-item').forEach(function(it){
+          it.classList.remove('open');it.querySelector('.faq-a').style.maxHeight=null;it.querySelector('.faq-q').setAttribute('aria-expanded','false');
+        });
+        if(!isOpen){item.classList.add('open');ans.style.maxHeight=ans.scrollHeight+'px';btn.setAttribute('aria-expanded','true');}
+      });
+    });
+  }
+
+  /* count-up stats */
+  var counted=false;
+  function runCount(){
+    if(counted)return;counted=true;
+    document.querySelectorAll('.count').forEach(function(el){
+      var target=+el.getAttribute('data-target'),start=0,dur=1400,t0=null;
+      function step(ts){
+        if(!t0)t0=ts;var p=Math.min((ts-t0)/dur,1);
+        var eased=1-Math.pow(1-p,3);
+        el.textContent=Math.round(start+(target-start)*eased).toLocaleString();
+        if(p<1)requestAnimationFrame(step);
+      }
+      requestAnimationFrame(step);
+    });
+  }
+  var statsEl=document.querySelector('.stats');
+  if(statsEl&&'IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(ents){ents.forEach(function(e){if(e.isIntersecting)runCount();});},{threshold:.3});
+    io.observe(statsEl);
+  }else{runCount();}
+
+  /* demo play buttons -> brief animation only (no audio wired) */
+  document.querySelectorAll('.player-btn, .story-listen').forEach(function(b){
+    b.addEventListener('click',function(){b.style.transform='scale(.94)';setTimeout(function(){b.style.transform='';},140);});
+  });
+})();
+</script>
+</body>
+</html>
