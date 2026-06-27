@@ -132,11 +132,9 @@ nav{display:flex;align-items:center;justify-content:space-between;height:68px;ma
 .blob-warm{right:-16%;top:-26%;width:46%;height:46%;background:rgba(251,225,209,.85);filter:blur(120px)}
 .blob-rust{right:8%;top:-12%;width:22%;height:22%;background:rgba(93,42,26,.16);filter:blur(100px)}
 .blob-cool{left:-12%;bottom:-30%;width:46%;height:46%;background:rgba(211,227,252,.8);filter:blur(120px)}
-/* ── single rocket + snake-like fading contrail (canvas) ── */
+/* ── single rocket + snake-like fading contrail (one canvas: always synced) ── */
 .rocket-sky{position:absolute;inset:0;overflow:hidden;z-index:1;pointer-events:none}
-#rktCanvas{position:absolute;inset:0;width:100%;height:100%;filter:blur(.5px)}
-.rocket{position:absolute;top:0;left:0;width:26px;will-change:transform}
-.rocket .ship{width:100%;height:auto;display:block;filter:drop-shadow(0 5px 8px rgba(23,25,28,.12))}
+#rktCanvas{position:absolute;inset:0;width:100%;height:100%}
 .hero .wrap{position:relative;z-index:2}
 .hero-copy{max-width:760px;margin:0 auto;text-align:center;position:relative;z-index:3}
 .hero-pill{display:inline-flex;align-items:center;gap:9px;background:rgba(255,255,255,.7);border:1px solid var(--hairline);border-radius:var(--r-pill);padding:6px 15px 6px 8px;font-size:13px;font-weight:450;color:var(--color-ash);margin-bottom:26px}
@@ -417,17 +415,9 @@ footer{background:var(--color-fog);padding:64px 0 40px}
     <div class="blob blob-cool"></div>
   </div>
   <!-- single rocket that stays in frame, with a long snake-like fading contrail -->
+  <!-- rocket + trail are drawn together on ONE canvas so they can never drift apart -->
   <div class="rocket-sky" aria-hidden="true">
     <canvas id="rktCanvas"></canvas>
-    <div class="rocket" id="rkt">
-      <svg class="ship" viewBox="-10 0 74 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M18 12 L5 3 L22 14 Z" fill="#5d2a1a"/>
-        <path d="M18 28 L5 37 L22 26 Z" fill="#5d2a1a"/>
-        <path d="M16 11 H38 Q58 11 62 20 Q58 29 38 29 H16 Q7 29 7 20 Q7 11 16 11 Z" fill="#17191c"/>
-        <circle cx="42" cy="20" r="4.6" fill="#fbe1d1"/>
-        <path d="M7 20 L-8 15 L-8 25 Z" fill="#5d2a1a" opacity=".85"/>
-      </svg>
-    </div>
   </div>
   <div class="wrap">
     <!-- floating product cards orbit the headline (desktop) -->
@@ -826,8 +816,8 @@ footer{background:var(--color-fog);padding:64px 0 40px}
   /* ── single rocket that stays in frame, with a long snake-like fading contrail ── */
   (function(){
     var reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    var sky=document.querySelector('.rocket-sky'),canvas=document.getElementById('rktCanvas'),rkt=document.getElementById('rkt');
-    if(reduce||!sky||!canvas||!rkt)return;
+    var sky=document.querySelector('.rocket-sky'),canvas=document.getElementById('rktCanvas');
+    if(reduce||!sky||!canvas)return;
     var ctx=canvas.getContext('2d');
     var W=0,H=0,DPR=Math.min(window.devicePixelRatio||1,2);
     function resize(){var r=sky.getBoundingClientRect();W=r.width;H=r.height;canvas.width=Math.max(1,W*DPR);canvas.height=Math.max(1,H*DPR);ctx.setTransform(DPR,0,0,DPR,0,0);}
@@ -835,11 +825,33 @@ footer{background:var(--color-fog);padding:64px 0 40px}
 
     var TRAIL_LIFE=8600;   // trail lingers ~8.6s
     var PERIOD=30000;      // ms for one full figure-eight (slow)
+    var NOSE=11;           // distance from rocket centre to the engine (trail emission point)
     // gentle figure-eight kept well inside the frame so the rocket never leaves
     function at(t){
       var cx=W*0.5, cy=H*0.30;
       var ax=Math.min(W*0.36, 540), ay=Math.min(H*0.14, 92);
       return {x:cx+ax*Math.sin(t), y:cy+ay*Math.sin(2*t)};
+    }
+    // little rocket drawn straight onto the canvas, centred at (0,0), nose toward +x
+    function drawRocket(){
+      ctx.save();
+      ctx.shadowColor='rgba(23,25,28,.18)';ctx.shadowBlur=6;ctx.shadowOffsetY=3;
+      // fins (rust)
+      ctx.fillStyle='#5d2a1a';
+      ctx.beginPath();ctx.moveTo(-7,-5);ctx.lineTo(-14,-11);ctx.lineTo(-3,-5);ctx.closePath();ctx.fill();
+      ctx.beginPath();ctx.moveTo(-7,5);ctx.lineTo(-14,11);ctx.lineTo(-3,5);ctx.closePath();ctx.fill();
+      // flame
+      ctx.beginPath();ctx.moveTo(-11,0);ctx.lineTo(-19,-4);ctx.lineTo(-19,4);ctx.closePath();ctx.fill();
+      ctx.shadowBlur=0;ctx.shadowOffsetY=0;
+      // body capsule (ink) with pointed nose to the right
+      ctx.fillStyle='#17191c';
+      ctx.beginPath();
+      ctx.moveTo(-11,-5.5);ctx.lineTo(6,-5.5);ctx.quadraticCurveTo(15,-5.5,17,0);
+      ctx.quadraticCurveTo(15,5.5,6,5.5);ctx.lineTo(-11,5.5);
+      ctx.quadraticCurveTo(-13,3,-13,0);ctx.quadraticCurveTo(-13,-3,-11,-5.5);ctx.closePath();ctx.fill();
+      // window (apricot)
+      ctx.fillStyle='#fbe1d1';ctx.beginPath();ctx.arc(8,0,3,0,Math.PI*2);ctx.fill();
+      ctx.restore();
     }
     var trail=[],t0=null;
     function frame(ts){
@@ -847,7 +859,9 @@ footer{background:var(--color-fog);padding:64px 0 40px}
       var ang=((ts-t0)/PERIOD)*Math.PI*2;
       var p=at(ang), p2=at(ang+0.012);
       var heading=Math.atan2(p2.y-p.y,p2.x-p.x);
-      trail.push({x:p.x,y:p.y,t:ts});
+      // emit the trail from the engine (behind the nose) so it leaves the rocket's tail
+      var ex=p.x-Math.cos(heading)*NOSE, ey=p.y-Math.sin(heading)*NOSE;
+      trail.push({x:ex,y:ey,t:ts});
       while(trail.length&&ts-trail[0].t>TRAIL_LIFE)trail.shift();
       ctx.clearRect(0,0,W,H);
       ctx.lineCap='round';ctx.lineJoin='round';
@@ -860,7 +874,8 @@ footer{background:var(--color-fog);padding:64px 0 40px}
         ctx.lineWidth=2.5+6.5*life;             // prominent near the rocket, tapering to the tail
         ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
       }
-      rkt.style.transform='translate('+(p.x-rkt.offsetWidth/2)+'px,'+(p.y-(rkt.offsetHeight||14)/2)+'px) rotate('+heading+'rad)';
+      // rocket drawn on the SAME canvas, same frame → trail can never lag behind it
+      ctx.save();ctx.translate(p.x,p.y);ctx.rotate(heading);drawRocket();ctx.restore();
       requestAnimationFrame(frame);
     }
     requestAnimationFrame(frame);
