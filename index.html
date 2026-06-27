@@ -122,18 +122,21 @@ nav{display:flex;align-items:center;justify-content:space-between;height:68px;ma
 
 /* ═══════════ HERO ═══════════ */
 .hero{position:relative;overflow:hidden;padding:84px 0 64px}
-.hero-glow{position:absolute;top:-200px;left:50%;transform:translateX(-50%);width:1200px;max-width:140vw;height:860px;background:radial-gradient(ellipse 50% 56% at 50% 40%, rgba(251,225,209,.9), rgba(251,225,209,.28) 46%, transparent 70%);z-index:0;pointer-events:none}
-/* ── flying rocket + fading contrail (header background only) ── */
-.rocket-sky{position:absolute;inset:0;overflow:hidden;z-index:0;pointer-events:none}
-.rocket{position:absolute;left:0;will-change:transform}
-.rocket .ship{width:100%;height:auto;display:block;filter:drop-shadow(0 6px 10px rgba(23,25,28,.10))}
-.rocket .trail{position:absolute;top:50%;right:66%;transform:translateY(-50%);height:6px;border-radius:6px;background:linear-gradient(to left,rgba(141,144,156,.55),rgba(141,144,156,0));filter:blur(2.5px)}
-.r1{top:30%;width:44px;animation:fly1 13s linear infinite}
-.r1 .trail{width:210px}
-.r2{top:14%;width:26px;animation:fly2 19s linear infinite;animation-delay:-9s}
-.r2 .trail{width:140px;height:5px}
-@keyframes fly1{0%{transform:translate(-18vw,46px) rotate(-15deg);opacity:0}7%{opacity:.62}93%{opacity:.62}100%{transform:translate(120vw,-66px) rotate(-15deg);opacity:0}}
-@keyframes fly2{0%{transform:translate(-18vw,30px) rotate(-10deg);opacity:0}10%{opacity:.34}90%{opacity:.34}100%{transform:translate(120vw,-46px) rotate(-10deg);opacity:0}}
+/* ── infinite scrolling grid background (header) ── */
+.grid-bg{position:absolute;inset:0;z-index:0;overflow:hidden;pointer-events:none}
+.grid-layer{position:absolute;inset:-40px;background-image:linear-gradient(to right, rgba(119,123,134,.9) 1px, transparent 1px),linear-gradient(to bottom, rgba(119,123,134,.9) 1px, transparent 1px);background-size:40px 40px;animation:gridscroll 5.6s linear infinite}
+.grid-base{opacity:.05}
+.grid-reveal{opacity:.32;-webkit-mask-image:radial-gradient(300px circle at var(--mx,50%) var(--my,32%), #000 0%, transparent 70%);mask-image:radial-gradient(300px circle at var(--mx,50%) var(--my,32%), #000 0%, transparent 70%)}
+@keyframes gridscroll{from{transform:translate(0,0)}to{transform:translate(40px,40px)}}
+.blob{position:absolute;border-radius:50%}
+.blob-warm{right:-16%;top:-26%;width:46%;height:46%;background:rgba(251,225,209,.85);filter:blur(120px)}
+.blob-rust{right:8%;top:-12%;width:22%;height:22%;background:rgba(93,42,26,.16);filter:blur(100px)}
+.blob-cool{left:-12%;bottom:-30%;width:46%;height:46%;background:rgba(211,227,252,.8);filter:blur(120px)}
+/* ── single rocket + snake-like fading contrail (canvas) ── */
+.rocket-sky{position:absolute;inset:0;overflow:hidden;z-index:1;pointer-events:none}
+#rktCanvas{position:absolute;inset:0;width:100%;height:100%;filter:blur(.5px)}
+.rocket{position:absolute;top:0;left:0;width:26px;will-change:transform}
+.rocket .ship{width:100%;height:auto;display:block;filter:drop-shadow(0 5px 8px rgba(23,25,28,.12))}
 .hero .wrap{position:relative;z-index:2}
 .hero-copy{max-width:760px;margin:0 auto;text-align:center;position:relative;z-index:3}
 .hero-pill{display:inline-flex;align-items:center;gap:9px;background:rgba(255,255,255,.7);border:1px solid var(--hairline);border-radius:var(--r-pill);padding:6px 15px 6px 8px;font-size:13px;font-weight:450;color:var(--color-ash);margin-bottom:26px}
@@ -405,20 +408,18 @@ footer{background:var(--color-fog);padding:64px 0 40px}
 
 <!-- ═══════════ HERO ═══════════ -->
 <section class="hero">
-  <div class="hero-glow" aria-hidden="true"></div>
+  <!-- infinite scrolling grid background (ported from the-infinite-grid) -->
+  <div class="grid-bg" id="gridBg" aria-hidden="true">
+    <div class="grid-layer grid-base"></div>
+    <div class="grid-layer grid-reveal"></div>
+    <div class="blob blob-warm"></div>
+    <div class="blob blob-rust"></div>
+    <div class="blob blob-cool"></div>
+  </div>
+  <!-- single rocket that stays in frame, with a long snake-like fading contrail -->
   <div class="rocket-sky" aria-hidden="true">
-    <div class="rocket r1">
-      <span class="trail"></span>
-      <svg class="ship" viewBox="-10 0 74 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M18 12 L5 3 L22 14 Z" fill="#5d2a1a"/>
-        <path d="M18 28 L5 37 L22 26 Z" fill="#5d2a1a"/>
-        <path d="M16 11 H38 Q58 11 62 20 Q58 29 38 29 H16 Q7 29 7 20 Q7 11 16 11 Z" fill="#17191c"/>
-        <circle cx="42" cy="20" r="4.6" fill="#fbe1d1"/>
-        <path d="M7 20 L-8 15 L-8 25 Z" fill="#5d2a1a" opacity=".85"/>
-      </svg>
-    </div>
-    <div class="rocket r2">
-      <span class="trail"></span>
+    <canvas id="rktCanvas"></canvas>
+    <div class="rocket" id="rkt">
       <svg class="ship" viewBox="-10 0 74 40" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M18 12 L5 3 L22 14 Z" fill="#5d2a1a"/>
         <path d="M18 28 L5 37 L22 26 Z" fill="#5d2a1a"/>
@@ -811,6 +812,59 @@ footer{background:var(--color-fog);padding:64px 0 40px}
   if(statsEl&&'IntersectionObserver' in window){new IntersectionObserver(function(en){en.forEach(function(e){if(e.isIntersecting)runCount();});},{threshold:.3}).observe(statsEl);}else{runCount();}
 
   document.querySelectorAll('.player-btn,.listen,.chat-send').forEach(function(b){b.addEventListener('click',function(){b.style.transform='scale(.94)';setTimeout(function(){b.style.transform='';},140);});});
+
+  /* ── grid reveal follows the cursor ── */
+  var hero=document.querySelector('.hero'),grid=document.getElementById('gridBg');
+  if(hero&&grid){
+    hero.addEventListener('mousemove',function(e){
+      var r=hero.getBoundingClientRect();
+      grid.style.setProperty('--mx',(e.clientX-r.left)+'px');
+      grid.style.setProperty('--my',(e.clientY-r.top)+'px');
+    });
+  }
+
+  /* ── single rocket that stays in frame, with a long snake-like fading contrail ── */
+  (function(){
+    var reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var sky=document.querySelector('.rocket-sky'),canvas=document.getElementById('rktCanvas'),rkt=document.getElementById('rkt');
+    if(reduce||!sky||!canvas||!rkt)return;
+    var ctx=canvas.getContext('2d');
+    var W=0,H=0,DPR=Math.min(window.devicePixelRatio||1,2);
+    function resize(){var r=sky.getBoundingClientRect();W=r.width;H=r.height;canvas.width=Math.max(1,W*DPR);canvas.height=Math.max(1,H*DPR);ctx.setTransform(DPR,0,0,DPR,0,0);}
+    resize();window.addEventListener('resize',resize);
+
+    var TRAIL_LIFE=8600;   // trail lingers ~8.6s
+    var PERIOD=30000;      // ms for one full figure-eight (slow)
+    // gentle figure-eight kept well inside the frame so the rocket never leaves
+    function at(t){
+      var cx=W*0.5, cy=H*0.30;
+      var ax=Math.min(W*0.36, 540), ay=Math.min(H*0.14, 92);
+      return {x:cx+ax*Math.sin(t), y:cy+ay*Math.sin(2*t)};
+    }
+    var trail=[],t0=null;
+    function frame(ts){
+      if(t0==null)t0=ts;
+      var ang=((ts-t0)/PERIOD)*Math.PI*2;
+      var p=at(ang), p2=at(ang+0.012);
+      var heading=Math.atan2(p2.y-p.y,p2.x-p.x);
+      trail.push({x:p.x,y:p.y,t:ts});
+      while(trail.length&&ts-trail[0].t>TRAIL_LIFE)trail.shift();
+      ctx.clearRect(0,0,W,H);
+      ctx.lineCap='round';ctx.lineJoin='round';
+      for(var i=1;i<trail.length;i++){
+        var a=trail[i-1],b=trail[i];
+        var life=1-(ts-b.t)/TRAIL_LIFE;        // 1 at head → 0 at tail
+        if(life<=0)continue;
+        var fade=Math.min(1,life*1.5);          // stays solid, only the tail dissolves (snake)
+        ctx.strokeStyle='rgba(150,142,138,'+(fade*0.7)+')';
+        ctx.lineWidth=2.5+6.5*life;             // prominent near the rocket, tapering to the tail
+        ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
+      }
+      rkt.style.transform='translate('+(p.x-rkt.offsetWidth/2)+'px,'+(p.y-(rkt.offsetHeight||14)/2)+'px) rotate('+heading+'rad)';
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  })();
 })();
 </script>
 </body>
