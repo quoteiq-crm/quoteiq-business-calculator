@@ -123,6 +123,17 @@ nav{display:flex;align-items:center;justify-content:space-between;height:68px;ma
 /* ═══════════ HERO ═══════════ */
 .hero{position:relative;overflow:hidden;padding:84px 0 64px}
 .hero-glow{position:absolute;top:-200px;left:50%;transform:translateX(-50%);width:1200px;max-width:140vw;height:860px;background:radial-gradient(ellipse 50% 56% at 50% 40%, rgba(251,225,209,.9), rgba(251,225,209,.28) 46%, transparent 70%);z-index:0;pointer-events:none}
+/* ── flying rocket + fading contrail (header background only) ── */
+.rocket-sky{position:absolute;inset:0;overflow:hidden;z-index:0;pointer-events:none}
+.rocket{position:absolute;left:0;will-change:transform}
+.rocket .ship{width:100%;height:auto;display:block;filter:drop-shadow(0 6px 10px rgba(23,25,28,.10))}
+.rocket .trail{position:absolute;top:50%;right:66%;transform:translateY(-50%);height:6px;border-radius:6px;background:linear-gradient(to left,rgba(141,144,156,.55),rgba(141,144,156,0));filter:blur(2.5px)}
+.r1{top:30%;width:44px;animation:fly1 13s linear infinite}
+.r1 .trail{width:210px}
+.r2{top:14%;width:26px;animation:fly2 19s linear infinite;animation-delay:-9s}
+.r2 .trail{width:140px;height:5px}
+@keyframes fly1{0%{transform:translate(-18vw,46px) rotate(-15deg);opacity:0}7%{opacity:.62}93%{opacity:.62}100%{transform:translate(120vw,-66px) rotate(-15deg);opacity:0}}
+@keyframes fly2{0%{transform:translate(-18vw,30px) rotate(-10deg);opacity:0}10%{opacity:.34}90%{opacity:.34}100%{transform:translate(120vw,-46px) rotate(-10deg);opacity:0}}
 .hero .wrap{position:relative;z-index:2}
 .hero-copy{max-width:760px;margin:0 auto;text-align:center;position:relative;z-index:3}
 .hero-pill{display:inline-flex;align-items:center;gap:9px;background:rgba(255,255,255,.7);border:1px solid var(--hairline);border-radius:var(--r-pill);padding:6px 15px 6px 8px;font-size:13px;font-weight:450;color:var(--color-ash);margin-bottom:26px}
@@ -358,7 +369,7 @@ footer{background:var(--color-fog);padding:64px 0 40px}
   .hero-cta{flex-direction:column}
   .hero-cta .btn{width:100%}
 }
-@media(prefers-reduced-motion:reduce){*{animation:none!important;scroll-behavior:auto!important}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;scroll-behavior:auto!important}.rocket-sky{display:none!important}}
 </style>
 </head>
 <body>
@@ -395,6 +406,28 @@ footer{background:var(--color-fog);padding:64px 0 40px}
 <!-- ═══════════ HERO ═══════════ -->
 <section class="hero">
   <div class="hero-glow" aria-hidden="true"></div>
+  <div class="rocket-sky" aria-hidden="true">
+    <div class="rocket r1">
+      <span class="trail"></span>
+      <svg class="ship" viewBox="-10 0 74 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M18 12 L5 3 L22 14 Z" fill="#5d2a1a"/>
+        <path d="M18 28 L5 37 L22 26 Z" fill="#5d2a1a"/>
+        <path d="M16 11 H38 Q58 11 62 20 Q58 29 38 29 H16 Q7 29 7 20 Q7 11 16 11 Z" fill="#17191c"/>
+        <circle cx="42" cy="20" r="4.6" fill="#fbe1d1"/>
+        <path d="M7 20 L-8 15 L-8 25 Z" fill="#5d2a1a" opacity=".85"/>
+      </svg>
+    </div>
+    <div class="rocket r2">
+      <span class="trail"></span>
+      <svg class="ship" viewBox="-10 0 74 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M18 12 L5 3 L22 14 Z" fill="#5d2a1a"/>
+        <path d="M18 28 L5 37 L22 26 Z" fill="#5d2a1a"/>
+        <path d="M16 11 H38 Q58 11 62 20 Q58 29 38 29 H16 Q7 29 7 20 Q7 11 16 11 Z" fill="#17191c"/>
+        <circle cx="42" cy="20" r="4.6" fill="#fbe1d1"/>
+        <path d="M7 20 L-8 15 L-8 25 Z" fill="#5d2a1a" opacity=".85"/>
+      </svg>
+    </div>
+  </div>
   <div class="wrap">
     <!-- floating product cards orbit the headline (desktop) -->
     <div class="hero-floats" aria-hidden="true">
