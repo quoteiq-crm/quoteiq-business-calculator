@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Rocket Docket — The morning legal briefing, built around your practice.</title>
+<meta name="description" content="Rocket Docket scans 200+ legal sources every morning, curates the developments that touch your practice and jurisdiction, and delivers a personalized, voiced briefing — every citation checked before you hear it." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400..600&family=Source+Serif+4:opsz,wght@8..60,400..600&display=swap" rel="stylesheet" />
+<style>
+:root{
+  /* ── Steep colour tokens ── */
+  --color-ink:#17191c;
+  --color-white:#ffffff;
+  --color-fog:#f7f7f8;
+  --color-ash:#4c4c4c;
+  --color-graphite:#777b86;
+  --color-dove:#a3a6af;
+  --color-rust:#5d2a1a;
+  --color-apricot:#fbe1d1;
+  --color-sky:#d3e3fc;
+  --color-mint:#d8efe2;
+  --color-blue:#4a90e2;
+
+  --font-serif:'Source Serif 4', Georgia, 'Times New Roman', serif;
+  --font-sans:'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --tracking:-0.009em;
+
+  --r-card:24px;
+  --r-inner:16px;
+  --r-img:12px;
+  --r-pill:9999px;
+
+  --max:1200px;
+  --gap:80px;
+
+  --shadow:rgba(4,23,43,.05) 0 0 0 1px, rgba(0,0,0,.10) 0 20px 25px -5px, rgba(0,0,0,.10) 0 8px 10px -6px;
+  --shadow-float:rgba(4,23,43,.06) 0 0 0 1px, rgba(0,0,0,.12) 0 24px 34px -8px, rgba(0,0,0,.08) 0 8px 10px -6px;
+  --hairline:#ececee;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{font-family:var(--font-sans);font-size:16px;line-height:1.38;letter-spacing:var(--tracking);color:var(--color-ink);background:var(--color-white);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+a{color:inherit;text-decoration:none}
+img,svg{display:block;max-width:100%}
+::selection{background:var(--color-apricot);color:var(--color-ink)}
+
+.wrap{width:100%;max-width:var(--max);margin:0 auto;padding:0 24px}
+
+/* ── type ── */
+.serif{font-family:var(--font-serif);font-weight:400}
+.display{font-family:var(--font-serif);font-weight:400;font-size:clamp(44px,7.4vw,76px);line-height:1.04;letter-spacing:-0.03em}
+.h-sec{font-family:var(--font-serif);font-weight:400;font-size:clamp(34px,4.6vw,48px);line-height:1.08;letter-spacing:-0.025em}
+.rust{color:var(--color-rust)}
+.lead{font-size:18px;line-height:1.5;letter-spacing:-0.16px;color:var(--color-ash)}
+
+.eyebrow{font-family:var(--font-sans);font-size:13px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:var(--color-rust);display:inline-flex;align-items:center;gap:12px}
+.eyebrow::before{content:"";width:24px;height:1px;background:currentColor;opacity:.7}
+.eyebrow.center{justify-content:center}
+.eyebrow.center::after{content:"";width:24px;height:1px;background:currentColor;opacity:.7}
+
+/* ── buttons ── */
+.btn{font-family:var(--font-sans);font-size:15px;font-weight:450;letter-spacing:var(--tracking);cursor:pointer;border:none;border-radius:var(--r-pill);display:inline-flex;align-items:center;justify-content:center;gap:8px;transition:transform .18s,box-shadow .18s,background .18s,color .18s;white-space:nowrap}
+.btn-ink{background:var(--color-ink);color:#fff;padding:11px 22px}
+.btn-ink:hover{transform:translateY(-1px);box-shadow:0 10px 24px -8px rgba(23,25,28,.5)}
+.btn-link{background:transparent;color:var(--color-ink);padding:11px 10px}
+.btn-link:hover{color:var(--color-rust)}
+.btn-lg{padding:14px 26px;font-size:16px}
+.btn svg{width:15px;height:15px}
+
+/* ── nav ── */
+.nav-outer{position:sticky;top:0;z-index:200;background:rgba(255,255,255,.82);backdrop-filter:saturate(180%) blur(16px);border-bottom:1px solid var(--hairline)}
+nav{display:flex;align-items:center;justify-content:space-between;height:68px;max-width:var(--max);margin:0 auto;padding:0 24px;gap:24px}
+.logo{display:flex;align-items:center;gap:11px;flex-shrink:0;cursor:pointer}
+.logo-mark{width:32px;height:32px;border-radius:9px;background:var(--color-ink);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.logo-mark svg{width:17px;height:17px;stroke:#fff;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.logo-word{font-size:17px;font-weight:500;letter-spacing:-0.02em}
+.nav-links{display:flex;align-items:center;gap:2px;flex:1;justify-content:center}
+.nav-link{font-size:15px;font-weight:430;color:var(--color-ash);padding:8px 14px;border-radius:var(--r-pill);transition:.15s;cursor:pointer}
+.nav-link:hover{color:var(--color-ink);background:var(--color-fog)}
+.nav-right{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.nav-signin{font-size:15px;font-weight:430;color:var(--color-ink);cursor:pointer;padding:8px 6px}
+.nav-signin:hover{color:var(--color-rust)}
+.burger{display:none;width:40px;height:40px;border-radius:11px;border:1px solid var(--hairline);background:#fff;cursor:pointer;align-items:center;justify-content:center}
+.burger svg{width:18px;height:18px;stroke:var(--color-ink);stroke-width:1.8;stroke-linecap:round}
+.mpanel{display:none;flex-direction:column;padding:8px 16px 18px;background:#fff;border-bottom:1px solid var(--hairline)}
+.mpanel.open{display:flex}
+.mpanel a{padding:13px 6px;font-size:16px;font-weight:450;border-bottom:1px solid var(--color-fog)}
+.mpanel .btn{margin-top:12px}
+
+/* ── generic card / widgets used across hero + dashboard ── */
+.card{background:#fff;border-radius:var(--r-card);box-shadow:var(--shadow);padding:20px}
+.w-label{font-size:13px;font-weight:450;color:var(--color-graphite)}
+.w-title{font-size:15px;font-weight:500;color:var(--color-ink)}
+.avatar{width:34px;height:34px;border-radius:var(--r-pill);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0}
+.av-peach{background:var(--color-apricot);color:var(--color-rust)}
+.av-sky{background:var(--color-sky);color:#1f3a5f}
+.av-mint{background:var(--color-mint);color:#1f6b4a}
+
+/* donut */
+.donut{width:78px;height:78px;border-radius:50%;position:relative;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:conic-gradient(var(--color-rust) 0 100%)}
+.donut.warm-bg::after{background:var(--color-apricot)}
+.donut::after{content:"";position:absolute;inset:10px;border-radius:50%;background:#fff}
+.donut svg{position:relative;z-index:1;width:24px;height:24px;stroke:var(--color-rust);fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+
+/* mini bars */
+.bars{display:flex;align-items:flex-end;gap:7px;height:62px}
+.bars span{flex:1;background:var(--color-blue);border-radius:4px 4px 0 0;opacity:.85}
+.bars span:nth-child(even){opacity:.5}
+
+/* mini line chart (svg) */
+.linechart{width:100%;height:74px;display:block}
+
+/* region rows */
+.rows{display:flex;flex-direction:column;gap:11px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.row .nm{font-size:14px;color:var(--color-graphite);display:inline-flex;align-items:center;gap:9px}
+.row .ct{font-size:14px;font-weight:480;color:var(--color-ink)}
+.seal{display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:24px;padding:0 6px;border-radius:7px;background:var(--color-fog);font-size:12px;font-weight:500;color:var(--color-ink)}
+.seal.peach{background:var(--color-apricot);color:var(--color-rust)}
+
+/* ═══════════ HERO ═══════════ */
+.hero{position:relative;overflow:hidden;padding:84px 0 64px}
+/* ── infinite scrolling grid background (header) ── */
+.grid-bg{position:absolute;inset:0;z-index:0;overflow:hidden;pointer-events:none}
+.grid-layer{position:absolute;inset:-40px;background-image:linear-gradient(to right, rgba(119,123,134,.9) 1px, transparent 1px),linear-gradient(to bottom, rgba(119,123,134,.9) 1px, transparent 1px);background-size:40px 40px;animation:gridscroll 5.6s linear infinite}
+.grid-base{opacity:.05}
+.grid-reveal{opacity:.32;-webkit-mask-image:radial-gradient(300px circle at var(--mx,50%) var(--my,32%), #000 0%, transparent 70%);mask-image:radial-gradient(300px circle at var(--mx,50%) var(--my,32%), #000 0%, transparent 70%)}
+@keyframes gridscroll{from{transform:translate(0,0)}to{transform:translate(40px,40px)}}
+.blob{position:absolute;border-radius:50%}
+.blob-warm{right:-16%;top:-26%;width:46%;height:46%;background:rgba(251,225,209,.85);filter:blur(120px)}
+.blob-rust{right:8%;top:-12%;width:22%;height:22%;background:rgba(93,42,26,.16);filter:blur(100px)}
+.blob-cool{left:-12%;bottom:-30%;width:46%;height:46%;background:rgba(211,227,252,.8);filter:blur(120px)}
+/* ── single rocket + snake-like fading contrail (one canvas: always synced) ── */
+.rocket-sky{position:absolute;inset:0;overflow:hidden;z-index:1;pointer-events:none}
+#rktCanvas{position:absolute;inset:0;width:100%;height:100%}
+.hero .wrap{position:relative;z-index:2}
+.hero-copy{max-width:760px;margin:0 auto;text-align:center;position:relative;z-index:3}
+.hero-pill{display:inline-flex;align-items:center;gap:9px;background:rgba(255,255,255,.7);border:1px solid var(--hairline);border-radius:var(--r-pill);padding:6px 15px 6px 8px;font-size:13px;font-weight:450;color:var(--color-ash);margin-bottom:26px}
+.hero-pill .dot{width:7px;height:7px;border-radius:50%;background:var(--color-rust)}
+.hero-copy h1{margin:0 auto}
+.hero-sub{max-width:580px;margin:24px auto 0;font-size:18px;line-height:1.5;letter-spacing:-0.16px;color:var(--color-ash)}
+.hero-cta{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:32px;flex-wrap:wrap}
+.hero-trust{display:inline-flex;align-items:center;gap:9px;margin-top:24px;font-size:14px;color:var(--color-graphite)}
+.hero-trust svg{width:16px;height:16px;stroke:var(--color-rust);fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+
+/* floating hero cards */
+.hero-floats{position:relative;z-index:1}
+.float{position:absolute;width:230px}
+.fl-tl{top:128px;left:0}
+.fl-tr{top:96px;right:0;width:212px}
+.fl-bl{bottom:8px;left:18px;width:216px}
+.fl-br{bottom:-6px;right:0;width:264px}
+.badge-float{position:absolute;box-shadow:var(--shadow);border:2px solid #fff}
+.bf-1{top:78px;right:196px}
+.bf-2{bottom:196px;left:206px}
+/* hero cards stacked on small screens */
+.hero-mcards{display:none;margin-top:40px;gap:16px;grid-template-columns:1fr 1fr}
+
+/* ═══════════ SOURCE MARQUEE ═══════════ */
+.sources{padding:48px 0 8px;text-align:center}
+.sources-label{font-size:13px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--color-graphite)}
+.marquee{position:relative;overflow:hidden;margin-top:26px;-webkit-mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent);mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent)}
+.mtrack{display:inline-flex;gap:14px;white-space:nowrap;animation:marquee 40s linear infinite}
+.marquee:hover .mtrack{animation-play-state:paused}
+.src-item{display:inline-flex;align-items:center;border-radius:var(--r-pill);border:1px solid var(--hairline);background:var(--color-fog);color:var(--color-ash);font-size:14px;font-weight:430;padding:9px 18px}
+@keyframes marquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+/* ═══════════ SECTION SHELLS ═══════════ */
+.band{padding:var(--gap) 0}
+.band.fog{background:var(--color-fog)}
+.sec-head{text-align:center;max-width:680px;margin:0 auto 52px}
+.sec-head .h-sec{margin-top:18px}
+.sec-head .lead{margin-top:18px}
+
+/* ═══════════ PRODUCT SHOWCASE (marble dashboard) ═══════════ */
+.app{background:#fff;border-radius:28px;box-shadow:var(--shadow-float);overflow:hidden;display:grid;grid-template-columns:240px 1fr;max-width:1120px;margin:0 auto}
+.app-side{background:var(--color-fog);padding:22px 16px;display:flex;flex-direction:column;gap:6px;border-right:1px solid var(--hairline)}
+.app-brand{display:flex;align-items:center;gap:10px;padding:4px 8px 18px}
+.app-brand .logo-mark{width:28px;height:28px;border-radius:8px}
+.app-brand .logo-mark svg{width:15px;height:15px}
+.app-brand span{font-size:15px;font-weight:500;letter-spacing:-0.02em}
+.side-grp{font-size:11px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--color-graphite);padding:14px 8px 6px}
+.side-item{display:flex;align-items:center;gap:11px;padding:9px 10px;border-radius:10px;font-size:14px;font-weight:430;color:var(--color-ash);cursor:default}
+.side-item svg{width:16px;height:16px;stroke:var(--color-graphite);fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.side-item.active{background:#fff;color:var(--color-ink);box-shadow:rgba(4,23,43,.04) 0 0 0 1px}
+.side-item.active svg{stroke:var(--color-ink)}
+.side-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.app-main{padding:24px;background:#fff;min-width:0}
+.app-top{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:20px}
+.app-top h3{font-size:20px;font-weight:500;letter-spacing:-0.01em}
+.app-top .when{font-size:13px;color:var(--color-graphite);margin-top:2px}
+.app-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.tile{background:#fff;border-radius:18px;box-shadow:rgba(4,23,43,.04) 0 0 0 1px, rgba(0,0,0,.05) 0 8px 16px -8px;padding:18px}
+.tile.warm{background:var(--color-apricot);box-shadow:rgba(4,23,43,.04) 0 0 0 1px}
+.tile.cool{background:var(--color-sky);box-shadow:rgba(4,23,43,.04) 0 0 0 1px}
+.tile.span2{grid-column:span 2}
+.kpi-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.kpi-ico{width:30px;height:30px;border-radius:9px;background:var(--color-fog);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.kpi-ico svg{width:15px;height:15px;stroke:var(--color-ash);fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.kpi-num{font-size:30px;font-weight:480;letter-spacing:-0.03em;line-height:1;margin-top:14px}
+.kpi-delta{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:480;color:var(--color-rust);margin-top:8px}
+.kpi-delta svg{width:12px;height:12px;stroke:var(--color-rust);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.ai-tile{background:#fff;border-radius:18px;box-shadow:rgba(4,23,43,.04) 0 0 0 1px, rgba(0,0,0,.05) 0 8px 16px -8px;padding:18px}
+.ai-chart{background:var(--color-sky);border-radius:var(--r-inner);padding:14px 14px 6px}
+.ai-legend{display:flex;gap:16px;margin-top:8px;font-size:12px;color:#42648c}
+.ai-legend i{display:inline-block;width:16px;height:3px;border-radius:2px;vertical-align:middle;margin-right:6px}
+.ai-tile h4{font-size:16px;font-weight:500;margin:14px 0 6px}
+.ai-tile p{font-size:13.5px;line-height:1.55;color:var(--color-ash)}
+.ai-tile a{color:var(--color-blue);text-decoration:underline;text-underline-offset:2px}
+
+/* ═══════════ HOW ═══════════ */
+.cards-3{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.how-card{background:#fff;border-radius:var(--r-card);padding:28px;box-shadow:var(--shadow)}
+.band.fog .how-card{box-shadow:var(--shadow)}
+.how-num{font-family:var(--font-serif);font-size:40px;color:var(--color-rust);line-height:1;letter-spacing:-0.02em}
+.how-card h3{font-size:20px;font-weight:500;margin:18px 0 10px;letter-spacing:-0.01em}
+.how-card p{font-size:15px;line-height:1.55;color:var(--color-ash)}
+
+/* ═══════════ ASK / AI ═══════════ */
+.ask-grid{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center}
+.ask-copy .h-sec{margin:18px 0 16px}
+.ask-copy p{font-size:16px;line-height:1.6;color:var(--color-ash);max-width:420px}
+.chat-input{display:flex;align-items:center;gap:12px;background:#fff;border:1px solid var(--hairline);border-radius:var(--r-inner);padding:14px 14px 14px 20px;box-shadow:var(--shadow);margin-top:24px}
+.chat-input .q{flex:1;font-size:15px;color:var(--color-graphite)}
+.chat-send{width:42px;height:42px;border-radius:var(--r-pill);background:var(--color-ink);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.chat-send svg{width:18px;height:18px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.ask-suggest{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.chip{border:1px solid var(--hairline);background:#fff;border-radius:var(--r-pill);padding:7px 14px;font-size:13px;color:var(--color-ash)}
+.resp-card{background:#fff;border-radius:var(--r-card);box-shadow:var(--shadow);padding:22px}
+.resp-head{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.resp-head .avatar{width:30px;height:30px;font-size:11px}
+.resp-head .who{font-size:13px;color:var(--color-graphite)}
+.resp-card .ai-chart{background:var(--color-sky)}
+.resp-card h4{font-size:17px;font-weight:500;margin:16px 0 8px;letter-spacing:-0.01em}
+.resp-card p{font-size:14.5px;line-height:1.6;color:var(--color-ash)}
+.resp-card a{color:var(--color-blue);text-decoration:underline;text-underline-offset:2px}
+
+/* ═══════════ EDITION / STORIES ═══════════ */
+.edition-head{display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:end;margin-bottom:32px}
+.edition-head .h-sec{margin-top:16px}
+.edition-head .lead{font-size:16px}
+.player{display:flex;align-items:center;gap:18px;background:var(--color-ink);border-radius:var(--r-card);padding:20px 24px;margin-bottom:24px}
+.player-btn{width:50px;height:50px;border-radius:var(--r-pill);background:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:transform .15s}
+.player-btn:hover{transform:scale(1.05)}
+.player-btn svg{width:17px;height:17px;fill:var(--color-ink);margin-left:2px}
+.player .pt{color:#fff;font-size:16px;font-weight:480}
+.player .ps{color:rgba(255,255,255,.6);font-size:13px;margin-top:3px}
+.player .pw{display:flex;align-items:center;gap:3px;height:30px;flex:1;justify-content:flex-end;max-width:260px;margin-left:auto}
+.player .pw span{width:3px;border-radius:2px;background:rgba(255,255,255,.3)}
+.player .pw span:nth-child(3n){background:var(--color-apricot)}
+.stories{display:flex;flex-direction:column;gap:18px}
+.story{display:grid;grid-template-columns:180px 1fr;gap:26px;background:#fff;border-radius:var(--r-card);padding:24px;box-shadow:var(--shadow)}
+.story-rail{display:flex;flex-direction:column;gap:11px}
+.src-badge{display:inline-flex;align-items:center;gap:9px;font-size:14px;font-weight:480}
+.story-meta{font-size:13px;line-height:1.5;color:var(--color-graphite)}
+.story h3{font-size:21px;font-weight:500;line-height:1.24;letter-spacing:-0.01em}
+.sum-tag{display:inline-flex;align-items:center;gap:8px;margin:15px 0 10px;font-size:12px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--color-rust)}
+.sum-tag .b{width:18px;height:2px;background:var(--color-rust);border-radius:2px}
+.sum-list{list-style:none;display:flex;flex-direction:column;gap:9px}
+.sum-list li{position:relative;padding-left:20px;font-size:15px;line-height:1.55;color:var(--color-ash)}
+.sum-list li::before{content:"";position:absolute;left:2px;top:9px;width:6px;height:6px;border-radius:50%;background:var(--color-rust);opacity:.6}
+.listen{display:inline-flex;align-items:center;gap:9px;margin-top:16px;font-size:14px;font-weight:480;cursor:pointer}
+.listen .pm{width:28px;height:28px;border-radius:50%;background:var(--color-fog);display:flex;align-items:center;justify-content:center;transition:.15s}
+.listen:hover .pm{background:var(--color-apricot)}
+.listen .pm svg{width:11px;height:11px;fill:var(--color-rust);margin-left:1px}
+
+/* ═══════════ STATS ═══════════ */
+.stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.stat-card{background:#fff;border-radius:var(--r-card);padding:24px;box-shadow:var(--shadow)}
+.stat-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:18px}
+.stat-title{font-size:14px;color:var(--color-graphite);max-width:20ch}
+.stat-ico{width:34px;height:34px;border-radius:10px;background:var(--color-fog);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.stat-ico svg{width:17px;height:17px;stroke:var(--color-ash);fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.stat-num{font-size:46px;font-weight:480;letter-spacing:-0.03em;line-height:1}
+.stat-num .sfx{color:var(--color-rust)}
+.stat-rule{height:1px;background:var(--hairline);margin:16px 0 14px}
+.stat-sec{display:flex;align-items:baseline;gap:8px}
+.stat-sec .v{font-size:17px;font-weight:480}
+.stat-sec .l{font-size:13px;color:var(--color-graphite)}
+.stats-foot{margin:24px auto 0;text-align:center;font-size:15px;color:var(--color-graphite);max-width:680px}
+.stats-foot strong{color:var(--color-ash);font-weight:480}
+
+/* ═══════════ TESTIMONIALS ═══════════ */
+.voices-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.voice{background:#fff;border-radius:var(--r-card);padding:28px;box-shadow:var(--shadow);display:flex;flex-direction:column}
+.voice.tw{background:var(--color-apricot);box-shadow:rgba(4,23,43,.04) 0 0 0 1px}
+.voice.tc{background:var(--color-sky);box-shadow:rgba(4,23,43,.04) 0 0 0 1px}
+.qmark{font-family:var(--font-serif);font-size:60px;line-height:.5;color:var(--color-rust);opacity:.4;height:32px}
+.voice p{font-size:18px;line-height:1.42;letter-spacing:-0.01em;font-weight:450;margin:16px 0 22px;flex:1}
+.voice-by{display:flex;align-items:center;gap:12px}
+.voice-by .nm{font-size:14px;font-weight:480}
+.voice-by .rl{font-size:13px;color:var(--color-graphite)}
+
+/* ═══════════ FAQ ═══════════ */
+.faq-grid{display:grid;grid-template-columns:.85fr 1.15fr;gap:64px;align-items:start}
+.faq-aside .h-sec{margin:18px 0 16px}
+.faq-aside p{font-size:15.5px;line-height:1.6;color:var(--color-ash);max-width:320px}
+.faq-list{border-top:1px solid var(--hairline)}
+.faq-item{border-bottom:1px solid var(--hairline)}
+.faq-q{width:100%;text-align:left;background:none;border:none;cursor:pointer;padding:22px 0;display:flex;align-items:center;justify-content:space-between;gap:20px}
+.faq-q .q{font-size:18px;font-weight:480;letter-spacing:-0.01em}
+.faq-ico{position:relative;width:22px;height:22px;flex-shrink:0}
+.faq-ico::before,.faq-ico::after{content:"";position:absolute;left:50%;top:50%;background:var(--color-rust);transition:.25s}
+.faq-ico::before{width:13px;height:1.6px;transform:translate(-50%,-50%)}
+.faq-ico::after{width:1.6px;height:13px;transform:translate(-50%,-50%)}
+.faq-item.open .faq-ico::after{transform:translate(-50%,-50%) rotate(90deg);opacity:0}
+.faq-a{max-height:0;overflow:hidden;transition:max-height .3s ease}
+.faq-a p{font-size:15px;line-height:1.65;color:var(--color-ash);padding:0 0 24px}
+.faq-a a{color:var(--color-blue);text-decoration:underline;text-underline-offset:2px}
+.faq-a strong{color:var(--color-ink);font-weight:500}
+
+/* ═══════════ CTA ═══════════ */
+.cta{position:relative;overflow:hidden;padding:110px 0;text-align:center}
+.cta-glow{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:1000px;max-width:140vw;height:640px;background:radial-gradient(ellipse 50% 56% at 50% 50%, rgba(251,225,209,.85), transparent 70%);z-index:0;pointer-events:none}
+.cta .wrap{position:relative;z-index:1}
+.cta h2{font-family:var(--font-serif);font-weight:400;font-size:clamp(34px,5vw,58px);line-height:1.06;letter-spacing:-0.025em;max-width:18ch;margin:18px auto 0}
+.cta h2 em{font-style:italic;color:var(--color-rust)}
+.cta .lead{margin:20px auto 0;max-width:460px}
+.cta-actions{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:34px;flex-wrap:wrap}
+.cta-note{margin-top:22px;font-size:13.5px;color:var(--color-graphite)}
+
+/* ═══════════ FOOTER ═══════════ */
+footer{background:var(--color-fog);padding:64px 0 40px}
+.foot-top{display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr;gap:40px;padding-bottom:48px;border-bottom:1px solid #e7e7ea}
+.foot-brand .logo{margin-bottom:18px}
+.foot-brand p{font-size:14.5px;line-height:1.6;color:var(--color-graphite);max-width:300px}
+.foot-col h4{font-size:13px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--color-graphite);margin-bottom:16px}
+.foot-col a{display:block;font-size:15px;color:var(--color-ash);padding:7px 0;cursor:pointer;transition:color .15s}
+.foot-col a:hover{color:var(--color-rust)}
+.foot-bottom{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-top:28px;flex-wrap:wrap}
+.foot-bottom .tag{font-family:var(--font-serif);font-size:17px;font-style:italic;color:var(--color-ash)}
+.foot-bottom .cp{font-size:13.5px;color:var(--color-graphite)}
+
+/* ═══════════ RESPONSIVE ═══════════ */
+@media(min-width:1000px){
+  .hero-floats{position:absolute;inset:0;max-width:var(--max);margin:0 auto;left:0;right:0;padding:0 24px}
+}
+@media(max-width:999px){
+  :root{--gap:64px}
+  .nav-links,.nav-right .nav-signin,.nav-right>.btn{display:none}
+  .burger{display:flex}
+  .hero{padding:64px 0 8px}
+  .hero-floats{display:none}
+  .hero-mcards{display:grid}
+  .app{grid-template-columns:1fr}
+  .app-side{flex-direction:row;flex-wrap:wrap;gap:8px;border-right:none;border-bottom:1px solid var(--hairline)}
+  .app-brand{width:100%}
+  .side-grp{display:none}
+  .side-item{padding:8px 12px}
+  .app-grid{grid-template-columns:1fr 1fr}
+  .tile.span2{grid-column:span 2}
+  .cards-3{grid-template-columns:1fr}
+  .ask-grid{grid-template-columns:1fr;gap:28px}
+  .ask-copy p{max-width:none}
+  .edition-head{grid-template-columns:1fr;gap:16px;align-items:start}
+  .story{grid-template-columns:1fr;gap:16px}
+  .stats-grid{grid-template-columns:1fr}
+  .voices-grid{grid-template-columns:1fr}
+  .faq-grid{grid-template-columns:1fr;gap:32px}
+  .foot-top{grid-template-columns:1fr 1fr;gap:32px}
+  .foot-brand{grid-column:1/-1}
+}
+@media(max-width:560px){
+  .hero-mcards{grid-template-columns:1fr}
+  .app-grid{grid-template-columns:1fr}
+  .tile.span2{grid-column:span 1}
+  .foot-top{grid-template-columns:1fr}
+  .hero-cta{flex-direction:column}
+  .hero-cta .btn{width:100%}
+}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;scroll-behavior:auto!important}.rocket-sky{display:none!important}}
+</style>
+</head>
+<body>
+<span id="top"></span>
+
+<!-- ═══════════ NAV ═══════════ -->
+<div class="nav-outer">
+  <nav>
+    <a class="logo" href="#top">
+      <span class="logo-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 13c0-5 3-9 7-11 4 2 7 6 7 11 0 1.5-.3 3-1 4l-2-2H8l-2 2c-.7-1-1-2.5-1-4z"/><circle cx="12" cy="9" r="2"/><path d="M9 18c-1 1.5-1.2 3.5-1 5 1.3-.4 2.3-1.2 3-2.3"/><path d="M15 18c1 1.5 1.2 3.5 1 5-1.3-.4-2.3-1.2-3-2.3"/></svg></span>
+      <span class="logo-word">Rocket Docket</span>
+    </a>
+    <div class="nav-links">
+      <a class="nav-link" href="#product">Product</a>
+      <a class="nav-link" href="#how">How it works</a>
+      <a class="nav-link" href="#customers">Customers</a>
+      <a class="nav-link" href="#pricing">Pricing</a>
+    </div>
+    <div class="nav-right">
+      <span class="nav-signin">Sign in</span>
+      <a class="btn btn-ink" href="#pricing">Start free trial</a>
+      <button class="burger" id="burger" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+    </div>
+  </nav>
+  <div class="mpanel" id="mpanel">
+    <a href="#product">Product</a>
+    <a href="#how">How it works</a>
+    <a href="#customers">Customers</a>
+    <a href="#pricing">Pricing</a>
+    <a class="btn btn-ink btn-lg" href="#pricing">Start free trial</a>
+  </div>
+</div>
+
+<!-- ═══════════ HERO ═══════════ -->
+<section class="hero">
+  <!-- infinite scrolling grid background (ported from the-infinite-grid) -->
+  <div class="grid-bg" id="gridBg" aria-hidden="true">
+    <div class="grid-layer grid-base"></div>
+    <div class="grid-layer grid-reveal"></div>
+    <div class="blob blob-warm"></div>
+    <div class="blob blob-rust"></div>
+    <div class="blob blob-cool"></div>
+  </div>
+  <!-- single rocket that stays in frame, with a long snake-like fading contrail -->
+  <!-- rocket + trail are drawn together on ONE canvas so they can never drift apart -->
+  <div class="rocket-sky" aria-hidden="true">
+    <canvas id="rktCanvas"></canvas>
+  </div>
+  <div class="wrap">
+    <!-- floating product cards orbit the headline (desktop) -->
+    <div class="hero-floats" aria-hidden="true">
+      <div class="card float fl-tl">
+        <div class="w-title">On today's docket</div>
+        <div class="rows" style="margin-top:14px">
+          <div class="row"><span class="nm"><span class="seal peach">5</span>5th Circuit</span><span class="ct">2</span></div>
+          <div class="row"><span class="nm"><span class="seal">FL</span>Fla. Supreme Ct.</span><span class="ct">1</span></div>
+          <div class="row"><span class="nm"><span class="seal">7</span>7th Circuit</span><span class="ct">1</span></div>
+        </div>
+      </div>
+
+      <div class="card float fl-tr" style="background:var(--color-apricot);box-shadow:rgba(4,23,43,.05) 0 0 0 1px, rgba(0,0,0,.10) 0 20px 25px -8px">
+        <div class="w-label" style="color:#8a5a45">Citations verified</div>
+        <div style="display:flex;align-items:center;gap:14px;margin-top:14px">
+          <div class="donut warm-bg"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></div>
+          <div><div style="font-size:28px;font-weight:480;color:var(--color-rust);line-height:1">100%</div><div style="font-size:12.5px;color:#8a5a45;margin-top:5px;max-width:11ch">checked before you hear it</div></div>
+        </div>
+      </div>
+
+      <div class="card float fl-bl" style="background:var(--color-sky);box-shadow:rgba(4,23,43,.05) 0 0 0 1px, rgba(0,0,0,.10) 0 20px 25px -8px">
+        <div class="w-label" style="color:#42648c">Filings this week</div>
+        <div class="bars" style="margin-top:14px"><span style="height:50%"></span><span style="height:75%"></span><span style="height:40%"></span><span style="height:92%"></span><span style="height:62%"></span><span style="height:80%"></span></div>
+        <div style="font-size:26px;font-weight:480;color:#1f3a5f;margin-top:14px;line-height:1">200+ <span style="font-size:13px;font-weight:430;color:#42648c">sources scanned</span></div>
+      </div>
+
+      <div class="card float fl-br">
+        <div style="display:flex;align-items:center;gap:9px;margin-bottom:10px"><span class="avatar av-peach" style="width:26px;height:26px;font-size:10px">RD</span><span class="w-label">This week vs last</span></div>
+        <svg class="linechart" viewBox="0 0 240 74" preserveAspectRatio="none">
+          <polyline points="0,52 40,46 80,50 120,36 160,40 200,24 240,20" fill="none" stroke="#4a90e2" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <polyline points="0,60 40,58 80,54 120,56 160,50 200,52 240,46" fill="none" stroke="#5d2a1a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" opacity=".55"/>
+        </svg>
+        <div style="font-size:13px;font-weight:480;margin-top:10px">Relevant rulings, up 18%</div>
+      </div>
+
+      <span class="avatar av-sky badge-float bf-1">JD</span>
+      <span class="avatar av-mint badge-float bf-2">AL</span>
+    </div>
+
+    <!-- centered hero copy -->
+    <div class="hero-copy">
+      <span class="hero-pill"><span class="dot"></span>Personalized legal intelligence · Built by lawyers</span>
+      <h1 class="display">Your time is important.<br/><span class="rust">Let us give you some back.</span></h1>
+      <p class="hero-sub">Every morning, Rocket Docket scans over 200 legal sources, curates a feed built around your practice area and jurisdiction — then delivers a fully personalized, voiced briefing straight to your inbox.</p>
+      <div class="hero-cta">
+        <a class="btn btn-ink btn-lg" href="#pricing">Start free trial</a>
+        <a class="btn btn-link" href="#edition">Hear a sample
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg></a>
+      </div>
+      <div class="hero-trust"><svg viewBox="0 0 24 24"><path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6l8-4z"/><path d="M9 12l2 2 4-4"/></svg>Built from primary sources. Every citation checked before you hear it.</div>
+    </div>
+
+    <!-- small-screen card set -->
+    <div class="hero-mcards">
+      <div class="card">
+        <div class="w-title">On today's docket</div>
+        <div class="rows" style="margin-top:14px">
+          <div class="row"><span class="nm"><span class="seal peach">5</span>5th Circuit</span><span class="ct">2</span></div>
+          <div class="row"><span class="nm"><span class="seal">FL</span>Fla. Supreme Ct.</span><span class="ct">1</span></div>
+          <div class="row"><span class="nm"><span class="seal">7</span>7th Circuit</span><span class="ct">1</span></div>
+        </div>
+      </div>
+      <div class="card" style="background:var(--color-apricot);box-shadow:rgba(4,23,43,.04) 0 0 0 1px">
+        <div class="w-label" style="color:#8a5a45">Citations verified</div>
+        <div style="display:flex;align-items:center;gap:12px;margin-top:14px">
+          <div class="donut warm-bg"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></div>
+          <div style="font-size:26px;font-weight:480;color:var(--color-rust);line-height:1">100%</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ SOURCES ═══════════ -->
+<section class="sources">
+  <div class="wrap"><div class="sources-label">The record we read, so you don't have to</div></div>
+  <div class="marquee"><div class="mtrack" id="srcTrack"></div></div>
+</section>
+
+<!-- ═══════════ PRODUCT SHOWCASE (marble dashboard) ═══════════ -->
+<section class="band fog" id="product">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow center">Your briefing room</span>
+      <h2 class="h-sec">Every development that touches<br/>your practice, in one calm view.</h2>
+      <p class="lead">Rocket Docket reads the record overnight and lays the morning out like a dashboard — verified, sorted by your circuit, and ready to hear.</p>
+    </div>
+
+    <div class="app">
+      <aside class="app-side">
+        <div class="app-brand"><span class="logo-mark" aria-hidden="true"><svg viewBox="0 0 24 24" stroke="#fff" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13c0-5 3-9 7-11 4 2 7 6 7 11 0 1.5-.3 3-1 4l-2-2H8l-2 2c-.7-1-1-2.5-1-4z"/><circle cx="12" cy="9" r="2"/></svg></span><span>Rocket Docket</span></div>
+        <div class="side-item active"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/></svg>Today's Edition</div>
+        <div class="side-item"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/></svg>My Briefings</div>
+        <div class="side-item"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>Court Watch</div>
+        <div class="side-item"><svg viewBox="0 0 24 24"><path d="M4 19.5V5a1 1 0 0 1 1-1h13a1 1 0 0 1 1 1v14.5"/><path d="M8 8h8M8 12h8"/></svg>Sources</div>
+        <div class="side-grp">Practice areas</div>
+        <div class="side-item"><span class="side-dot" style="background:var(--color-rust)"></span>Personal Injury</div>
+        <div class="side-item"><span class="side-dot" style="background:var(--color-blue)"></span>Premises Liability</div>
+        <div class="side-item"><span class="side-dot" style="background:#1f6b4a"></span>Employment</div>
+      </aside>
+      <div class="app-main">
+        <div class="app-top">
+          <div><h3>Today's Edition</h3><div class="when">Friday, June 27 · 6 min listen</div></div>
+          <span class="avatar av-peach">RD</span>
+        </div>
+        <div class="app-grid">
+          <div class="tile">
+            <div class="kpi-top"><span class="w-label">Matters tracked</span><span class="kpi-ico"><svg viewBox="0 0 24 24"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg></span></div>
+            <div class="kpi-num">42</div>
+            <div class="kpi-delta"><svg viewBox="0 0 24 24"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>3 new this week</div>
+          </div>
+          <div class="tile">
+            <div class="kpi-top"><span class="w-label">New filings today</span><span class="kpi-ico"><svg viewBox="0 0 24 24"><path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M5 3h9l5 5v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/></svg></span></div>
+            <div class="kpi-num">7</div>
+            <div class="kpi-delta"><svg viewBox="0 0 24 24"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>across 4 circuits</div>
+          </div>
+          <div class="tile warm">
+            <span class="w-label" style="color:#8a5a45">Citations verified</span>
+            <div style="display:flex;align-items:center;gap:14px;margin-top:14px">
+              <div class="donut warm-bg"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></div>
+              <div style="font-size:26px;font-weight:480;color:var(--color-rust);line-height:1">100%</div>
+            </div>
+          </div>
+          <div class="tile cool">
+            <span class="w-label" style="color:#42648c">Filings by circuit</span>
+            <div class="bars" style="margin-top:16px"><span style="height:55%"></span><span style="height:85%"></span><span style="height:45%"></span><span style="height:70%"></span><span style="height:95%"></span><span style="height:60%"></span></div>
+          </div>
+          <div class="tile">
+            <span class="w-title">On today's docket</span>
+            <div class="rows" style="margin-top:14px">
+              <div class="row"><span class="nm"><span class="seal peach">5</span>5th Cir.</span><span class="ct">2</span></div>
+              <div class="row"><span class="nm"><span class="seal">FL</span>Fla. S.Ct.</span><span class="ct">1</span></div>
+              <div class="row"><span class="nm"><span class="seal">7</span>7th Cir.</span><span class="ct">1</span></div>
+            </div>
+          </div>
+          <div class="ai-tile">
+            <div class="ai-chart">
+              <svg class="linechart" viewBox="0 0 240 70" preserveAspectRatio="none">
+                <polyline points="0,50 40,44 80,48 120,32 160,38 200,22 240,18" fill="none" stroke="#4a90e2" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <polyline points="0,58 40,56 80,52 120,54 160,48 200,50 240,44" fill="none" stroke="#5d2a1a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" opacity=".55"/>
+              </svg>
+              <div class="ai-legend"><span><i style="background:#4a90e2"></i>This week</span><span><i style="background:#5d2a1a;opacity:.55"></i>Last week</span></div>
+            </div>
+            <h4>Relevant rulings are up 18%</h4>
+            <p>Mostly spoliation and discovery decisions in your circuits. Heard in this morning's edition.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ HOW ═══════════ -->
+<section class="band" id="how">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow center">How it works</span>
+      <h2 class="h-sec">Set it up once.<br/>Then it simply arrives.</h2>
+      <p class="lead">No prompts, no settings to tune, no dashboard to manage. You tell us where you practice; we handle the reading.</p>
+    </div>
+    <div class="cards-3">
+      <div class="how-card"><div class="how-num">01</div><h3>Tell us your practice</h3><p>Your circuit, jurisdictions, practice areas, and the matters you're watching. About a minute, and it's the whole setup.</p></div>
+      <div class="how-card"><div class="how-num">02</div><h3>We read the record</h3><p>Each morning we review decisions, filings, and regulatory actions from trusted sources — then verify every holding and citation against the original.</p></div>
+      <div class="how-card"><div class="how-num">03</div><h3>Your briefing arrives</h3><p>A concise audio edition lands in your inbox before the workday — and waits in your archive whenever you want to hear it again.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ ASK (chat input + AI response) ═══════════ -->
+<section class="band fog">
+  <div class="wrap">
+    <div class="ask-grid">
+      <div class="ask-copy">
+        <span class="eyebrow">Ask a follow-up</span>
+        <h2 class="h-sec">Heard something<br/>worth a closer look?</h2>
+        <p>Ask in plain language and Rocket Docket answers from the same verified record — with the chart, the holding, and a link back to the source.</p>
+        <div class="chat-input">
+          <span class="q">What changed in the 5th Circuit this week?</span>
+          <button class="chat-send" aria-label="Ask"><svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></button>
+        </div>
+        <div class="ask-suggest">
+          <span class="chip">Spoliation rulings near me</span>
+          <span class="chip">New premises-liability holdings</span>
+        </div>
+      </div>
+      <div class="resp-card">
+        <div class="resp-head"><span class="avatar av-peach">RD</span><span class="who">Rocket Docket · answered from 6 verified sources</span></div>
+        <div class="ai-chart">
+          <svg class="linechart" viewBox="0 0 300 80" preserveAspectRatio="none">
+            <polyline points="0,58 50,50 100,54 150,36 200,42 250,26 300,22" fill="none" stroke="#4a90e2" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <polyline points="0,66 50,64 100,60 150,62 200,56 250,58 300,52" fill="none" stroke="#5d2a1a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" opacity=".55"/>
+          </svg>
+          <div class="ai-legend"><span><i style="background:#4a90e2"></i>This week</span><span><i style="background:#5d2a1a;opacity:.55"></i>Last week</span></div>
+        </div>
+        <h4>Three rulings touch your matters</h4>
+        <p>The 5th Circuit revived a wrongful-death claim over preserved black-box data, strengthening spoliation leverage in pending auto cases. <a href="#edition">Read the full holding →</a></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ EDITION ═══════════ -->
+<section class="band" id="edition">
+  <div class="wrap">
+    <div class="edition-head">
+      <div><span class="eyebrow">Inside this morning's edition</span><h2 class="h-sec">What a briefing<br/>actually sounds like.</h2></div>
+      <p class="lead">Three developments from three different practices. Each one summarized, sourced, and read aloud — built around your circuit and practice area, not someone else's.</p>
+    </div>
+    <div class="player">
+      <button class="player-btn" aria-label="Play"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg></button>
+      <div><div class="pt">Today's Edition · Full Briefing</div><div class="ps">6 min · Tailored to your practice and jurisdiction</div></div>
+      <div class="pw" aria-hidden="true"><span style="height:30%"></span><span style="height:60%"></span><span style="height:90%"></span><span style="height:45%"></span><span style="height:75%"></span><span style="height:55%"></span><span style="height:85%"></span><span style="height:40%"></span><span style="height:70%"></span><span style="height:50%"></span><span style="height:95%"></span><span style="height:35%"></span><span style="height:65%"></span><span style="height:80%"></span><span style="height:48%"></span><span style="height:72%"></span></div>
+    </div>
+    <div class="stories">
+      <article class="story">
+        <div class="story-rail"><span class="src-badge"><span class="seal peach">5</span>5th Circuit</span><span class="story-meta">Personal Injury · Auto<br/>4 min · Verified</span></div>
+        <div>
+          <h3>Fifth Circuit revives wrongful-death claim against trucking carrier over black-box data dispute</h3>
+          <div class="sum-tag"><span class="b"></span>Docket Summary</div>
+          <ul class="sum-list">
+            <li>The panel held that a carrier's failure to preserve event-data-recorder logs after notice of a claim can support an adverse-inference instruction at trial.</li>
+            <li>Practical effect: plaintiffs in pending auto cases gain new leverage on spoliation motions — worth raising in any open discovery dispute.</li>
+          </ul>
+          <div class="listen"><span class="pm"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg></span>Listen · 4 min</div>
+        </div>
+      </article>
+      <article class="story">
+        <div class="story-rail"><span class="src-badge"><span class="seal">FL</span>Fla. Supreme Ct.</span><span class="story-meta">Premises Liability<br/>3 min · Verified</span></div>
+        <div>
+          <h3>Florida Supreme Court narrows landowner defenses in slip-and-fall apportionment dispute</h3>
+          <div class="sum-tag"><span class="b"></span>Docket Summary</div>
+          <ul class="sum-list">
+            <li>The Court held that a property manager's internal maintenance logs are discoverable even absent a prior notice claim, resolving a split among district courts of appeal.</li>
+            <li>Defense takeaway: the ruling broadens discovery exposure on maintenance history — relevant to any open premises matter you're carrying.</li>
+          </ul>
+          <div class="listen"><span class="pm"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg></span>Listen · 3 min</div>
+        </div>
+      </article>
+      <article class="story">
+        <div class="story-rail"><span class="src-badge"><span class="seal">7</span>7th Circuit</span><span class="story-meta">Employment · Retaliation<br/>2 min · Verified</span></div>
+        <div>
+          <h3>Seventh Circuit lowers bar for retaliation claims tied to internal HR complaints</h3>
+          <div class="sum-tag"><span class="b"></span>Docket Summary</div>
+          <ul class="sum-list">
+            <li>The panel held that an informal complaint to HR, without invoking a specific statute, can still count as protected activity under Title VII.</li>
+            <li>If you handle employment matters, expect more retaliation claims to survive summary judgment — brief clients on documentation practices.</li>
+          </ul>
+          <div class="listen"><span class="pm"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg></span>Listen · 2 min</div>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ STATS ═══════════ -->
+<section class="band fog">
+  <div class="wrap">
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-top"><span class="stat-title">Attorneys briefed each morning</span><span class="stat-ico"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span></div>
+        <div class="stat-num"><span class="count" data-target="2400">0</span><span class="sfx">+</span></div>
+        <div class="stat-rule"></div>
+        <div class="stat-sec"><span class="v">38</span><span class="l">practice areas covered</span></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-top"><span class="stat-title">Sources monitored daily</span><span class="stat-ico"><svg viewBox="0 0 24 24"><path d="M3 21h18"/><path d="M5 21V9l7-5 7 5v12"/><path d="M9 21v-6h6v6"/></svg></span></div>
+        <div class="stat-num"><span class="count" data-target="200">0</span><span class="sfx">+</span></div>
+        <div class="stat-rule"></div>
+        <div class="stat-sec"><span class="v">50</span><span class="l">courts &amp; agencies tracked</span></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-top"><span class="stat-title">Minutes saved every week</span><span class="stat-ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span></div>
+        <div class="stat-num"><span class="count" data-target="150">0</span></div>
+        <div class="stat-rule"></div>
+        <div class="stat-sec"><span class="v">30</span><span class="l">minutes a day, the old way</span></div>
+      </div>
+    </div>
+    <p class="stats-foot">Skim past the wrong headline and you can miss the ruling that changes your case. <strong>Rocket Docket watches so you don't have to.</strong></p>
+  </div>
+</section>
+
+<!-- ═══════════ TESTIMONIALS ═══════════ -->
+<section class="band" id="customers">
+  <div class="wrap">
+    <div class="sec-head"><span class="eyebrow center">From the bar</span><h2 class="h-sec">Lawyers who made it<br/>part of the morning.</h2></div>
+    <div class="voices-grid">
+      <div class="voice">
+        <div class="qmark">&ldquo;</div>
+        <p>Instead of scanning five legal newsletters before work, I spend six minutes with Rocket Docket and I'm done.</p>
+        <div class="voice-by"><span class="avatar av-peach">MP</span><div><div class="nm">Managing Partner</div><div class="rl">Litigation · Atlanta</div></div></div>
+      </div>
+      <div class="voice tw">
+        <div class="qmark">&ldquo;</div>
+        <p>The story selection feels like it was written specifically for my practice. It knows my circuit better than most associates.</p>
+        <div class="voice-by"><span class="avatar" style="background:rgba(255,255,255,.6);color:var(--color-rust)">CA</span><div><div class="nm">Coverage Attorney</div><div class="rl">Insurance Defense</div></div></div>
+      </div>
+      <div class="voice tc">
+        <div class="qmark">&ldquo;</div>
+        <p>The first legal product I've kept in my routine — and the only briefing I trust to have checked its sources.</p>
+        <div class="voice-by"><span class="avatar" style="background:rgba(255,255,255,.6);color:#1f3a5f">GC</span><div><div class="nm">General Counsel</div><div class="rl">Healthcare</div></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ FAQ ═══════════ -->
+<section class="band fog" id="pricing">
+  <div class="wrap faq-grid">
+    <div class="faq-aside">
+      <span class="eyebrow">Questions</span>
+      <h2 class="h-sec">Before you<br/>subscribe.</h2>
+      <p>Everything you'd want to know about how Rocket Docket sources, verifies, and delivers your morning edition.</p>
+    </div>
+    <div class="faq-list" id="faqList"></div>
+  </div>
+</section>
+
+<!-- ═══════════ CTA ═══════════ -->
+<section class="cta">
+  <div class="cta-glow" aria-hidden="true"></div>
+  <div class="wrap">
+    <span class="eyebrow center">Tomorrow morning</span>
+    <h2 class="serif">Start the day already <em>knowing what matters.</em></h2>
+    <p class="lead">Set up your practice profile in a minute. Your first briefing arrives with tomorrow's edition.</p>
+    <div class="cta-actions">
+      <a class="btn btn-ink btn-lg" href="#top">Start your free trial</a>
+      <a class="btn btn-link" href="#edition">See a sample briefing
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a>
+    </div>
+    <div class="cta-note">No credit card required to start · Cancel anytime</div>
+  </div>
+</section>
+
+<!-- ═══════════ FOOTER ═══════════ -->
+<footer>
+  <div class="wrap">
+    <div class="foot-top">
+      <div class="foot-brand">
+        <a class="logo" href="#top"><span class="logo-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 13c0-5 3-9 7-11 4 2 7 6 7 11 0 1.5-.3 3-1 4l-2-2H8l-2 2c-.7-1-1-2.5-1-4z"/><circle cx="12" cy="9" r="2"/><path d="M9 18c-1 1.5-1.2 3.5-1 5 1.3-.4 2.3-1.2 3-2.3"/><path d="M15 18c1 1.5 1.2 3.5 1 5-1.3-.4-2.3-1.2-3-2.3"/></svg></span><span class="logo-word">Rocket Docket</span></a>
+        <p>Personalized legal intelligence. Built by lawyers, for lawyers — to keep you ahead of the developments that touch your practice.</p>
+      </div>
+      <div class="foot-col"><h4>Product</h4><a href="#product">Briefing room</a><a href="#how">How it works</a><a href="#edition">Sample briefing</a><a href="#pricing">Pricing</a></div>
+      <div class="foot-col"><h4>Company</h4><a>About</a><a>Sources</a><a>Contact</a></div>
+      <div class="foot-col"><h4>Legal</h4><a>Terms of Service</a><a>Privacy Policy</a></div>
+    </div>
+    <div class="foot-bottom"><span class="tag">The law, read to you by morning.</span><span class="cp">© 2026 Rocket Docket. All rights reserved.</span></div>
+  </div>
+</footer>
+
+<script>
+(function(){
+  var burger=document.getElementById('burger'),mp=document.getElementById('mpanel');
+  if(burger)burger.addEventListener('click',function(){mp.classList.toggle('open');});
+  if(mp)mp.querySelectorAll('a').forEach(function(a){a.addEventListener('click',function(){mp.classList.remove('open');});});
+
+  var SOURCES=["Law360","CourtListener","SCOTUSblog","Federal Register","Reuters Legal","Associated Press","Dept. of Justice","SEC","FTC","Congress.gov","Bloomberg Law","PACER","U.S. Courts","American Bar Assn."];
+  var track=document.getElementById('srcTrack');
+  if(track){var m=function(){return SOURCES.map(function(s){return '<span class="src-item">'+s+'</span>';}).join('');};track.innerHTML=m()+m();}
+
+  var FAQ=[
+    ["What is the best legal news briefing for attorneys?","<strong>Rocket Docket is a personalized alternative to the traditional legal newsletter</strong> — instead of one email sent to everyone, it delivers a short daily audio briefing built around your circuit, jurisdictions, and practice areas. It draws on primary sources like the <a href=\"https://www.federalregister.gov/\" target=\"_blank\" rel=\"noopener\">Federal Register</a> and the courts, and every citation is checked before you hear it."],
+    ["How do lawyers stay up to date on case law?","<strong>Most attorneys stay current through a mix of court opinions, agency actions, and legal news</strong> — a routine that can take 30 to 60 minutes a day. Rocket Docket condenses that into one personalized audio briefing each morning, drawn from primary sources including the <a href=\"https://www.uscourts.gov/\" target=\"_blank\" rel=\"noopener\">U.S. Courts</a> and the <a href=\"https://www.supremecourt.gov/\" target=\"_blank\" rel=\"noopener\">Supreme Court</a>."],
+    ["What is the best way to keep up with legal news?","<strong>The most efficient way is a personalized briefing rather than a general feed.</strong> Rocket Docket monitors more than 200 courts, agencies, and legal publications — including the <a href=\"https://www.americanbar.org/\" target=\"_blank\" rel=\"noopener\">American Bar Association</a> — then delivers a five-to-seven-minute edition tailored to your jurisdictions and practice areas."],
+    ["Is AI-generated legal news accurate?","<strong>It can be — but only with verification, which is central to how Rocket Docket works.</strong> AI helps identify and organize relevant developments, but every holding and citation is checked against the original source — such as the published opinion or the filing on <a href=\"https://www.congress.gov/\" target=\"_blank\" rel=\"noopener\">Congress.gov</a> — before it reaches your briefing."],
+    ["Is there a daily legal news podcast for lawyers?","<strong>Yes — Rocket Docket is a daily audio legal briefing made specifically for practicing attorneys.</strong> Each weekday morning it delivers a short, personalized edition you can hear on the commute or over coffee."],
+    ["How much does a daily legal briefing cost?","<strong>Rocket Docket begins with a free trial, then continues as a paid subscription</strong> — with no long-term commitment, and you can cancel anytime. The trial sends real, personalized editions so you can judge the value before you pay."]
+  ];
+  var list=document.getElementById('faqList');
+  if(list){
+    list.innerHTML=FAQ.map(function(p){return '<div class="faq-item"><button class="faq-q" aria-expanded="false"><span class="q">'+p[0]+'</span><span class="faq-ico"></span></button><div class="faq-a"><p>'+p[1]+'</p></div></div>';}).join('');
+    list.querySelectorAll('.faq-q').forEach(function(btn){btn.addEventListener('click',function(){
+      var item=btn.parentNode,ans=item.querySelector('.faq-a'),open=item.classList.contains('open');
+      list.querySelectorAll('.faq-item').forEach(function(it){it.classList.remove('open');it.querySelector('.faq-a').style.maxHeight=null;it.querySelector('.faq-q').setAttribute('aria-expanded','false');});
+      if(!open){item.classList.add('open');ans.style.maxHeight=ans.scrollHeight+'px';btn.setAttribute('aria-expanded','true');}
+    });});
+  }
+
+  var counted=false;
+  function runCount(){if(counted)return;counted=true;document.querySelectorAll('.count').forEach(function(el){var target=+el.getAttribute('data-target'),dur=1400,t0=null;function step(ts){if(!t0)t0=ts;var p=Math.min((ts-t0)/dur,1),e=1-Math.pow(1-p,3);el.textContent=Math.round(target*e).toLocaleString();if(p<1)requestAnimationFrame(step);}requestAnimationFrame(step);});}
+  var statsEl=document.querySelector('.stats-grid');
+  if(statsEl&&'IntersectionObserver' in window){new IntersectionObserver(function(en){en.forEach(function(e){if(e.isIntersecting)runCount();});},{threshold:.3}).observe(statsEl);}else{runCount();}
+
+  document.querySelectorAll('.player-btn,.listen,.chat-send').forEach(function(b){b.addEventListener('click',function(){b.style.transform='scale(.94)';setTimeout(function(){b.style.transform='';},140);});});
+
+  /* ── grid reveal follows the cursor ── */
+  var hero=document.querySelector('.hero'),grid=document.getElementById('gridBg');
+  if(hero&&grid){
+    hero.addEventListener('mousemove',function(e){
+      var r=hero.getBoundingClientRect();
+      grid.style.setProperty('--mx',(e.clientX-r.left)+'px');
+      grid.style.setProperty('--my',(e.clientY-r.top)+'px');
+    });
+  }
+
+  /* ── single rocket that stays in frame, with a long snake-like fading contrail ── */
+  (function(){
+    var reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var sky=document.querySelector('.rocket-sky'),canvas=document.getElementById('rktCanvas');
+    if(reduce||!sky||!canvas)return;
+    var ctx=canvas.getContext('2d');
+    var W=0,H=0,DPR=Math.min(window.devicePixelRatio||1,2);
+    function resize(){var r=sky.getBoundingClientRect();W=r.width;H=r.height;canvas.width=Math.max(1,W*DPR);canvas.height=Math.max(1,H*DPR);ctx.setTransform(DPR,0,0,DPR,0,0);}
+    resize();window.addEventListener('resize',resize);
+
+    var TRAIL_LIFE=8600;   // trail lingers ~8.6s
+    var PERIOD=30000;      // ms for one full figure-eight (slow)
+    var NOSE=11;           // distance from rocket centre to the engine (trail emission point)
+    // gentle figure-eight kept well inside the frame so the rocket never leaves
+    function at(t){
+      var cx=W*0.5, cy=H*0.30;
+      var ax=Math.min(W*0.36, 540), ay=Math.min(H*0.14, 92);
+      return {x:cx+ax*Math.sin(t), y:cy+ay*Math.sin(2*t)};
+    }
+    // little rocket drawn straight onto the canvas, centred at (0,0), nose toward +x
+    function drawRocket(){
+      ctx.save();
+      ctx.shadowColor='rgba(23,25,28,.18)';ctx.shadowBlur=6;ctx.shadowOffsetY=3;
+      // fins (rust)
+      ctx.fillStyle='#5d2a1a';
+      ctx.beginPath();ctx.moveTo(-7,-5);ctx.lineTo(-14,-11);ctx.lineTo(-3,-5);ctx.closePath();ctx.fill();
+      ctx.beginPath();ctx.moveTo(-7,5);ctx.lineTo(-14,11);ctx.lineTo(-3,5);ctx.closePath();ctx.fill();
+      // flame
+      ctx.beginPath();ctx.moveTo(-11,0);ctx.lineTo(-19,-4);ctx.lineTo(-19,4);ctx.closePath();ctx.fill();
+      ctx.shadowBlur=0;ctx.shadowOffsetY=0;
+      // body capsule (ink) with pointed nose to the right
+      ctx.fillStyle='#17191c';
+      ctx.beginPath();
+      ctx.moveTo(-11,-5.5);ctx.lineTo(6,-5.5);ctx.quadraticCurveTo(15,-5.5,17,0);
+      ctx.quadraticCurveTo(15,5.5,6,5.5);ctx.lineTo(-11,5.5);
+      ctx.quadraticCurveTo(-13,3,-13,0);ctx.quadraticCurveTo(-13,-3,-11,-5.5);ctx.closePath();ctx.fill();
+      // window (apricot)
+      ctx.fillStyle='#fbe1d1';ctx.beginPath();ctx.arc(8,0,3,0,Math.PI*2);ctx.fill();
+      ctx.restore();
+    }
+    var trail=[],t0=null;
+    function frame(ts){
+      if(t0==null)t0=ts;
+      var ang=((ts-t0)/PERIOD)*Math.PI*2;
+      var p=at(ang), p2=at(ang+0.012);
+      var heading=Math.atan2(p2.y-p.y,p2.x-p.x);
+      // emit the trail from the engine (behind the nose) so it leaves the rocket's tail
+      var ex=p.x-Math.cos(heading)*NOSE, ey=p.y-Math.sin(heading)*NOSE;
+      trail.push({x:ex,y:ey,t:ts});
+      while(trail.length&&ts-trail[0].t>TRAIL_LIFE)trail.shift();
+      ctx.clearRect(0,0,W,H);
+      ctx.lineCap='round';ctx.lineJoin='round';
+      for(var i=1;i<trail.length;i++){
+        var a=trail[i-1],b=trail[i];
+        var life=1-(ts-b.t)/TRAIL_LIFE;        // 1 at head → 0 at tail
+        if(life<=0)continue;
+        var fade=Math.min(1,life*1.5);          // stays solid, only the tail dissolves (snake)
+        ctx.strokeStyle='rgba(150,142,138,'+(fade*0.7)+')';
+        ctx.lineWidth=2.5+6.5*life;             // prominent near the rocket, tapering to the tail
+        ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
+      }
+      // rocket drawn on the SAME canvas, same frame → trail can never lag behind it
+      ctx.save();ctx.translate(p.x,p.y);ctx.rotate(heading);drawRocket();ctx.restore();
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  })();
+})();
+</script>
+</body>
+</html>
