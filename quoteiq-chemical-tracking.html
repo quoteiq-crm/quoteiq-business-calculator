@@ -534,7 +534,7 @@
           <div class="side-sub-item" onclick="outOfScope('MapMeasure Pro')">MapMeasure Pro</div>
           <div class="side-sub-item" onclick="outOfScope('Pipelines')">Pipelines</div>
           <div class="side-sub-item" onclick="outOfScope('Inventory')">Inventory</div>
-          <div class="side-sub-item" data-nav="chemtool" onclick="showPanel('chemtool')">Chem Tracking <span class="side-new">NEW</span></div>
+          <div class="side-sub-item" data-nav="chemtool" onclick="showPanel('chemtool')">Chemical Tracking <span class="side-new">NEW</span></div>
           <div class="side-sub-item" onclick="outOfScope('Reminders & Tasks')">Reminders &amp; Tasks</div>
           <div class="side-sub-item" onclick="outOfScope('Gallery')">Gallery <span class="side-new">NEW</span></div>
         </div>
@@ -1058,8 +1058,8 @@ function renderDashboard() {
     ['Area vs mix calc', 'In Log Application: Talstar + 2,400 sq ft auto-calcs 2.4 oz; Demand CS switches to manual.', 'jobs-list', 'Open Jobs'],
     ['Empty → build', '#mR8kL-1 has no defaults — log a full manual application with photos and follow-up.', 'jobs-list', 'Open Jobs'],
     ['Intercept / skip', 'Complete #qP3xY-2 with pendings — both intercept modals, then skip-with-reason.', 'jobs-list', 'Open Jobs'],
-    ['Catalog onboarding', 'Complete Termidor SC (add a rate) → row flips Ready → selectable in the log form.', 'chemtool', 'Open Chem Tracking'],
-    ['Master OFF/ON', 'Chem Tracking → Settings → flip the master toggle. Everything hides; data survives; no re-seed.', 'chemtool-settings', 'Open Settings'],
+    ['Catalog onboarding', 'Complete Termidor SC (add a rate) → row flips Ready → selectable in the log form.', 'chemtool', 'Open Chemical Tracking'],
+    ['Master OFF/ON', 'Chemical Tracking → Settings → flip the master toggle. Everything hides; data survives; no re-seed.', 'chemtool-settings', 'Open Settings'],
     ['Tier lock', 'Demo Controls → Essentials. Chemical screens gray out with the upgrade nudge.', 'demo', 'Demo Controls'],
     ['Treatment history', 'Contacts → Albert Einstein → Treatment History → filter by property → Export PDF.', 'customers-list', 'Open Contacts']
   ];
@@ -1077,7 +1077,7 @@ function renderDashboard() {
     '<div class="hub-banner"><div class="hub-banner-inner">' +
       '<div class="hub-banner-eyebrow">' + IC.flask.replace('<svg', '<svg style="width:12px;height:12px;stroke-width:2"') + ' Interactive mockup · in-app styling</div>' +
       '<div class="hub-banner-title">Chemical Tracking</div>' +
-      '<div class="hub-banner-desc">Click-through reference for the QuoteIQ Chemical Tracking feature, styled to match the live platform. Chemicals live under Tools → Chem Tracking; applications are logged from the Job card; follow-up lands on the invoice. Use the Demo Controls gear (bottom-right) to switch role, weather, and plan tier.</div>' +
+      '<div class="hub-banner-desc">Click-through reference for the QuoteIQ Chemical Tracking feature, styled to match the live platform. Chemicals live under Tools → Chemical Tracking; applications are logged from the Job card; follow-up lands on the invoice. Use the Demo Controls gear (bottom-right) to switch role, weather, and plan tier.</div>' +
       '<div class="hub-banner-stats">' +
         '<div><div class="hub-banner-stat-num">' + QIQ.chemicals.length + '</div><div class="hub-banner-stat-label">Chemicals</div></div>' +
         '<div><div class="hub-banner-stat-num">' + loggedCount() + '</div><div class="hub-banner-stat-label">Applications</div></div>' +
@@ -1086,7 +1086,7 @@ function renderDashboard() {
       '</div>' +
     '</div></div>' +
     '<div class="section-grid mb-16">' +
-      '<div class="section-tile" onclick="showPanel(\'chemtool\')"><div class="section-tile-top"><span class="section-tile-icon amber">' + IC.flask + '</span><span class="section-tile-name">Tools → Chem Tracking</span></div><div class="section-tile-desc">Catalog, application log, lookup tables, and the feature settings.</div></div>' +
+      '<div class="section-tile" onclick="showPanel(\'chemtool\')"><div class="section-tile-top"><span class="section-tile-icon amber">' + IC.flask + '</span><span class="section-tile-name">Tools → Chemical Tracking</span></div><div class="section-tile-desc">Catalog, application log, lookup tables, and the feature settings.</div></div>' +
       '<div class="section-tile" onclick="showPanel(\'jobs-list\')"><div class="section-tile-top"><span class="section-tile-icon indigo">' + IC.briefcase + '</span><span class="section-tile-name">CRM → Jobs</span></div><div class="section-tile-desc">The Job card: pending chemical cards, Log Application drawer, Complete-Job intercept.</div></div>' +
       '<div class="section-tile" onclick="showPanel(\'customers-list\')"><div class="section-tile-top"><span class="section-tile-icon green">' + IC.user + '</span><span class="section-tile-name">CRM → Contacts</span></div><div class="section-tile-desc">Per-property Treatment History with print export.</div></div>' +
       '<div class="section-tile" onclick="showPanel(\'pricebook\')"><div class="section-tile-top"><span class="section-tile-icon indigo">' + IC.list + '</span><span class="section-tile-name">Price Book &amp; Employees</span></div><div class="section-tile-desc">Per-service default chemicals; applicator licenses that drive the RUP flow.</div></div>' +
@@ -1097,7 +1097,7 @@ function renderDashboard() {
 }
 
 /* ============================================================
-   CHEM TRACKING TOOL (Tools → Chem Tracking)
+   CHEM TRACKING TOOL (Tools → Chemical Tracking)
    Tabs: Chemicals · Applications · Lookup Tables · Settings
    ============================================================ */
 var chemTab = 'chemicals';
@@ -1119,6 +1119,7 @@ function renderChemTool() {
   if (isOwner()) tabs.push(['chemicals', 'Chemicals', IC.flask, QIQ.chemicals.length]);
   tabs.push(['applications', 'Applications', IC.doc, QIQ.applicationRecords.length]);
   if (isOwner()) {
+    tabs.push(['licenses', 'Licenses', IC.shield, QIQ.employees.filter(function (e) { return e.license; }).length]);
     tabs.push(['lookups', 'Lookup Tables', IC.list, null]);
     tabs.push(['settings', 'Settings', IC.gear, null]);
   }
@@ -1135,13 +1136,14 @@ function renderChemTool() {
   var body;
   if (chemTab === 'chemicals') body = chemTabChemicals();
   else if (chemTab === 'applications') body = chemTabApplications();
+  else if (chemTab === 'licenses') body = chemTabLicenses();
   else if (chemTab === 'lookups') body = chemTabLookups();
   else body = chemTabSettings();
 
   host.innerHTML =
     '<div class="page-head-row"><div>' +
-      '<div class="page-title">Chem Tracking</div>' +
-      '<div class="page-sub">Chemical catalog, application records, and compliance settings</div>' +
+      '<div class="page-title">Chemical Tracking</div>' +
+      '<div class="page-sub">Chemical catalog, application records, applicator licenses, and compliance settings</div>' +
     '</div><div>' + headBtn + '</div></div>' +
     '<div class="tool-tabs">' + tabsHtml + '</div>' +
     body;
@@ -1386,6 +1388,70 @@ function chemEditBack() {
   } else { chemDraft = null; closeDrawer(); }
 }
 
+/* ----- Applicator licenses (shared: Licenses tab + Settings tab + Employees) ----- */
+function licenseRowsHtml() {
+  return QIQ.employees.map(function (e) {
+    var initials = e.name.split(' ').map(function (p) { return p[0]; }).join('').slice(0, 2);
+    var lic = e.license
+      ? '<span class="mono">' + esc(e.license.num) + '</span> · ' + esc(e.license.category || '—') + (e.license.state ? ' (' + esc(e.license.state) + ')' : '') + (e.license.expires ? ' · exp ' + esc(e.license.expires) : '')
+      : 'No applicator license on file';
+    return '<div class="person-row" onclick="openLicenseEdit(\'' + e.id + '\')">' +
+      '<span class="person-avatar">' + esc(initials) + '</span>' +
+      '<div style="flex:1;min-width:0;"><div class="cell-main">' + esc(e.name) + '</div>' +
+      '<div class="cell-sub">' + lic + '</div></div>' +
+      '<span class="pill pill-muted">' + esc(e.role) + '</span>' +
+      (e.license ? '<span class="pill pill-success">' + IC.shield + ' Licensed</span>' : '<span class="pill pill-danger">Unlicensed</span>') +
+      '<button class="act-btn" title="Edit license" onclick="event.stopPropagation();openLicenseEdit(\'' + e.id + '\')">' + IC.edit + '</button>' +
+    '</div>';
+  }).join('');
+}
+function chemTabLicenses() {
+  if (!trackingOn()) return trackingOffNotice('Applicator Licenses');
+  var inner =
+    '<div class="warn-banner info" style="margin-top:0;">' + IC.shield + '<div class="warn-banner-body">Licenses drive the <b>RUP acknowledgment flow</b> — a licensed applicator logs restricted products with no interruption; an unlicensed tech must acknowledge supervision first. Category is state-defined free text (no national taxonomy). Also editable from Employees and the Settings tab — it\'s the same list.</div></div>' +
+    '<div class="tbl">' + licenseRowsHtml() + '</div>';
+  return planLocked() ? planLockWrap(inner, 'Applicator Licenses') : inner;
+}
+function openLicenseEdit(empId) {
+  var e = empById(empId);
+  if (!e) return;
+  var lic = e.license || { num: '', state: '', category: '', expires: '' };
+  var body =
+    '<div class="drawer-sec"><div class="drawer-sec-title">Applicator License' +
+      '<span class="tail">' + (e.license ? '<span class="pill pill-success">On file</span>' : '<span class="pill pill-muted">None on file</span>') + '</span></div>' +
+      '<div class="helper-line" style="margin-top:-8px;">Leave the license # blank to remove the license. Category is state-defined free text.</div>' +
+      '<div class="fbox"><div class="fbox-label">License #</div><input class="mono" id="dLicNum" value="' + esc(lic.num) + '" placeholder="e.g. JF-30821-22"></div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0 12px;">' +
+        '<div class="fbox"><div class="fbox-label">State</div><input id="dLicState" value="' + esc(lic.state) + '" placeholder="FL"></div>' +
+        '<div class="fbox"><div class="fbox-label">Category</div><input id="dLicCat" value="' + esc(lic.category) + '" placeholder="e.g. Pest Control 7A"></div>' +
+        '<div class="fbox"><div class="fbox-label">Expiration</div><input id="dLicExp" type="date" value="' + esc(lic.expires) + '"></div>' +
+      '</div>' +
+    '</div>' +
+    '<div class="drawer-sec" style="border-style:dashed;background:var(--zebra);"><div class="helper-line" style="margin:0 2px;">Saving updates the RUP flow immediately — the next restricted-product log for ' + esc(e.name.split(' ')[0]) + ' uses this license.</div></div>';
+  var foot = '<button class="btn btn-ghost" onclick="closeDrawer()">Discard</button>' +
+    '<button class="btn btn-primary" onclick="saveLicenseDrawer(\'' + empId + '\')">Save changes</button>';
+  openDrawer('Edit License — ' + e.name, body, foot, {});
+}
+function saveLicenseDrawer(empId) {
+  var e = empById(empId);
+  var num = document.getElementById('dLicNum').value.trim();
+  if (!num) {
+    e.license = null;
+    toast(e.name + ' now has no license — RUP products will require acknowledgment');
+  } else {
+    e.license = {
+      num: num,
+      state: document.getElementById('dLicState').value.trim(),
+      category: document.getElementById('dLicCat').value.trim(),
+      expires: document.getElementById('dLicExp').value
+    };
+    toast('License saved for ' + e.name);
+  }
+  save();
+  closeDrawer();
+  rerenderCurrent();
+}
+
 /* ----- Tab: Lookup Tables ----- */
 var lookupTab = 'methods';
 var lookupRenaming = null;
@@ -1485,7 +1551,12 @@ function chemTabSettings() {
         '<div class="toggle-row"><div><div class="toggle-row-title">Show in Client Portal <span class="pill pill-info" style="margin-left:6px;' + (QIQ.company.showInClientHub ? '' : 'display:none;') + '" id="hubComingSoon">Coming soon in Client Portal</span></div>' +
           '<div class="toggle-row-sub">Will surface treatment history in the customer portal when Client Portal support ships.</div></div>' +
           '<button class="toggle ' + (QIQ.company.showInClientHub ? 'on' : '') + '" onclick="togglePref(\'showInClientHub\', this)"></button></div>' +
-      '</div></div>';
+      '</div></div>' +
+      '<div class="card"><div class="card-head"><span class="card-icon green">' + IC.shield + '</span>' +
+        '<div class="card-titleblock"><div class="card-title">Applicator Licenses</div><div class="card-sub">Licenses drive the RUP acknowledgment flow. This is the same list as the Licenses tab and Employees — edit it anywhere.</div></div>' +
+        '<div class="card-meta"><button class="btn btn-sm" onclick="chemSetTab(\'licenses\')">Open Licenses tab</button></div></div>' +
+        licenseRowsHtml() +
+      '</div>';
   } else {
     inner +=
       '<div class="warn-banner">' + IC.warn + '<div class="warn-banner-body"><span class="warn-banner-title">Chemical Tracking is off.</span> ' +
@@ -2577,7 +2648,7 @@ function renderInvoice() {
           '<button class="toggle ' + (invoiceShowsChems(j.id) ? 'on' : '') + '" onclick="invToggleOverride()"></button></div>' +
         '<div class="field-hint mt-12">' + (overridden
           ? 'Overriding the company setting (company default: ' + (QIQ.company.showOnInvoice ? 'On' : 'Off') + '). <button class="link-btn" onclick="invClearOverride()">Use company default</button>'
-          : 'Inheriting the company setting (' + (QIQ.company.showOnInvoice ? 'On' : 'Off') + ') from Chem Tracking → Settings.') + '</div>' +
+          : 'Inheriting the company setting (' + (QIQ.company.showOnInvoice ? 'On' : 'Off') + ') from Chemical Tracking → Settings.') + '</div>' +
       '</div></div>';
   }
 
@@ -2755,7 +2826,7 @@ function exportHistoryPDF() {
     'table{width:100%;border-collapse:collapse;font-size:11.5px;} th{text-align:left;border-bottom:2px solid #1a2340;padding:6px 8px;text-transform:uppercase;font-size:9.5px;letter-spacing:.05em;}' +
     'td{border-bottom:1px solid #e6e8ee;padding:7px 8px;vertical-align:top;} @media print { .noprint{display:none;} }</style></head><body>' +
     '<h1>Treatment History — ' + esc(c.name) + '</h1>' +
-    '<div class="sub">' + esc(propLabel) + ' · ' + filtered.length + ' records · generated ' + fmtDate(new Date().toISOString()) + ' by QuoteIQ Chem Tracking</div>' +
+    '<div class="sub">' + esc(propLabel) + ' · ' + filtered.length + ' records · generated ' + fmtDate(new Date().toISOString()) + ' by QuoteIQ Chemical Tracking</div>' +
     '<table><thead><tr><th>Date</th><th>Job</th><th>Chemical</th><th>Total</th><th>Method / Area</th><th>Applicator</th></tr></thead><tbody>' + rows + '</tbody></table>' +
     '<script>window.onload=function(){window.print();}<\/script></body></html>');
   w.document.close();
