@@ -634,7 +634,7 @@ var SEED_VERSION = 1;
 var STORE_KEY = 'qiq-chem-mockup';
 
 function buildSeed() {
-  var d30 = new Date(Date.now() - 30 * 86400000);
+  var d30 = new Date(Date.now() - 25 * 86400000); // ~a month ago; safely inside the 30-day Usage window and >24h for the tech edit rule
   function at(base, h, m) { var d = new Date(base); d.setHours(h, m, 0, 0); return d.toISOString(); }
   // EPA numbers for c4–c15 must be pulled from EPA PPLS before dev seed ships — blank here is intentional (facts-only strategy demo)
   var factsOnly = [
@@ -660,11 +660,11 @@ function buildSeed() {
     chemicals: [
       { id: 'c1', name: 'Talstar P', epa: '279-3206', activeIngredient: 'Bifenthrin 7.9%', category: 'Insecticide',
         rate: { qty: 1, unit: 'oz', per: '1,000 sq ft' }, defaultMethod: 'Perimeter band', rei: 24,
-        maxWind: 10, minTemp: 40, maxTemp: 90, restrictedUse: true,
+        maxWind: 10, minTemp: 40, maxTemp: 90, restrictedUse: true, costPerUnit: 0.70,
         customerInstructions: 'Keep pets & kids off treated areas until dry', active: true },
       { id: 'c2', name: 'Demand CS', epa: '100-1066', activeIngredient: 'Lambda-cyhalothrin 9.7%', category: 'Insecticide',
         rate: { qty: 0.4, unit: 'oz', per: 'gallon' }, defaultMethod: 'Backpack spray', rei: 12,
-        maxWind: 12, minTemp: null, maxTemp: null, restrictedUse: false, customerInstructions: '', active: true },
+        maxWind: 12, minTemp: null, maxTemp: null, restrictedUse: false, costPerUnit: 11.90, customerInstructions: '', active: true },
       { id: 'c3', name: 'Termidor SC', epa: '7969-210', activeIngredient: '', category: 'Termiticide',
         rate: { qty: null, unit: '', per: '—' }, defaultMethod: '', rei: null,
         maxWind: null, minTemp: null, maxTemp: null, restrictedUse: false, customerInstructions: '', active: true }
@@ -698,14 +698,14 @@ function buildSeed() {
         mowing: '', customerNotes: 'Keep pets & kids off treated areas until dry', nextService: '',
         customerNotified: true, notifyMethod: 'text', photos: [1, 2], sensitiveAreas: '', skippedAreas: '',
         applicatorId: 'e2', applicatorName: 'James Castro', licenseNum: 'JF-44210-24', serviceName: 'Pest Control — General',
-        tankMixId: null, loggedAt: at(d30, 9, 41) },
+        costPerUnitSnapshot: 0.70, tankMixId: null, loggedAt: at(d30, 9, 41) },
       { id: 'r2', jobId: 'j4', skip: false, chemicalId: 'c2', chemName: 'Demand CS', epa: '100-1066', category: 'Insecticide',
         qty: 0.4, unit: 'oz', per: 'gallon', total: 1.2, method: 'Backpack spray', target: 'Spiders', area: 'Eaves',
         treatedSqFt: 800, round: '', startTime: '', endTime: '', tempF: 81, windMph: 5, windDir: 'SW', windHand: null,
         windAck: false, rupAck: false, rei: 12, reiOverride: false, watering: '', mowing: '', customerNotes: '',
         nextService: '', customerNotified: true, notifyMethod: 'text', photos: [], sensitiveAreas: '', skippedAreas: '',
         applicatorId: 'e2', applicatorName: 'James Castro', licenseNum: 'JF-44210-24', serviceName: 'Pest Control — General',
-        tankMixId: null, loggedAt: at(d30, 10, 5) }
+        costPerUnitSnapshot: 11.90, tankMixId: null, loggedAt: at(d30, 10, 5) }
     ],
     invoiceOverrides: {}
   };
@@ -773,6 +773,21 @@ function loggedCount() { return QIQ.applicationRecords.filter(function (r) { ret
 function rupAckCount() { return QIQ.applicationRecords.filter(function (r) { return !r.skip && r.rupAck; }).length; }
 function needsSetupCount() { return QIQ.chemicals.filter(function (c) { return c.active && !chemComplete(c); }).length; }
 function activeLookup(key) { return QIQ.lookups[key].filter(function (x) { return x.active; }); }
+/* ---------- Usage & Cost (UPDATE-01) — all spend computed live, never stored ---------- */
+function startOfYear() { var d = new Date(); return new Date(d.getFullYear(), 0, 1); }
+function showCosts() { return isOwner(); } // cost visibility is Owner-only everywhere
+function hasCost(n) { return n !== null && n !== undefined && n !== '' && !isNaN(n); }
+function recordCost(r) { // live per-record cost from the frozen snapshot; blank when no snapshot
+  if (r.skip || !hasCost(r.costPerUnitSnapshot) || !hasCost(r.total)) return null;
+  return round2(Number(r.total) * Number(r.costPerUnitSnapshot));
+}
+function fmtCost(n) { return n == null ? '—' : '$' + Number(n).toFixed(2); }
+function amountsByUnit(records) { // {oz: 12, gal: 3} → "12 oz · 3 gal"
+  var byUnit = {};
+  records.forEach(function (r) { if (r.skip || !r.unit) return; byUnit[r.unit] = round2((byUnit[r.unit] || 0) + Number(r.total || 0)); });
+  var parts = Object.keys(byUnit).map(function (u) { return byUnit[u] + ' ' + u; });
+  return parts.length ? parts.join(' · ') : '—';
+}
 
 /* ---------- Toast / out-of-scope ---------- */
 function toast(msg) {
@@ -1112,12 +1127,13 @@ function gotoAppLog(opts) {
 
 function renderChemTool() {
   var host = document.getElementById('panel-chemtool');
-  // Permission rule: catalog/lookups/settings are owner-only; techs get Applications view-only.
-  if (!isOwner() && chemTab !== 'applications') chemTab = 'applications';
+  // Permission rule: catalog/licenses/lookups/settings are owner-only; techs get Applications + Usage (amount-only).
+  if (!isOwner() && chemTab !== 'applications' && chemTab !== 'usage') chemTab = 'applications';
 
   var tabs = [];
   if (isOwner()) tabs.push(['chemicals', 'Chemicals', IC.flask, QIQ.chemicals.length]);
   tabs.push(['applications', 'Applications', IC.doc, QIQ.applicationRecords.length]);
+  tabs.push(['usage', 'Usage', IC.chart, null]);
   if (isOwner()) {
     tabs.push(['licenses', 'Licenses', IC.shield, QIQ.employees.filter(function (e) { return e.license; }).length]);
     tabs.push(['lookups', 'Lookup Tables', IC.list, null]);
@@ -1136,6 +1152,7 @@ function renderChemTool() {
   var body;
   if (chemTab === 'chemicals') body = chemTabChemicals();
   else if (chemTab === 'applications') body = chemTabApplications();
+  else if (chemTab === 'usage') body = chemTabUsage();
   else if (chemTab === 'licenses') body = chemTabLicenses();
   else if (chemTab === 'lookups') body = chemTabLookups();
   else body = chemTabSettings();
@@ -1261,7 +1278,7 @@ function openChemEdit(id) {
   chemDraft = c ? JSON.parse(JSON.stringify(c)) : {
     id: null, name: '', epa: '', activeIngredient: '', category: '',
     rate: { qty: null, unit: '', per: '1,000 sq ft' }, defaultMethod: '', rei: null,
-    maxWind: null, minTemp: null, maxTemp: null, restrictedUse: false, customerInstructions: '', active: true
+    maxWind: null, minTemp: null, maxTemp: null, restrictedUse: false, costPerUnit: null, customerInstructions: '', active: true
   };
   chemDraft._dirty = false;
   renderChemEditDrawer();
@@ -1298,6 +1315,8 @@ function renderChemEditDrawer() {
         '<div class="fbox"><div class="fbox-label">Per</div><select onchange="chemSetRate(\'per\', this.value)">' + opt(['1,000 sq ft', 'acre', 'gallon', '—'], d.rate.per, '—') + '</select></div>' +
         '<div class="fbox"><div class="fbox-label">Default Method</div><select onchange="chemSet(\'defaultMethod\', this.value)">' + opt(activeLookup('methods'), d.defaultMethod, '— none —') + '</select></div>' +
       '</div>' +
+      '<div class="fbox" style="margin-bottom:0;"><div class="fbox-label">Cost per unit ($) <span style="text-transform:none;font-weight:400;">(optional, per ' + esc(d.rate.unit || 'unit') + ')</span></div><input type="number" step="0.01" min="0" value="' + (hasCost(d.costPerUnit) ? d.costPerUnit : '') + '" oninput="chemSetNum(\'costPerUnit\', this.value)"></div>' +
+      '<div class="helper-line" style="margin-top:8px;margin-bottom:0;">Powers the Usage report. Internal product cost — never shown to customers.</div>' +
     '</div>' +
 
     '<div class="drawer-sec warnsoft"><div class="drawer-sec-title">Label Compliance<span class="tail">' + IC.warn.replace('<svg', '<svg style="width:18px;height:18px;color:var(--warn);stroke-width:2"') + '</span></div>' +
@@ -1536,12 +1555,15 @@ function chemTabSettings() {
       '<div class="card-meta"><button class="toggle ' + (on ? 'on' : '') + '" onclick="toggleMasterTracking()" aria-label="Track Chemicals"></button></div></div></div>';
 
   if (on) {
+    var spend30 = QIQ.applicationRecords.filter(function (r) { return !r.skip && (Date.now() - new Date(r.loggedAt).getTime()) <= 30 * 86400000; })
+      .reduce(function (s, r) { var c = recordCost(r); return s + (c || 0); }, 0);
     inner +=
-      '<div class="stat-tiles">' +
+      '<div class="stat-tiles" style="grid-template-columns:repeat(5,1fr);">' +
         '<div class="stat-tile" onclick="gotoCatalog(\'All\')"><span class="stat-tile-icon gray">' + IC.flask + '</span><div class="stat-tile-num">' + QIQ.chemicals.length + '</div><div class="stat-tile-label">Chemicals</div></div>' +
         '<div class="stat-tile" onclick="gotoCatalog(\'needs\')"><span class="stat-tile-icon red">' + IC.warn + '</span><div class="stat-tile-num red">' + needsSetupCount() + '</div><div class="stat-tile-label">Needs setup</div></div>' +
         '<div class="stat-tile" onclick="gotoAppLog({})"><span class="stat-tile-icon green">' + IC.doc + '</span><div class="stat-tile-num">' + loggedCount() + '</div><div class="stat-tile-label">Applications logged</div></div>' +
         '<div class="stat-tile" onclick="gotoAppLog({rup:true})"><span class="stat-tile-icon warn">' + IC.shield + '</span><div class="stat-tile-num">' + rupAckCount() + '</div><div class="stat-tile-label">RUP acknowledgments</div></div>' +
+        '<div class="stat-tile" onclick="usageState.range=\'30d\';chemSetTab(\'usage\')"><span class="stat-tile-icon green">' + IC.chart + '</span><div class="stat-tile-num">' + fmtCost(round2(spend30)) + '</div><div class="stat-tile-label">Product spend · 30d</div></div>' +
       '</div>' +
       '<div class="card"><div class="card-head"><span class="card-icon">' + IC.doc + '</span>' +
         '<div class="card-titleblock"><div class="card-title">Display preferences</div><div class="card-sub">Where logged chemicals appear for the customer.</div></div></div>' +
@@ -1609,8 +1631,12 @@ function filteredLogRecords() {
   return QIQ.applicationRecords.filter(function (r) {
     if (logFilters.skips) { if (!r.skip) return false; }
     if (logFilters.date !== 'All') {
-      var days = logFilters.date === '30d' ? 30 : 7;
-      if (now - new Date(r.loggedAt).getTime() > days * 86400000) return false;
+      if (logFilters.date === 'ytd') {
+        if (new Date(r.loggedAt) < startOfYear()) return false;
+      } else {
+        var days = logFilters.date === '90d' ? 90 : (logFilters.date === '30d' ? 30 : 7);
+        if (now - new Date(r.loggedAt).getTime() > days * 86400000) return false;
+      }
     }
     if (logFilters.chem && (r.skip || r.chemicalId !== logFilters.chem)) return false;
     if (logFilters.applicator && r.applicatorId !== logFilters.applicator) return false;
@@ -1637,11 +1663,14 @@ function chemTabApplications() {
   QIQ.chemicals.forEach(function (c) { chemOpts += '<option value="' + c.id + '" ' + (logFilters.chem === c.id ? 'selected' : '') + '>' + esc(c.name) + '</option>'; });
   var appOpts = '<option value="">All Applicators</option>';
   QIQ.employees.forEach(function (e) { appOpts += '<option value="' + e.id + '" ' + (logFilters.applicator === e.id ? 'selected' : '') + '>' + esc(e.name) + '</option>'; });
-  var dateOpts = [['All', 'All Time'], ['30d', 'Last 30 Days'], ['7d', 'Last 7 Days']].map(function (d) {
+  var dateOpts = [['All', 'All Time'], ['ytd', 'Year to Date'], ['90d', 'Last 90 Days'], ['30d', 'Last 30 Days'], ['7d', 'Last 7 Days']].map(function (d) {
     return '<option value="' + d[0] + '" ' + (logFilters.date === d[0] ? 'selected' : '') + '>' + d[1] + '</option>';
   }).join('');
 
-  var grid = 'grid-template-columns: 120px 1.6fr 110px 1.3fr 1.2fr 1.2fr 110px;';
+  var costs = showCosts();
+  var grid = costs
+    ? 'grid-template-columns: 115px 1.5fr 100px 1.2fr 1.1fr 90px 1fr 110px;'
+    : 'grid-template-columns: 120px 1.6fr 110px 1.3fr 1.2fr 1.2fr 110px;';
   var rows = list.map(function (r) {
     var j = jobById(r.jobId);
     var cust = j ? custById(j.customerId) : null;
@@ -1660,6 +1689,7 @@ function chemTabApplications() {
         '<div><button class="link-btn mono" onclick="openJob(\'' + r.jobId + '\')">' + esc(j.num) + '</button></div>' +
         '<div class="cell-plain">' + esc(cust.name) + '</div>' +
         '<div class="cell-plain">' + esc(r.applicatorName) + '</div>' +
+        (costs ? '<div class="cell-plain">—</div>' : '') +
         '<div></div>' +
         '<div class="acts">' + acts + '</div>' +
       '</div>';
@@ -1670,17 +1700,32 @@ function chemTabApplications() {
     if (r.reiOverride) flags.push('<span class="pill pill-warn">REI</span>');
     if (r.customerNotified) flags.push('<span class="pill pill-success">Notified</span>');
     if (r.tankMixId) flags.push('<span class="pill pill-info">Mix</span>');
+    var rc = recordCost(r);
     return '<div class="tbl-row" style="' + grid + '">' +
       '<div><div class="cell-main">' + fmtDate(r.loggedAt) + '</div><div class="cell-sub">' + fmtTime(r.loggedAt) + '</div></div>' +
       '<div><div class="cell-main">' + esc(r.chemName) + ' · ' + r.total + ' ' + esc(r.unit) + '</div><div class="cell-sub">' + esc(r.method) + ' · ' + esc(r.area) + '</div></div>' +
       '<div><button class="link-btn mono" onclick="openJob(\'' + r.jobId + '\')">' + esc(j.num) + '</button></div>' +
       '<div><div class="cell-plain">' + esc(cust.name) + '</div><div class="cell-sub">' + esc(r.serviceName) + '</div></div>' +
       '<div><div class="cell-plain">' + esc(r.applicatorName) + '</div><div class="cell-sub">' + (r.licenseNum ? 'Lic ' + esc(r.licenseNum) : 'No license') + '</div></div>' +
+      (costs ? '<div class="cell-main">' + (rc == null ? '<span style="color:var(--muted);font-weight:500;">—</span>' : fmtCost(rc)) + '</div>' : '') +
       '<div class="row-flex-wrap" style="gap:5px;">' + flags.join('') + '</div>' +
       '<div class="acts">' + acts + '</div>' +
     '</div>';
   }).join('');
   if (!rows) rows = '<div class="empty-state">' + IC.doc + '<div>No records match these filters.</div></div>';
+
+  // Totals row for the current filtered view
+  var applied = list.filter(function (r) { return !r.skip; });
+  var totalCost = applied.reduce(function (s, r) { var c = recordCost(r); return s + (c || 0); }, 0);
+  var totalsRow = applied.length
+    ? '<div class="tbl-row tbl-total" style="' + grid + '; background:var(--indigo-soft); border-top:1px solid var(--line); font-weight:700;">' +
+        '<div class="cell-sub" style="font-weight:700;color:var(--body);">Totals</div>' +
+        '<div class="cell-main">' + esc(amountsByUnit(applied)) + ' applied</div>' +
+        '<div></div><div></div><div></div>' +
+        (costs ? '<div class="cell-main">' + fmtCost(round2(totalCost)) + '</div>' : '') +
+        '<div></div><div></div>' +
+      '</div>'
+    : '';
 
   var inner =
     '<div class="toolbar">' +
@@ -1697,10 +1742,12 @@ function chemTabApplications() {
       (isOwner() ? '' : '<span style="font-size:12.5px;color:var(--muted);margin-left:6px;">View-only for your role</span>') +
     '</div>' +
     '<div class="tbl"><div class="tbl-scroll">' +
-      '<div class="tbl-head" style="' + grid + '">' + th('Date') + th('Chemical') + th('Job') + th('Customer') + th('Applicator') + th('Flags') + '<span class="tbl-h" style="justify-content:flex-end;">Actions</span></div>' +
-      rows +
+      '<div class="tbl-head" style="' + grid + '">' + th('Date') + th('Chemical') + th('Job') + th('Customer') + th('Applicator') + (costs ? th('Cost') : '') + th('Flags') + '<span class="tbl-h" style="justify-content:flex-end;">Actions</span></div>' +
+      rows + totalsRow +
     '</div>' +
-    '<div class="tbl-foot"><span class="left">' + list.length + ' record' + (list.length === 1 ? '' : 's') + ' · retained for compliance</span><span>Rows per page: 25</span><span>1–' + list.length + ' of ' + list.length + '</span></div></div>';
+    '<div class="tbl-foot"><span class="left">' + list.length + ' record' + (list.length === 1 ? '' : 's') + ' · retained for compliance</span>' +
+      '<span>' + esc(amountsByUnit(applied)) + ' applied' + (costs ? ' · ' + fmtCost(round2(totalCost)) + ' product cost' : '') + '</span>' +
+      '<span>1–' + list.length + ' of ' + list.length + '</span></div></div>';
 
   return planLocked() ? planLockWrap(inner, 'Applications log') : inner;
 }
@@ -1714,24 +1761,127 @@ function logSearch(v) {
   if (input) { input.focus(); if (pos !== null) input.setSelectionRange(pos, pos); }
 }
 function exportLogCSV() {
-  var rows = [['Date', 'Time', 'Job', 'Customer', 'Property', 'Service', 'Type', 'Skip Reason', 'Chemical', 'EPA Reg #', 'Rate Qty', 'Unit', 'Total Applied', 'Method', 'Target', 'Area', 'Treated Sq Ft', 'Temp F', 'Wind Mph', 'Wind Dir', 'Wind Hand-Measured', 'Wind Acknowledged', 'RUP Acknowledged', 'REI Hours', 'REI Override', 'Customer Notified', 'Notify Method', 'Tank Mix Id', 'Applicator', 'License #']];
+  var costs = showCosts();
+  var head = ['Date', 'Time', 'Job', 'Customer', 'Property', 'Service', 'Type', 'Skip Reason', 'Chemical', 'EPA Reg #', 'Rate Qty', 'Unit', 'Total Applied', 'Method', 'Target', 'Area', 'Treated Sq Ft', 'Temp F', 'Wind Mph', 'Wind Dir', 'Wind Hand-Measured', 'Wind Acknowledged', 'RUP Acknowledged', 'REI Hours', 'REI Override', 'Customer Notified', 'Notify Method', 'Tank Mix Id', 'Applicator', 'License #'];
+  if (costs) head = head.concat(['Cost Per Unit', 'Record Cost']);
+  var rows = [head];
   filteredLogRecords().forEach(function (r) {
     var j = jobById(r.jobId);
     var cust = j ? custById(j.customerId) : null;
+    var row;
     if (r.skip) {
-      rows.push([fmtDate(r.loggedAt), fmtTime(r.loggedAt), j.num, cust.name, cust.properties[j.property], svcById(j.serviceId).name,
-        'skip', r.skipReason + (r.note ? ' — ' + r.note : ''), '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', r.applicatorName, '']);
+      row = [fmtDate(r.loggedAt), fmtTime(r.loggedAt), j.num, cust.name, cust.properties[j.property], svcById(j.serviceId).name,
+        'skip', r.skipReason + (r.note ? ' — ' + r.note : ''), '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', r.applicatorName, ''];
+      if (costs) row = row.concat(['', '']);
     } else {
-      rows.push([fmtDate(r.loggedAt), fmtTime(r.loggedAt), j.num, cust.name, cust.properties[j.property], r.serviceName,
+      row = [fmtDate(r.loggedAt), fmtTime(r.loggedAt), j.num, cust.name, cust.properties[j.property], r.serviceName,
         'application', '', r.chemName, r.epa, r.qty, r.unit, r.total, r.method, r.target, r.area,
         r.treatedSqFt == null ? '' : r.treatedSqFt, r.tempF, r.windMph, r.windDir,
         r.windHand == null ? '' : r.windHand, r.windAck ? 'yes' : 'no', r.rupAck ? 'yes' : 'no',
         r.rei == null ? '' : r.rei, r.reiOverride ? 'yes' : 'no', r.customerNotified ? 'yes' : 'no',
-        r.notifyMethod, r.tankMixId || '', r.applicatorName, r.licenseNum]);
+        r.notifyMethod, r.tankMixId || '', r.applicatorName, r.licenseNum];
+      if (costs) { var rc = recordCost(r); row = row.concat([hasCost(r.costPerUnitSnapshot) ? r.costPerUnitSnapshot : '', rc == null ? '' : rc]); }
     }
+    rows.push(row);
   });
   downloadCSV('chemical-application-log.csv', rows);
   toast('Applications exported — ' + (rows.length - 1) + ' records');
+}
+
+/* ----- Tab: Usage (per-chemical rollup, computed live from records) ----- */
+var usageState = { range: '30d', applicator: '' };
+function usageInRange(r) {
+  if (r.skip) return false;
+  if (usageState.applicator && r.applicatorId !== usageState.applicator) return false;
+  if (usageState.range === 'All') return true;
+  if (usageState.range === 'ytd') return new Date(r.loggedAt) >= startOfYear();
+  var days = usageState.range === '90d' ? 90 : 30;
+  return (Date.now() - new Date(r.loggedAt).getTime()) <= days * 86400000;
+}
+function usageRollup() {
+  var map = {}, order = [];
+  QIQ.applicationRecords.filter(usageInRange).forEach(function (r) {
+    if (!map[r.chemicalId]) { map[r.chemicalId] = { id: r.chemicalId, name: r.chemName, records: [] }; order.push(r.chemicalId); }
+    map[r.chemicalId].records.push(r);
+  });
+  return order.map(function (id) {
+    var g = map[id];
+    var totalCost = 0, anyCost = false;
+    g.records.forEach(function (r) { var c = recordCost(r); if (c != null) { totalCost += c; anyCost = true; } });
+    return { id: id, name: g.name, count: g.records.length, amount: amountsByUnit(g.records), cost: anyCost ? round2(totalCost) : null };
+  });
+}
+function chemTabUsage() {
+  if (!trackingOn()) {
+    return '<div class="warn-banner">' + IC.warn + '<div class="warn-banner-body"><span class="warn-banner-title">Chemical Tracking is off.</span> The Usage report is hidden while tracking is disabled — records are preserved.' +
+      (isOwner() ? '<div class="warn-banner-actions"><button class="btn btn-sm" onclick="chemSetTab(\'settings\')">Enable in Settings</button></div>' : '') +
+      '</div></div>';
+  }
+  var costs = showCosts();
+  var roll = usageRollup();
+  var appOpts = '<option value="">All Applicators</option>';
+  QIQ.employees.forEach(function (e) { appOpts += '<option value="' + e.id + '" ' + (usageState.applicator === e.id ? 'selected' : '') + '>' + esc(e.name) + '</option>'; });
+  var chips = [['30d', 'Last 30 days'], ['90d', 'Last 90 days'], ['ytd', 'Year to date'], ['All', 'All time']].map(function (c) {
+    return '<button class="filter-chip ' + (usageState.range === c[0] ? 'active' : '') + '" onclick="usageSetRange(\'' + c[0] + '\')">' + c[1] + '</button>';
+  }).join('');
+
+  var grid = costs ? 'grid-template-columns: 2fr 120px 1.4fr 130px;' : 'grid-template-columns: 2fr 140px 1.6fr;';
+  var body;
+  if (!roll.length) {
+    body = '<div class="tbl"><div class="empty-state">' + IC.chart + '<div><b>No applications in this range</b><br>Log applications on jobs, or widen the date range above.</div></div></div>';
+  } else {
+    var totCost = 0, anyCost = false;
+    var rows = roll.map(function (u) {
+      if (u.cost != null) { totCost += u.cost; anyCost = true; }
+      return '<div class="tbl-row clickable" style="' + grid + '" onclick="usageRowClick(\'' + u.id + '\')">' +
+        '<div class="cell-main">' + esc(u.name) + '</div>' +
+        '<div class="cell-plain">' + u.count + '</div>' +
+        '<div class="cell-plain">' + esc(u.amount) + '</div>' +
+        (costs ? '<div class="cell-main">' + (u.cost == null ? '<span style="color:var(--muted);font-weight:500;">—</span>' : fmtCost(u.cost)) + '</div>' : '') +
+      '</div>';
+    }).join('');
+    var totalsRow = '<div class="tbl-row tbl-total" style="' + grid + '; background:var(--indigo-soft); border-top:1px solid var(--line); font-weight:700;">' +
+      '<div class="cell-sub" style="font-weight:700;color:var(--body);">' + roll.length + ' chemical' + (roll.length === 1 ? '' : 's') + '</div>' +
+      '<div class="cell-main">' + roll.reduce(function (s, u) { return s + u.count; }, 0) + '</div>' +
+      '<div></div>' +
+      (costs ? '<div class="cell-main">' + fmtCost(round2(totCost)) + '</div>' : '') +
+    '</div>';
+    body = '<div class="tbl"><div class="tbl-scroll">' +
+      '<div class="tbl-head" style="' + grid + '">' + th('Chemical') + th('# Applications') + th('Total Amount') + (costs ? th('Total Cost') : '') + '</div>' +
+      rows + totalsRow +
+    '</div><div class="tbl-foot"><span class="left">Live rollup from application records · click a row to see its applications</span>' +
+      (costs && anyCost ? '<span>' + fmtCost(round2(totCost)) + ' product spend</span>' : '') + '</div></div>';
+  }
+
+  var inner =
+    '<div class="toolbar">' +
+      '<div class="tb-select"><select onchange="usageSetApplicator(this.value)">' + appOpts + '</select></div>' +
+      '<span class="spacer"></span>' +
+      '<button class="btn btn-primary" onclick="exportUsageCSV()">' + IC.download + ' Export CSV</button>' +
+    '</div>' +
+    '<div class="filter-chips">' + chips + (costs ? '' : '<span style="font-size:12.5px;color:var(--muted);margin-left:6px;">Amounts only for your role</span>') + '</div>' +
+    body;
+  return planLocked() ? planLockWrap(inner, 'Usage') : inner;
+}
+function usageSetRange(r) { usageState.range = r; renderChemTool(); }
+function usageSetApplicator(v) { usageState.applicator = v; renderChemTool(); }
+function usageRowClick(chemId) {
+  // hand off to Applications, pre-filtered to this chemical + the active range
+  logFilters = { date: usageState.range, chem: chemId, applicator: usageState.applicator, rup: false, wind: false, skips: false, search: '' };
+  chemSetTab('applications');
+}
+function exportUsageCSV() {
+  var costs = showCosts();
+  var head = ['Chemical', '# Applications', 'Total Amount'];
+  if (costs) head.push('Total Cost');
+  var rows = [head];
+  usageRollup().forEach(function (u) {
+    var row = [u.name, u.count, u.amount];
+    if (costs) row.push(u.cost == null ? '' : u.cost);
+    rows.push(row);
+  });
+  downloadCSV('chemical-usage.csv', rows);
+  toast('Usage exported — ' + (rows.length - 1) + ' chemicals');
 }
 
 /* ============================================================
@@ -1869,7 +2019,8 @@ function recordCard(r, showJobActions) {
       (r.epa ? '<span class="rec-epa mono">EPA ' + esc(r.epa) + '</span>' : '') +
       '<span class="pill pill-muted">' + esc(r.category) + '</span>' +
       (r.tankMixId ? '<span class="pill pill-info">Tank mix</span>' : '') + actions + '</div>' +
-    '<div class="rec-qty">' + r.total + ' ' + esc(r.unit) + ' total · rate ' + r.qty + ' ' + esc(r.unit) + (r.per && r.per !== '—' ? ' / ' + esc(r.per) : '') + '</div>' +
+    '<div class="rec-qty">' + r.total + ' ' + esc(r.unit) + ' total · rate ' + r.qty + ' ' + esc(r.unit) + (r.per && r.per !== '—' ? ' / ' + esc(r.per) : '') +
+      (showCosts() && recordCost(r) != null ? ' · <span style="color:var(--body);">' + fmtCost(recordCost(r)) + ' product cost</span>' : '') + '</div>' +
     '<div class="rec-grid">' +
       '<div class="rec-kv"><div class="k">Method</div><div class="v">' + esc(r.method) + '</div></div>' +
       '<div class="rec-kv"><div class="k">Target</div><div class="v">' + esc(r.target) + '</div></div>' +
@@ -2465,13 +2616,17 @@ function laSave() {
       customerNotified: d.customerNotified, notifyMethod: d.customerNotified ? d.notifyMethod : '',
       photos: d.photos.slice(), sensitiveAreas: d.sensitiveAreas, skippedAreas: d.skippedAreas,
       applicatorId: me.id, applicatorName: me.name, licenseNum: me.license ? me.license.num : '',
-      serviceName: svc.name, tankMixId: tankMixId || null, loggedAt: now
+      serviceName: svc.name, tankMixId: tankMixId || null,
+      costPerUnitSnapshot: hasCost(c.costPerUnit) ? Number(c.costPerUnit) : null, // frozen at save; editing chem cost later never changes history
+      loggedAt: now
     };
   }
 
   if (d.recordId) {
     var r = byId(QIQ.applicationRecords, d.recordId);
     var keep = { id: r.id, applicatorId: r.applicatorId, applicatorName: r.applicatorName, licenseNum: r.licenseNum, loggedAt: r.loggedAt, tankMixId: r.tankMixId };
+    // Same chemical → keep the frozen snapshot; switching chemical re-stamps from the new one.
+    if (r.chemicalId === d.chemicalId) keep.costPerUnitSnapshot = r.costPerUnitSnapshot;
     var updated = buildRecord(d.chemicalId, d.qty, d.total, r.tankMixId);
     Object.keys(updated).forEach(function (k) { r[k] = updated[k]; });
     Object.keys(keep).forEach(function (k) { r[k] = keep[k]; });
