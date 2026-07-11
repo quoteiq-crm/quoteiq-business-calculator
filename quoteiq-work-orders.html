@@ -1,0 +1,1877 @@
+<!-- QuoteIQ — Work Orders (interactive mockup, styled to match the live QuoteIQ platform) -->
+<!--
+  DATA FLOW NOTES FOR THE ENGINEER
+  ================================
+  - The Work Order document is a PURE RENDER FUNCTION over (job + settings + perDocOverrides).
+    No document state is duplicated from the Job; the customer signature and the sent-timestamp
+    are the ONLY writes this feature performs, and both write to the JOB.
+  - A Work Order is NOT a new object. The Job IS the work order: a WO number plus a printable /
+    sendable document face assembled from data the Job already holds (services, materials,
+    chemical application records, notes, photos, schedule, tech assignment).
+  - Chemical rows are consumed READ-ONLY from the chemical-tracking record shape (see the
+    Chemical Tracking mockup seed) — zero schema changes to that feature.
+  - The generic job-attachment pattern (chemicals-on-job, materials-on-job) is what future
+    attachment types plug into: the document's section renderer iterates section configs
+    (WO_SECTIONS below), it does not hardcode five ifs.
+  - Job status drives the document mode: Scheduled -> Dispatch mode; anything else -> Completion
+    mode. There are no WO-specific statuses.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QuoteIQ — Work Orders</title>
+<style>
+  *,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --navy: #1e2b4d; --navy-deep: #16203c; --ink: #1a2340; --body: #45506b; --muted: #6b7280;
+    --page: #f7f8fa; --card: #ffffff; --line: #e6e8ee; --line-2: #eef0f5;
+    --zebra: #f7f8fc; --field: #f6f7f9;
+    --indigo-soft: #eef0fb; --indigo-chip: #e8eafc; --indigo-ink: #2e3d6b;
+    --amber: #f2a93b; --amber-deep: #d78f1f; --amber-soft: #fff4e0;
+    --green: #21a55e; --green-soft: #e9f9f0;
+    --red: #e05252; --red-soft: #fdecec;
+    --warn: #b45309; --warn-soft: #fef3c7;
+    --info: #3b82f6; --info-soft: #eff6ff;
+    --shadow-sm: 0 1px 2px rgba(20,26,50,0.05);
+    --shadow-md: 0 6px 18px rgba(20,26,50,0.08);
+    --shadow-lg: 0 24px 70px rgba(20,26,50,0.16);
+  }
+  html, body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, system-ui, sans-serif;
+    background: var(--page); color: var(--ink);
+    -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+    line-height: 1.5; letter-spacing: -0.005em;
+  }
+  body { min-height: 100vh; }
+  .app-frame { height: 100vh; min-height: 560px; display: flex; background: var(--page); overflow: hidden; }
+
+  /* ============ SIDEBAR (matches live app) ============ */
+  .sidebar { width: 302px; flex-shrink: 0; background: #ffffff; border-right: 1px solid var(--line); display: flex; flex-direction: column; min-height: 0; transition: margin-left 220ms ease; }
+  .sidebar.collapsed { margin-left: -302px; }
+  .side-top { padding: 18px 20px 6px; display: flex; align-items: center; justify-content: space-between; }
+  .max-badge { display: inline-flex; align-items: center; gap: 7px; background: #111318; color: var(--amber); font-size: 13px; font-weight: 800; letter-spacing: 0.04em; padding: 7px 16px; border-radius: 10px; border: none; cursor: pointer; }
+  .max-badge svg { width: 14px; height: 14px; }
+  .side-burger { width: 38px; height: 38px; border: none; background: transparent; border-radius: 10px; color: var(--body); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .side-burger:hover { background: var(--page); }
+  .side-burger svg { width: 22px; height: 22px; stroke-width: 2; }
+  .side-company { display: flex; align-items: center; gap: 12px; padding: 14px 20px 12px; }
+  .side-company-logo { width: 46px; height: 46px; border-radius: 50%; background: radial-gradient(circle at 32% 30%, #2a3350, #10131c); color: var(--amber); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-weight: 800; font-size: 15px; border: 2px solid #d9b25f; }
+  .side-company-name { font-size: 17px; font-weight: 800; color: var(--ink); line-height: 1.2; }
+  .side-company-mail { font-size: 12.5px; color: var(--muted); }
+  .side-company-gear { margin-left: auto; width: 32px; height: 32px; border: none; background: transparent; border-radius: 8px; color: var(--muted); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .side-company-gear:hover { background: var(--page); color: var(--ink); }
+  .side-company-gear svg { width: 17px; height: 17px; stroke-width: 2; }
+  .side-switch { margin: 0 20px 10px; }
+  .side-switch button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 10px; border: 1px solid var(--line); border-radius: 12px; background: #fff; font-size: 13.5px; font-weight: 600; color: var(--ink); cursor: pointer; font-family: inherit; }
+  .side-switch button:hover { background: var(--page); }
+  .side-switch svg { width: 15px; height: 15px; stroke-width: 2; }
+  .side-nav { flex: 1; overflow-y: auto; min-height: 0; padding: 4px 14px 12px; }
+  .side-nav::-webkit-scrollbar { width: 0; }
+  .side-item { display: flex; align-items: center; gap: 12px; padding: 11px 12px; border-radius: 12px; font-size: 15px; font-weight: 600; color: var(--body); cursor: pointer; border: 1px solid transparent; transition: background 130ms ease; user-select: none; }
+  .side-item:hover { background: var(--page); color: var(--ink); }
+  .side-item svg { width: 19px; height: 19px; stroke-width: 2; flex-shrink: 0; }
+  .side-item .chev { margin-left: auto; width: 15px; height: 15px; color: var(--muted); transition: transform 160ms ease; }
+  .side-item.open .chev { transform: rotate(90deg); }
+  .side-new { font-size: 10px; font-weight: 800; background: var(--amber); color: #3d2c05; border-radius: 6px; padding: 2px 7px; letter-spacing: 0.02em; }
+  .side-count { font-size: 12.5px; color: var(--muted); font-weight: 600; }
+  .side-sub { display: none; flex-direction: column; gap: 2px; margin: 2px 0 4px 26px; padding-left: 12px; border-left: 1px solid var(--line-2); }
+  .side-sub.open { display: flex; }
+  .side-sub-item { display: flex; align-items: center; gap: 8px; padding: 9px 12px; border-radius: 11px; font-size: 14px; font-weight: 500; color: var(--body); cursor: pointer; border: 1px solid transparent; }
+  .side-sub-item:hover { background: var(--page); color: var(--ink); }
+  .side-sub-item.active { border-color: var(--line); background: #fff; box-shadow: var(--shadow-sm); color: var(--ink); font-weight: 600; }
+  .side-support { margin: 8px 20px 16px; }
+  .side-support button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px; border: 1px solid var(--line); border-radius: 14px; background: #fff; font-size: 14px; font-weight: 600; color: var(--ink); cursor: pointer; font-family: inherit; }
+  .side-support button:hover { background: var(--page); }
+  .side-support svg { width: 16px; height: 16px; stroke-width: 2; }
+
+  /* ============ TOP HEADER (segmented nav + credits) ============ */
+  .main { flex: 1; display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+  .topbar { flex-shrink: 0; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 14px; padding: 14px 26px 10px; }
+  .topbar-burger { justify-self: start; width: 40px; height: 40px; border: 1px solid var(--line); background: #fff; border-radius: 12px; color: var(--body); cursor: pointer; display: none; align-items: center; justify-content: center; }
+  .topbar-burger.show { display: flex; }
+  .topbar-burger svg { width: 20px; height: 20px; stroke-width: 2; }
+  .seg { display: inline-flex; align-items: center; gap: 4px; background: #eef0f4; padding: 6px; border-radius: 16px; justify-self: center; }
+  .seg-tab { display: inline-flex; align-items: center; gap: 8px; padding: 9px 18px; border-radius: 12px; font-size: 15px; font-weight: 600; color: var(--muted); cursor: pointer; border: none; background: transparent; white-space: nowrap; font-family: inherit; transition: all 150ms ease; }
+  .seg-tab:hover { color: var(--ink); }
+  .seg-tab.active { background: #ffffff; color: var(--ink); box-shadow: var(--shadow-sm); }
+  .seg-tab svg { width: 17px; height: 17px; stroke-width: 2; flex-shrink: 0; }
+  .seg-tab.active svg { color: var(--amber-deep); }
+  .top-actions { justify-self: end; display: inline-flex; align-items: center; gap: 12px; }
+  .credits-pill { display: inline-flex; align-items: center; gap: 8px; padding: 7px 8px 7px 14px; background: var(--amber-soft); border: 1px solid rgba(242,169,59,0.45); border-radius: 14px; cursor: pointer; }
+  .credits-pill:hover { background: #ffedc9; }
+  .credits-pill .bolt { color: var(--amber-deep); display: flex; } .credits-pill .bolt svg { width: 14px; height: 14px; }
+  .credits-pill .num { font-size: 14.5px; font-weight: 800; color: #7a5410; letter-spacing: -0.01em; }
+  .credits-pill .boost { width: 26px; height: 26px; border-radius: 8px; background: linear-gradient(135deg, #f6bd54, #e99a22); display: flex; align-items: center; justify-content: center; color: #fff; }
+  .credits-pill .boost svg { width: 14px; height: 14px; }
+  .top-icon-btn { width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; background: transparent; border: none; border-radius: 12px; cursor: pointer; color: var(--body); position: relative; }
+  .top-icon-btn:hover { background: #eef0f4; }
+  .top-icon-btn svg { width: 21px; height: 21px; stroke-width: 2; }
+  .top-icon-btn .bubble { position: absolute; top: 2px; right: 0; background: #e23b3b; color: #fff; font-size: 10px; font-weight: 800; border-radius: 999px; padding: 2px 6px; border: 2px solid var(--page); }
+
+  /* ============ CONTENT / PANELS ============ */
+  .content { flex: 1; overflow-y: auto; min-height: 0; padding: 10px 28px 110px; }
+  .content-panel { display: none; max-width: 1560px; }
+  .content-panel.active { display: block; }
+  .page-head-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; margin: 14px 0 6px; flex-wrap: wrap; }
+  .page-title { font-size: 29px; font-weight: 800; color: var(--ink); letter-spacing: -0.02em; }
+  .page-sub { font-size: 14.5px; color: var(--muted); margin-top: 3px; }
+
+  /* Buttons */
+  .btn { padding: 11px 18px; border-radius: 13px; font-size: 14px; font-weight: 700; cursor: pointer; border: 1px solid var(--line); background: #ffffff; color: var(--ink); transition: all 150ms ease; font-family: inherit; display: inline-flex; align-items: center; gap: 8px; }
+  .btn:hover { background: var(--page); }
+  .btn-primary { background: var(--navy); color: #fff; border-color: var(--navy); }
+  .btn-primary:hover { background: var(--navy-deep); border-color: var(--navy-deep); }
+  .btn-danger { color: var(--red); border-color: #f4caca; }
+  .btn-danger:hover { background: var(--red-soft); }
+  .btn-ghost { background: transparent; border-color: transparent; }
+  .btn-ghost:hover { background: var(--page); }
+  .btn-sm { padding: 8px 13px; font-size: 13px; border-radius: 11px; }
+  .btn svg { width: 15px; height: 15px; stroke-width: 2; }
+  .btn[disabled] { opacity: 0.45; cursor: not-allowed; }
+  .link-btn { font-size: 13.5px; font-weight: 700; color: var(--navy); cursor: pointer; background: none; border: none; font-family: inherit; padding: 0; }
+  .link-btn:hover { text-decoration: underline; }
+
+  /* Tables (zebra rows, sort glyphs — matches Inventory/Expenses) */
+  .tbl { background: #fff; border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
+  .tbl-scroll { overflow-x: auto; }
+  .tbl-head, .tbl-row { display: grid; align-items: center; gap: 14px; padding: 0 22px; }
+  .tbl-head { min-height: 52px; border-bottom: 1px solid var(--line); }
+  .tbl-h { font-size: 13.5px; font-weight: 700; color: var(--body); display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+  .tbl-h.sortable { cursor: pointer; user-select: none; }
+  .tbl-h.sortable:hover { color: var(--ink); }
+  .tbl-h .sort { display: inline-flex; flex-direction: column; line-height: 0; color: #b6bcc9; }
+  .tbl-h .sort svg { width: 9px; height: 7px; }
+  .tbl-h .sort .on { color: var(--navy); }
+  .tbl-row { min-height: 72px; padding-top: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--line-2); }
+  .tbl-row:last-child { border-bottom: none; }
+  .tbl-row:nth-child(even) { background: var(--zebra); }
+  .tbl-row.clickable { cursor: pointer; }
+  .tbl-row.clickable:hover { background: var(--indigo-soft); }
+  .cell-main { font-size: 15px; font-weight: 600; color: var(--ink); }
+  .cell-sub { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+  .cell-plain { font-size: 14.5px; color: var(--body); font-weight: 500; }
+  .tbl-foot { display: flex; align-items: center; justify-content: flex-end; gap: 26px; padding: 14px 22px; border-top: 1px solid var(--line-2); font-size: 13.5px; color: var(--body); flex-wrap: wrap; }
+  .tbl-foot .left { margin-right: auto; color: var(--muted); }
+  .mono { font-family: 'SF Mono', Menlo, monospace; font-size: 0.93em; letter-spacing: -0.01em; }
+
+  /* Action icon buttons */
+  .acts { display: inline-flex; align-items: center; gap: 8px; justify-content: flex-end; }
+  .act-btn { width: 34px; height: 34px; border-radius: 10px; border: none; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; background: var(--indigo-soft); color: var(--indigo-ink); transition: filter 130ms ease; }
+  .act-btn:hover { filter: brightness(0.95); }
+  .act-btn svg { width: 16px; height: 16px; stroke-width: 2; }
+
+  /* Pills */
+  .pill { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 999px; font-size: 11.5px; font-weight: 700; letter-spacing: 0.02em; white-space: nowrap; }
+  .pill svg { width: 11px; height: 11px; stroke-width: 2.2; }
+  .pill-success { background: var(--green-soft); color: var(--green); }
+  .pill-amber { background: var(--amber-soft); color: #8a5e12; }
+  .pill-danger { background: var(--red-soft); color: var(--red); }
+  .pill-info { background: var(--info-soft); color: var(--info); }
+  .pill-warn { background: var(--warn-soft); color: var(--warn); }
+  .pill-muted { background: #eceef3; color: var(--muted); }
+  .pill-navy { background: var(--indigo-chip); color: var(--indigo-ink); }
+  .pill-clickable { cursor: pointer; }
+  .pill-clickable:hover { filter: brightness(0.96); }
+  .status-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; display: inline-block; }
+  .status-dot.red { background: var(--red); } .status-dot.amber { background: var(--amber); }
+  .status-dot.green { background: var(--green); } .status-dot.gray { background: #c3c9d4; }
+
+  /* Cards */
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; margin-bottom: 16px; overflow: hidden; }
+  .card-head { padding: 16px 22px; border-bottom: 1px solid var(--line-2); display: flex; align-items: flex-start; gap: 14px; flex-wrap: wrap; }
+  .card-icon { width: 38px; height: 38px; border-radius: 11px; background: var(--indigo-soft); color: var(--indigo-ink); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .card-icon svg { width: 18px; height: 18px; stroke-width: 2; }
+  .card-icon.amber { background: var(--amber-soft); color: var(--amber-deep); }
+  .card-icon.green { background: var(--green-soft); color: var(--green); }
+  .card-icon.red { background: var(--red-soft); color: var(--red); }
+  .card-icon.navy { background: var(--navy); color: var(--amber); }
+  .card-titleblock { flex: 1; min-width: 200px; }
+  .card-title-row { display: flex; align-items: center; gap: 10px; margin-bottom: 2px; flex-wrap: wrap; }
+  .card-title { font-size: 16px; font-weight: 700; color: var(--ink); letter-spacing: -0.01em; }
+  .card-sub { font-size: 13px; color: var(--body); line-height: 1.5; }
+  .card-meta { display: flex; align-items: center; gap: 10px; flex-shrink: 0; flex-wrap: wrap; }
+  .card-body { padding: 18px 22px; }
+  .card.expandable .card-head { cursor: pointer; }
+  .card .expand-chev { color: var(--muted); transition: transform 160ms ease; align-self: center; }
+  .card .expand-chev svg { width: 17px; height: 17px; stroke-width: 2; }
+  .card.expanded .expand-chev { transform: rotate(180deg); }
+  .card.expandable .card-body { display: none; }
+  .card.expandable.expanded .card-body { display: block; }
+
+  /* Sub-tabs (underline style) */
+  .subtabs { display: flex; align-items: center; gap: 26px; border-bottom: 1px solid var(--line); margin-bottom: 18px; overflow-x: auto; }
+  .subtab { display: inline-flex; align-items: center; gap: 8px; padding: 11px 2px 13px; font-size: 14.5px; font-weight: 600; color: var(--muted); background: none; border: none; border-bottom: 2.5px solid transparent; margin-bottom: -1px; cursor: pointer; font-family: inherit; white-space: nowrap; }
+  .subtab:hover { color: var(--ink); }
+  .subtab.active { color: var(--ink); border-bottom-color: var(--navy); font-weight: 700; }
+
+  /* Fields — page forms */
+  .field-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px 18px; }
+  .field-grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+  .field { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+  .field.span-2 { grid-column: span 2; }
+  .field-label { font-size: 12px; font-weight: 600; color: var(--muted); }
+  .field-hint { font-size: 12px; color: var(--muted); line-height: 1.45; margin-top: 3px; }
+  .qiq-input { width: 100%; font-family: inherit; font-size: 14.5px; padding: 11px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--field); color: var(--ink); outline: none; transition: border-color 140ms ease; }
+  .qiq-input:focus { border-color: var(--navy); background: #fff; }
+  .qiq-select { width: 100%; font-family: inherit; font-size: 14.5px; padding: 11px 38px 11px 14px; border: 1px solid var(--line); border-radius: 12px; background-color: var(--field); color: var(--ink); cursor: pointer; outline: none; font-weight: 500; appearance: none; background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'><polyline points='6 9 12 15 18 9'/></svg>"); background-repeat: no-repeat; background-position: right 12px center; background-size: 15px; }
+  .qiq-select:focus { border-color: var(--navy); }
+  .textarea { width: 100%; padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; font-size: 14.5px; color: var(--ink); font-family: inherit; background: var(--field); resize: vertical; min-height: 84px; line-height: 1.5; outline: none; }
+  .textarea:focus { border-color: var(--navy); background: #fff; }
+  .toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+  .toggle-row-title { font-size: 15px; font-weight: 700; color: var(--ink); }
+  .toggle-row-sub { font-size: 13px; color: var(--muted); margin-top: 2px; line-height: 1.5; }
+
+  /* Toggle (navy on) */
+  .toggle { position: relative; width: 44px; height: 25px; background: #d7dbe4; border-radius: 999px; cursor: pointer; transition: background 200ms ease; flex-shrink: 0; border: none; padding: 0; }
+  .toggle::after { content: ''; position: absolute; top: 2.5px; left: 3px; width: 20px; height: 20px; background: #ffffff; border-radius: 50%; transition: left 200ms cubic-bezier(0.32,0.72,0,1); box-shadow: var(--shadow-sm); }
+  .toggle.on { background: var(--navy); }
+  .toggle.on::after { left: 21px; }
+  .toggle.mini { width: 38px; height: 22px; }
+  .toggle.mini::after { width: 17px; height: 17px; top: 2.5px; }
+  .toggle.mini.on::after { left: 18px; }
+
+  /* Check chips */
+  .check-chips { display: flex; flex-wrap: wrap; gap: 10px; }
+  .check-chip { display: inline-flex; align-items: center; gap: 8px; padding: 11px 18px; border-radius: 12px; border: 1px solid var(--line); background: #fff; font-size: 14px; font-weight: 600; color: var(--ink); cursor: pointer; font-family: inherit; transition: all 130ms ease; }
+  .check-chip:hover { border-color: var(--navy); }
+  .check-chip.on { background: var(--indigo-chip); border-color: var(--indigo-chip); color: var(--indigo-ink); }
+  .check-chip svg { width: 15px; height: 15px; stroke-width: 2.4; display: none; }
+  .check-chip.on svg { display: block; }
+  .check-chip.disabled { opacity: 0.45; cursor: not-allowed; }
+  .check-chip.disabled:hover { border-color: var(--line); }
+  .check-chip .sub { font-size: 11.5px; font-weight: 500; color: var(--muted); }
+
+  /* ============ DRAWER (slide-over — Edit Product pattern) ============ */
+  .drawer-overlay { position: fixed; inset: 0; background: rgba(18,23,42,0.42); z-index: 190; display: flex; justify-content: flex-end; }
+  .drawer { width: 700px; max-width: 94vw; height: calc(100vh - 24px); margin: 12px 12px 12px 0; background: #fff; border-radius: 20px; box-shadow: var(--shadow-lg); display: flex; flex-direction: column; min-height: 0; animation: drawerIn 240ms cubic-bezier(0.32,0.72,0,1); }
+  .drawer.wide { width: 780px; }
+  .drawer.xwide { width: 880px; }
+  @keyframes drawerIn { from { transform: translateX(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+  .drawer-head { flex-shrink: 0; display: grid; grid-template-columns: 44px 1fr 44px; align-items: center; padding: 18px 20px 12px; }
+  .drawer-back, .drawer-x { width: 40px; height: 40px; border: none; background: transparent; border-radius: 12px; cursor: pointer; color: var(--ink); display: flex; align-items: center; justify-content: center; }
+  .drawer-back:hover, .drawer-x:hover { background: var(--page); }
+  .drawer-back svg, .drawer-x svg { width: 22px; height: 22px; stroke-width: 2; }
+  .drawer-title { text-align: center; font-size: 21px; font-weight: 800; color: var(--ink); letter-spacing: -0.01em; }
+  .drawer-body { flex: 1; overflow-y: auto; min-height: 0; padding: 6px 24px 20px; }
+
+  /* Modal (centered) */
+  .qiq-modal-overlay { position: fixed; inset: 0; background: rgba(18,23,42,0.5); z-index: 240; display: flex; align-items: center; justify-content: center; padding: 20px; }
+  .qiq-modal { background: #fff; border-radius: 20px; width: 100%; max-width: 560px; box-shadow: var(--shadow-lg); max-height: 90vh; overflow-y: auto; animation: modalIn 200ms ease; }
+  @keyframes modalIn { from { transform: translateY(10px); opacity: 0; } to { transform: none; opacity: 1; } }
+  .qiq-modal-head { display: grid; grid-template-columns: 40px 1fr 40px; align-items: center; padding: 18px 18px 4px; }
+  .qiq-modal-title { text-align: center; font-size: 19px; font-weight: 800; color: var(--ink); }
+  .qiq-modal-x { width: 36px; height: 36px; border: none; background: transparent; border-radius: 10px; color: var(--ink); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .qiq-modal-x:hover { background: var(--page); }
+  .qiq-modal-x svg { width: 18px; height: 18px; stroke-width: 2; }
+  .qiq-modal-body { padding: 12px 26px 20px; font-size: 14.5px; color: var(--body); line-height: 1.6; }
+  .qiq-modal-foot { display: flex; justify-content: flex-end; gap: 12px; padding: 0 26px 22px; flex-wrap: wrap; }
+
+  /* Info / warn banners */
+  .warn-banner { display: flex; gap: 12px; align-items: flex-start; background: var(--warn-soft); color: var(--warn); border: 1px solid #f0dc9a; border-radius: 14px; padding: 13px 16px; font-size: 13.5px; line-height: 1.55; margin: 12px 0; }
+  .warn-banner svg { width: 17px; height: 17px; flex-shrink: 0; margin-top: 2px; stroke-width: 2; }
+  .warn-banner.info { background: var(--info-soft); color: var(--info); border-color: #c4dcfd; }
+  .warn-banner-body { flex: 1; }
+  .warn-banner-title { font-weight: 800; }
+
+  /* Toast */
+  .toast-root { position: fixed; bottom: 26px; left: 50%; transform: translateX(-50%); z-index: 400; display: flex; flex-direction: column; gap: 8px; align-items: center; pointer-events: none; }
+  .toast { background: var(--navy); color: #fff; padding: 12px 20px; border-radius: 13px; font-size: 14px; font-weight: 600; box-shadow: var(--shadow-lg); animation: toastIn 200ms ease; max-width: 520px; text-align: center; }
+  @keyframes toastIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+  /* Demo controls */
+  .demo-fab { position: fixed; right: 24px; bottom: 24px; width: 54px; height: 54px; border-radius: 50%; background: #111318; color: var(--amber); border: none; cursor: pointer; z-index: 210; display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow-lg); transition: transform 150ms ease; }
+  .demo-fab:hover { transform: scale(1.06); }
+  .demo-fab svg { width: 24px; height: 24px; stroke-width: 2; }
+  .demo-panel { position: fixed; right: 24px; bottom: 88px; width: 320px; background: #fff; border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--shadow-lg); z-index: 210; padding: 20px; display: none; }
+  .demo-panel.open { display: block; animation: toastIn 180ms ease; }
+  body.drawer-active .demo-fab { right: auto; left: 24px; }
+  body.drawer-active .demo-panel { right: auto; left: 24px; }
+  .demo-panel-title { font-size: 15px; font-weight: 800; color: var(--ink); display: flex; align-items: center; gap: 9px; margin-bottom: 14px; }
+  .demo-panel-title svg { width: 16px; height: 16px; color: var(--amber-deep); stroke-width: 2; }
+  .demo-label { font-size: 11px; font-weight: 700; color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; margin: 15px 0 8px; }
+  .demo-label:first-of-type { margin-top: 0; }
+  .demo-seg { display: flex; gap: 4px; background: #eef0f4; padding: 4px; border-radius: 12px; }
+  .demo-seg button { flex: 1; padding: 8px 4px; border-radius: 9px; font-size: 12px; font-weight: 600; color: var(--body); cursor: pointer; border: none; background: transparent; font-family: inherit; transition: all 150ms ease; }
+  .demo-seg button.active { background: #fff; color: var(--ink); box-shadow: var(--shadow-sm); font-weight: 700; }
+  .demo-note { font-size: 11.5px; color: var(--muted); line-height: 1.5; margin-top: 8px; }
+
+  /* Permission lock */
+  .perm-placeholder { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 90px 30px; color: var(--muted); text-align: center; }
+  .perm-placeholder svg { width: 44px; height: 44px; color: #c8cdd8; stroke-width: 1.6; }
+  .perm-placeholder-title { font-size: 16px; font-weight: 700; color: var(--body); }
+
+  /* Dashboard hub */
+  .hub-banner { background: linear-gradient(135deg, #16203c 0%, #253356 100%); color: #ffffff; border-radius: 18px; padding: 26px 28px; margin: 14px 0 20px; position: relative; overflow: hidden; }
+  .hub-banner::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at 88% 15%, rgba(242,169,59,0.22) 0%, transparent 55%); pointer-events: none; }
+  .hub-banner-inner { position: relative; z-index: 1; }
+  .hub-banner-eyebrow { display: inline-flex; align-items: center; gap: 7px; font-size: 11px; font-weight: 800; color: var(--amber); letter-spacing: 0.07em; text-transform: uppercase; margin-bottom: 10px; }
+  .hub-banner-title { font-size: 23px; font-weight: 800; margin-bottom: 7px; letter-spacing: -0.01em; }
+  .hub-banner-desc { font-size: 14px; color: rgba(255,255,255,0.72); line-height: 1.65; max-width: 620px; }
+  .hub-banner-stats { display: flex; gap: 26px; margin-top: 18px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.12); flex-wrap: wrap; }
+  .hub-banner-stat-num { font-size: 20px; font-weight: 800; color: #ffffff; line-height: 1; }
+  .hub-banner-stat-label { font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.55); letter-spacing: 0.05em; text-transform: uppercase; margin-top: 5px; }
+  .section-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+  .section-tile { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 18px 20px; cursor: pointer; transition: all 150ms ease; display: flex; flex-direction: column; gap: 9px; }
+  .section-tile:hover { border-color: var(--navy); box-shadow: var(--shadow-md); transform: translateY(-1px); }
+  .section-tile-top { display: flex; align-items: center; gap: 12px; }
+  .section-tile-icon { width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .section-tile-icon svg { width: 19px; height: 19px; stroke-width: 2; }
+  .section-tile-icon.amber { background: var(--amber-soft); color: var(--amber-deep); }
+  .section-tile-icon.indigo { background: var(--indigo-soft); color: var(--indigo-ink); }
+  .section-tile-icon.green { background: var(--green-soft); color: var(--green); }
+  .section-tile-name { font-size: 15.5px; font-weight: 700; color: var(--ink); }
+  .section-tile-desc { font-size: 13px; color: var(--body); line-height: 1.5; }
+  .flow-row { display: flex; align-items: flex-start; gap: 14px; padding: 13px 2px; border-bottom: 1px solid var(--line-2); }
+  .flow-row:last-child { border-bottom: none; }
+  .flow-num { width: 26px; height: 26px; border-radius: 8px; background: var(--navy); color: #fff; font-size: 12.5px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+  .flow-body { flex: 1; min-width: 0; }
+  .flow-name { font-size: 14.5px; font-weight: 700; color: var(--ink); }
+  .flow-desc { font-size: 13px; color: var(--body); margin-top: 1px; line-height: 1.5; }
+
+  /* Job detail */
+  .job-head-card { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 20px 24px; margin: 14px 0 18px; display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+  .job-head-body { flex: 1; min-width: 240px; }
+  .job-head-num { font-size: 21px; font-weight: 800; color: var(--ink); display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .job-head-meta { font-size: 14px; color: var(--body); margin-top: 4px; }
+  .job-head-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .back-link { display: inline-flex; align-items: center; gap: 7px; font-size: 14px; font-weight: 700; color: var(--navy); background: none; border: none; cursor: pointer; padding: 0; margin: 12px 0 0; font-family: inherit; }
+  .back-link:hover { text-decoration: underline; }
+  .back-link svg { width: 17px; height: 17px; stroke-width: 2; }
+
+  /* Record cards (Chemicals on the job Report tab — read-only) */
+  .rec-card { border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; margin-bottom: 12px; background: var(--zebra); }
+  .rec-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .rec-name { font-size: 15px; font-weight: 700; color: var(--ink); }
+  .rec-epa { font-size: 12px; color: var(--muted); }
+  .rec-qty { font-size: 13.5px; color: var(--body); margin-top: 5px; font-weight: 600; }
+  .rec-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px 16px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line-2); }
+  .rec-kv .k { font-size: 10.5px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+  .rec-kv .v { font-size: 13px; font-weight: 600; color: var(--ink); margin-top: 2px; }
+  .rec-pills { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 12px; }
+
+  /* Photos */
+  .photo-strip { display: flex; gap: 10px; flex-wrap: wrap; }
+  .photo-tile { width: 88px; height: 88px; border-radius: 12px; overflow: hidden; position: relative; border: 1px solid var(--line); flex-shrink: 0; }
+  .photo-tile svg { width: 100%; height: 100%; display: block; }
+
+  /* Sign-off */
+  .sig-display { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+  .sig-display .sig-art { min-width: 200px; }
+  .sig-img { max-height: 74px; display: block; }
+  .sig-script { font-family: 'Brush Script MT', 'Segoe Script', 'Snell Roundhand', cursive; font-style: italic; font-size: 34px; color: var(--ink); line-height: 1.15; }
+  .sig-meta-name { font-size: 14px; font-weight: 700; color: var(--ink); }
+  .sig-meta-time { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+  .sig-empty { border: 1.5px dashed #c8cdd8; border-radius: 12px; padding: 26px 20px; display: flex; flex-direction: column; align-items: center; gap: 12px; color: var(--muted); font-size: 13.5px; text-align: center; }
+
+  /* Signature modal */
+  .sig-tabs { display: flex; gap: 4px; background: #eef0f4; padding: 4px; border-radius: 12px; margin-bottom: 14px; }
+  .sig-tabs button { flex: 1; padding: 9px 4px; border-radius: 9px; font-size: 13px; font-weight: 600; color: var(--body); cursor: pointer; border: none; background: transparent; font-family: inherit; }
+  .sig-tabs button.active { background: #fff; color: var(--ink); box-shadow: var(--shadow-sm); font-weight: 700; }
+  .sig-pad-label { font-size: 11px; font-weight: 800; letter-spacing: 0.07em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+  .sig-canvas-wrap { position: relative; border: 1.5px dashed #c8cdd8; border-radius: 12px; background: #fff; }
+  .sig-canvas-wrap canvas { display: block; width: 100%; height: 200px; border-radius: 12px; touch-action: none; cursor: crosshair; }
+  .sig-clear { position: absolute; right: 10px; bottom: 10px; }
+  .sig-type-preview { border: 1.5px dashed #c8cdd8; border-radius: 12px; background: #fff; min-height: 86px; display: flex; align-items: center; justify-content: center; padding: 10px 16px; margin-top: 10px; overflow: hidden; }
+  .sig-type-preview span { font-family: 'Brush Script MT', 'Segoe Script', 'Snell Roundhand', cursive; font-style: italic; font-size: 38px; color: var(--ink); white-space: nowrap; }
+  .sig-type-preview span:empty::before { content: 'Signature preview'; font-family: inherit; font-size: 14px; font-style: normal; color: #c8cdd8; }
+
+  /* ============ WORK ORDER DOCUMENT (paper) ============ */
+  .wo-toolbar { position: sticky; top: 0; z-index: 40; background: #fff; display: flex; gap: 10px; align-items: center; padding: 10px 4px 12px; border-bottom: 1px solid var(--line-2); margin-bottom: 18px; flex-wrap: wrap; }
+  .wo-sent-line { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--green); font-weight: 700; }
+  .wo-sent-line svg { width: 13px; height: 13px; stroke-width: 2.4; }
+  .sections-host { position: relative; margin-left: auto; }
+  .sections-pop { position: absolute; top: 46px; right: 0; background: #fff; border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow-lg); z-index: 60; width: 300px; padding: 14px 16px; }
+  .sections-pop-title { font-size: 12px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+  .sections-pop-sub { font-size: 12px; color: var(--muted); line-height: 1.45; margin-bottom: 8px; }
+  .sections-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--line-2); }
+  .sections-row:last-of-type { border-bottom: none; }
+  .sections-row-label { font-size: 13.5px; font-weight: 600; color: var(--ink); }
+  .sections-row-sub { font-size: 11px; color: var(--muted); margin-top: 1px; }
+  .sections-row select { font-family: inherit; font-size: 12.5px; font-weight: 600; padding: 5px 8px; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--ink); outline: none; cursor: pointer; }
+  .sections-reset { margin-top: 10px; }
+
+  .wo-paper { background: #fff; border: 1px solid var(--line); border-radius: 8px; box-shadow: var(--shadow-md); max-width: 720px; margin: 0 auto 34px; padding: 42px 46px 34px; position: relative; }
+  .wo-doc-top { display: flex; justify-content: space-between; gap: 24px; margin-bottom: 26px; }
+  .wo-brand { font-size: 20px; font-weight: 800; color: var(--ink); letter-spacing: -0.02em; }
+  .wo-brand span { color: var(--amber-deep); }
+  .wo-brand-lines { font-size: 12px; color: var(--body); line-height: 1.65; margin-top: 5px; }
+  .wo-doc-title { font-size: 23px; font-weight: 800; color: var(--ink); letter-spacing: 0.08em; text-align: right; }
+  .wo-doc-meta { text-align: right; font-size: 12.5px; color: var(--muted); line-height: 1.7; margin-top: 4px; }
+  .wo-doc-meta .num { font-weight: 800; color: var(--ink); }
+  .wo-doc-meta .pill { margin-top: 5px; }
+  .wo-parties { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+  .wo-party-label { font-size: 10.5px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 5px; }
+  .wo-party { font-size: 13px; color: var(--body); line-height: 1.6; }
+  .wo-party b { color: var(--ink); }
+  .wo-schedule { display: flex; gap: 28px; flex-wrap: wrap; background: var(--zebra); border: 1px solid var(--line-2); border-radius: 10px; padding: 13px 18px; margin-bottom: 8px; }
+  .wo-schedule-kv .k { font-size: 10px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 0.07em; }
+  .wo-schedule-kv .v { font-size: 13px; font-weight: 700; color: var(--ink); margin-top: 2px; }
+  .wo-sec-label { font-size: 10.5px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 0.09em; padding-bottom: 7px; border-bottom: 2px solid var(--ink); margin-top: 24px; }
+  .wo-table { width: 100%; border-collapse: collapse; }
+  .wo-table th { text-align: left; font-size: 10.5px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; padding: 9px 10px 7px 0; border-bottom: 1px solid var(--line); }
+  .wo-table td { font-size: 13px; color: var(--ink); padding: 10px 10px 10px 0; border-bottom: 1px solid var(--line-2); vertical-align: top; }
+  .wo-table tr:last-child td { border-bottom: none; }
+  .wo-table .r { text-align: right; padding-right: 0; }
+  .wo-table td .sub { font-size: 11.5px; color: var(--muted); margin-top: 1px; }
+  .wo-table.chem { table-layout: auto; }
+  .wo-table.chem th { font-size: 9px; padding: 8px 6px 6px 0; }
+  .wo-table.chem td { font-size: 11px; padding: 8px 6px 8px 0; }
+  .wo-subtotal { display: flex; justify-content: flex-end; gap: 34px; font-size: 13.5px; font-weight: 800; color: var(--ink); border-top: 2px solid var(--ink); padding-top: 9px; margin-top: 6px; }
+  .wo-callout { display: flex; gap: 11px; align-items: flex-start; background: var(--amber-soft); border: 1px solid rgba(242,169,59,0.45); border-radius: 10px; padding: 12px 15px; font-size: 13px; color: #6e4a0d; line-height: 1.55; margin-top: 14px; }
+  .wo-callout svg { width: 16px; height: 16px; flex-shrink: 0; margin-top: 1px; stroke-width: 2; color: var(--amber-deep); }
+  .wo-note { font-size: 13px; color: var(--body); line-height: 1.6; padding: 10px 0 2px; }
+  .wo-next-row { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--ink); font-weight: 600; padding: 12px 0 2px; }
+  .wo-next-row svg { width: 15px; height: 15px; stroke-width: 2; color: var(--indigo-ink); }
+  .wo-sig-zone { margin-top: 8px; }
+  .wo-sig-grid { display: grid; grid-template-columns: 1.4fr 1fr; gap: 22px; align-items: end; padding-top: 12px; }
+  .wo-sig-art { border-bottom: 1.5px solid var(--ink); padding: 4px 4px 8px; min-height: 66px; display: flex; align-items: flex-end; }
+  .wo-sig-cap { font-size: 10.5px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-top: 6px; }
+  .wo-sig-name { font-size: 13px; font-weight: 700; color: var(--ink); }
+  .wo-sig-time { font-size: 11.5px; color: var(--muted); margin-top: 1px; }
+  .wo-tech-line { font-size: 12.5px; color: var(--body); }
+  .wo-tech-line b { color: var(--ink); }
+  .wo-sig-pending { border: 1.5px dashed #c8cdd8; border-radius: 10px; padding: 22px 18px; display: flex; flex-direction: column; align-items: center; gap: 10px; color: var(--muted); font-size: 12.5px; margin-top: 12px; text-align: center; }
+  .wo-invoice-chip { margin-top: 18px; }
+  .wo-doc-footer { margin-top: 30px; padding-top: 14px; border-top: 1px solid var(--line-2); text-align: center; }
+  .wo-doc-footer-text { font-size: 12.5px; color: var(--body); line-height: 1.55; }
+  .wo-doc-footer-micro { font-size: 10.5px; color: #b6bcc9; margin-top: 6px; letter-spacing: 0.03em; }
+  .wo-watermark { display: inline-flex; align-items: center; gap: 6px; font-size: 10.5px; font-weight: 800; letter-spacing: 0.07em; text-transform: uppercase; color: var(--muted); background: #eceef3; border-radius: 999px; padding: 4px 12px; margin-bottom: 10px; }
+  .wo-watermark svg { width: 12px; height: 12px; stroke-width: 2; flex-shrink: 0; }
+
+  /* Send modal */
+  .send-msg-label { font-size: 11px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin: 14px 0 6px; }
+  .send-helper { font-size: 12px; color: var(--red); margin-top: 8px; }
+
+  /* Empty states + misc */
+  .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 44px 20px; color: var(--muted); font-size: 14px; text-align: center; }
+  .empty-state svg { width: 40px; height: 40px; color: #c8cdd8; stroke-width: 1.5; }
+  .row-flex { display: flex; align-items: center; gap: 10px; }
+  .row-flex-wrap { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .spacer { flex: 1; }
+  .mb-8 { margin-bottom: 8px; } .mb-12 { margin-bottom: 12px; } .mb-16 { margin-bottom: 16px; }
+  .mt-12 { margin-top: 12px; } .mt-16 { margin-top: 16px; }
+
+  /* Settings hub rows */
+  .sub-tile { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px 20px; cursor: pointer; transition: all 150ms ease; display: flex; align-items: center; gap: 14px; margin-bottom: 10px; }
+  .sub-tile:hover { border-color: var(--navy); box-shadow: var(--shadow-sm); }
+  .sub-tile-icon { width: 38px; height: 38px; border-radius: 10px; background: var(--indigo-soft); color: var(--indigo-ink); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .sub-tile-icon svg { width: 17px; height: 17px; stroke-width: 2; }
+  .sub-tile-body { flex: 1; min-width: 0; }
+  .sub-tile-title { font-size: 14.5px; font-weight: 700; color: var(--ink); }
+  .sub-tile-desc { font-size: 12.5px; color: var(--body); line-height: 1.45; margin-top: 1px; }
+  .sub-tile-arrow { color: var(--muted); flex-shrink: 0; }
+  .sub-tile-arrow svg { width: 16px; height: 16px; stroke-width: 2; }
+  .all-group-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin: 20px 0 10px; padding-bottom: 6px; border-bottom: 1px solid var(--line); }
+
+  /* ============ PRINT — isolate the paper document ============ */
+  #printRoot { display: none; }
+  @media print {
+    @page { margin: 0.5in; }
+    html, body { background: #fff; }
+    body > *:not(#printRoot) { display: none !important; }
+    #printRoot { display: block !important; }
+    #printRoot .wo-paper { box-shadow: none; border: none; border-radius: 0; max-width: none; margin: 0; padding: 0; }
+    #printRoot .no-print { display: none !important; }
+    #printRoot .wo-sec-label { break-after: avoid; }
+    #printRoot table, #printRoot .wo-callout, #printRoot .wo-sig-zone { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+  <div class="app-frame">
+
+    <!-- ============ SIDEBAR ============ -->
+    <aside class="sidebar" id="sidebar">
+      <div class="side-top">
+        <button class="max-badge" onclick="outOfScope('Plan & billing')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M2.5 8l4.6 3.2L12 4.5l4.9 6.7L21.5 8 19 18H5z"/></svg>MAX</button>
+        <button class="side-burger" onclick="toggleSidebar()" title="Collapse menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+      </div>
+      <div class="side-company">
+        <div class="side-company-logo">A</div>
+        <div>
+          <div class="side-company-name">Acme Company</div>
+          <div class="side-company-mail">test@gmail.com</div>
+        </div>
+        <button class="side-company-gear" title="Settings" onclick="showPanel('settings-hub')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg></button>
+      </div>
+      <div class="side-switch"><button onclick="outOfScope('Switch Company')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 014-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>Switch Company</button></div>
+
+      <nav class="side-nav">
+        <div class="side-item" onclick="outOfScope('Create')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Create</div>
+        <div class="side-item" onclick="outOfScope('AI AutoPilot')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 3l1.9 5.6 5.6 1.4-5.6 1.9L12 17.5l-1.9-5.6L4.5 10l5.6-1.4z"/><path d="M19 15l.6 1.8 1.9.7-1.9.7L19 20l-.6-1.8-1.9-.7 1.9-.7z"/></svg>AI AutoPilot<span class="side-new">NEW</span></div>
+        <div class="side-item" data-nav="dashboard" onclick="showPanel('dashboard')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Dashboard</div>
+
+        <div class="side-item open" id="grpCrm" onclick="toggleGroup('Crm')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>CRM<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="9 18 15 12 9 6"/></svg></div>
+        <div class="side-sub open" id="subCrm">
+          <div class="side-sub-item" onclick="outOfScope('Contacts')">Contacts</div>
+          <div class="side-sub-item" data-nav="jobs-list" onclick="showPanel('jobs-list')">Jobs</div>
+          <div class="side-sub-item" onclick="outOfScope('Estimates')">Estimates</div>
+          <div class="side-sub-item" onclick="outOfScope('Invoices')">Invoices</div>
+          <div class="side-sub-item" onclick="outOfScope('Expenses')">Expenses</div>
+          <div class="side-sub-item" onclick="outOfScope('Price Book')">Price Book (Services)</div>
+          <div class="side-sub-item" onclick="outOfScope('Client Portal')">Client Portal (2)</div>
+        </div>
+
+        <div class="side-item open" id="grpTools" onclick="toggleGroup('Tools')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>Tools<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="9 18 15 12 9 6"/></svg></div>
+        <div class="side-sub open" id="subTools">
+          <div class="side-sub-item" onclick="outOfScope('InstaQuote')">InstaQuote</div>
+          <div class="side-sub-item" onclick="outOfScope('AI Estimates')">AI Estimates <span class="side-new">NEW</span></div>
+          <div class="side-sub-item" onclick="outOfScope('MapMeasure Pro')">MapMeasure Pro</div>
+          <div class="side-sub-item" onclick="outOfScope('Pipelines')">Pipelines</div>
+          <div class="side-sub-item" onclick="outOfScope('Inventory')">Inventory</div>
+          <div class="side-sub-item" onclick="outOfScope('Chemical Tracking')">Chemical Tracking <span class="side-new">NEW</span></div>
+          <div class="side-sub-item" onclick="outOfScope('Reminders & Tasks')">Reminders &amp; Tasks</div>
+          <div class="side-sub-item" onclick="outOfScope('Gallery')">Gallery <span class="side-new">NEW</span></div>
+        </div>
+
+        <div class="side-item" onclick="outOfScope('Inbox')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z"/></svg>Inbox<span class="side-count">(54)</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="9 18 15 12 9 6"/></svg></div>
+        <div class="side-item" onclick="outOfScope('Phone')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.9.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0122 16.92z"/></svg>Phone<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="9 18 15 12 9 6"/></svg></div>
+        <div class="side-item" onclick="outOfScope('Employees')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>Employees<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="9 18 15 12 9 6"/></svg></div>
+      </nav>
+
+      <div class="side-support"><button onclick="outOfScope('Contact Support')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>Contact Support</button></div>
+    </aside>
+
+    <!-- ============ MAIN ============ -->
+    <div class="main">
+      <header class="topbar">
+        <button class="topbar-burger" id="topbarBurger" onclick="toggleSidebar()" title="Open menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+        <nav class="seg">
+          <button class="seg-tab active" data-seg="dashboard" onclick="showPanel('dashboard')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</button>
+          <button class="seg-tab" onclick="outOfScope('Calendar')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Calendar</button>
+          <button class="seg-tab" data-seg="jobs" onclick="showPanel('jobs-list')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>Jobs</button>
+          <button class="seg-tab" onclick="outOfScope('Estimates')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Estimates</button>
+          <button class="seg-tab" onclick="outOfScope('Invoices')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>Invoices</button>
+          <button class="seg-tab" onclick="outOfScope('Map')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>Map</button>
+          <button class="seg-tab" onclick="outOfScope('Cam')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>Cam</button>
+        </nav>
+        <div class="top-actions">
+          <div class="credits-pill" onclick="outOfScope('AI credits')">
+            <span class="bolt"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg></span>
+            <span class="num">998,067</span>
+            <span class="boost"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l1.9 5.6 5.6 1.4-5.6 1.9L12 17.5l-1.9-5.6L4.5 10l5.6-1.4z"/></svg></span>
+          </div>
+          <button class="top-icon-btn" onclick="outOfScope('Notifications')" title="Notifications"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg><span class="bubble">99+</span></button>
+          <button class="top-icon-btn" onclick="toggleDemoPanel(true)" title="Demo role &amp; account"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></button>
+        </div>
+      </header>
+
+      <div class="content" id="contentScroll">
+        <div class="content-panel" id="panel-dashboard"></div>
+        <div class="content-panel" id="panel-jobs-list"></div>
+        <div class="content-panel" id="panel-job-detail"></div>
+        <div class="content-panel" id="panel-settings-hub"></div>
+        <div class="content-panel" id="panel-wo-settings"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DEMO CONTROLS -->
+  <button class="demo-fab" id="demoFab" title="Demo Controls" onclick="toggleDemoPanel()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+  </button>
+  <div class="demo-panel" id="demoPanel">
+    <div class="demo-panel-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Demo Controls</div>
+    <div class="demo-label">Role (permissions)</div>
+    <div class="demo-seg" id="demoRoleSeg">
+      <button data-role="Owner">Owner</button>
+      <button data-role="Tech">Tech · Chris Nolan</button>
+    </div>
+    <div class="demo-label">J-102 job status (Dispatch → Completion + signature intercept)</div>
+    <div class="demo-seg" id="demoJ102Seg">
+      <button data-status="In Progress">In Progress</button>
+      <button data-status="Completed">Completed</button>
+    </div>
+    <div class="demo-note">Completing J-102 unsigned fires the signature intercept while “Require signature on completion” is ON in Work Order Settings.</div>
+    <div class="demo-note">WO numbering governs future jobs only — the three seeded jobs keep WO-1001/2/3. Preview the next number in Settings → Work Orders.</div>
+    <div class="demo-label">Demo data</div>
+    <button class="btn btn-danger btn-sm" style="width:100%;justify-content:center;" onclick="confirmReset()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
+      Reset demo data
+    </button>
+  </div>
+
+  <div class="toast-root" id="toastRoot"></div>
+  <div id="drawerRoot"></div>
+  <div id="modalRoot"></div>
+  <div id="printRoot"></div>
+
+<script>
+/* ============================================================
+   QuoteIQ Work Orders mockup — the Job IS the work order.
+   ============================================================ */
+"use strict";
+
+/* ---------- Seed data (Plan §3) ---------- */
+var SEED_VERSION = 1;
+var STORE_KEY = 'qiq-wo-mockup-v1';
+
+function buildSeed() {
+  var today1pm = new Date(); today1pm.setHours(13, 0, 0, 0);
+  var friday = new Date(); friday.setDate(friday.getDate() + (((5 - friday.getDay() + 7) % 7) || 7)); friday.setHours(9, 0, 0, 0);
+  return {
+    v: SEED_VERSION,
+    settings: {
+      numbering: { prefix: 'WO-', next: 1004 },
+      autoAssign: true,
+      defaults: {
+        showPricing: false,
+        showMaterials: true,
+        showChemicals: 'auto',
+        showPhotos: false,
+        showNextService: true
+      },
+      requireSignatureOnCompletion: true,
+      footerText: 'Thank you for your business! Questions? Call (305) 555-0134.'
+    },
+    demo: { role: 'Owner' },
+    company: { name: 'Acme Company', address: '7370 E Country Club Blvd, Boca Raton, FL 33487', license: 'License #FL-482-2210', phone: '(305) 555-0134' },
+    perDoc: {},
+    jobs: [
+      {
+        id: 'j101', wo: 'WO-1001',
+        title: 'Bi-Monthly General Pest Service', recurring: 'Recurring · every 2 months',
+        customer: { name: 'Andy Lopez', phone: '(954) 534-2476', email: 'andy.lopez@gmail.com' },
+        address: '2010 Northwest 36th Street, Miami, FL 33142',
+        status: 'Completed',
+        scheduledAt: '2026-06-09T09:00:00', window: '9:00 – 11:00 AM',
+        completedAt: '2026-06-09T10:22:00',
+        tech: { name: 'James Castro', license: 'JF-44210-24' },
+        services: [{ name: 'Bi-Monthly General Pest Service', qty: 1, price: 150 }],
+        materials: [{ name: 'Glue boards', qty: 4, unit: 'ea', price: 3.50, linked: true }],
+        chemicals: [
+          { product: 'Talstar P', epa: '279-3206', category: 'Insecticide', amount: '2.2 oz', rate: '1 oz / 1,000 sq ft',
+            method: 'Perimeter band', target: 'Fire ants', area: 'Perimeter', sqft: '2,200 sq ft', rei: '24h',
+            weather: '81°F · 5 mph SW', notified: 'text', photos: 2, applicator: 'James Castro', loggedAt: '2026-06-09T09:41:00' },
+          { product: 'Demand CS', epa: '100-1066', category: 'Insecticide', amount: '1.2 oz', rate: '0.4 oz / gallon',
+            method: 'Backpack spray', target: 'Spiders', area: 'Eaves', sqft: '800 sq ft', rei: '12h',
+            weather: '81°F · 5 mph SW', notified: 'text', photos: 0, applicator: 'James Castro', loggedAt: '2026-06-09T10:05:00' }
+        ],
+        instructions: 'Keep pets & kids off treated areas until dry.',
+        notes: { internal: 'Gate code 4482 — side gate sticks', customer: 'Treated perimeter + attic access point; activity down from last visit.' },
+        nextService: '2026-08-09T00:00:00',
+        photos: [1, 2],
+        signature: { mode: 'typed', text: 'Andy Lopez', name: 'Andy Lopez', at: '2026-06-09T10:22:00' },
+        unsignedCompleted: null,
+        invoice: 'INV-1088',
+        sent: null,
+        labor: [{ name: 'James Castro', desc: '1.6 hrs on site', amount: 72 }],
+        expenses: [{ name: 'Bait station disposal fee', amount: 8.50 }]
+      },
+      {
+        id: 'j102', wo: 'WO-1002',
+        title: 'AC Repair — Capacitor & Refrigerant', recurring: null,
+        customer: { name: 'Denise Carter', phone: '(912) 555-0182', email: 'denise.carter@comcast.net' },
+        address: '8814 Whitfield Ave, Savannah, GA 31406',
+        status: 'In Progress',
+        scheduledAt: today1pm.toISOString(), window: '1:00 – 3:00 PM',
+        completedAt: null,
+        tech: { name: 'Marcus (Truck #1)', license: null },
+        services: [{ name: 'AC Repair — Capacitor & Refrigerant', qty: 1, price: 385 }],
+        materials: [
+          { name: 'Capacitor 45/5 MFD', qty: 1, unit: 'ea', price: 42, linked: true },
+          { name: 'R-410A Refrigerant (25 lb)', qty: 1, unit: 'ea', price: 185, linked: true },
+          { name: 'Air Filter 16×25×1', qty: 1, unit: 'ea', price: 14.50, linked: true }
+        ],
+        chemicals: [],
+        instructions: '',
+        notes: { internal: '', customer: '' },
+        nextService: null,
+        photos: [],
+        signature: null,
+        unsignedCompleted: null,
+        invoice: null,
+        sent: null,
+        labor: [{ name: 'Marcus', desc: '0.8 hrs so far', amount: 36 }],
+        expenses: []
+      },
+      {
+        id: 'j103', wo: 'WO-1003',
+        title: 'Weekly Mow + Edge + Blow', recurring: 'Recurring · weekly',
+        customer: { name: 'Robert Yates', phone: '(912) 555-0147', email: '' },
+        address: '411 Palmetto Dr, Pooler, GA 31322',
+        status: 'Scheduled',
+        scheduledAt: friday.toISOString(), window: '9:00 – 11:00 AM',
+        completedAt: null,
+        tech: { name: 'Chris Nolan', license: null },
+        services: [{ name: 'Weekly Mow + Edge + Blow', qty: 1, price: 65 }],
+        materials: [],
+        chemicals: [],
+        instructions: 'Unlock side gate; dog is friendly',
+        notes: { internal: '', customer: '' },
+        nextService: null,
+        photos: [],
+        signature: null,
+        unsignedCompleted: null,
+        invoice: null,
+        sent: null,
+        labor: [],
+        expenses: []
+      }
+    ]
+  };
+}
+
+window.woState = loadState();
+function loadState() {
+  try {
+    var raw = localStorage.getItem(STORE_KEY);
+    if (raw) { var s = JSON.parse(raw); if (s && s.v === SEED_VERSION) return s; }
+  } catch (e) { /* corrupt state falls through to reseed */ }
+  var seed = buildSeed();
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(seed)); } catch (e) {}
+  return seed;
+}
+function save() { try { localStorage.setItem(STORE_KEY, JSON.stringify(window.woState)); } catch (e) {} }
+
+/* ---------- Utils ---------- */
+function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+function jobById(id) { var js = woState.jobs; for (var i = 0; i < js.length; i++) if (js[i].id === id) return js[i]; return null; }
+function isOwner() { return woState.demo.role === 'Owner'; }
+function fmtDate(iso) { var d = new Date(iso); return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }); }
+function fmtDateLong(iso) { var d = new Date(iso); return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }); }
+function fmtTime(iso) { var d = new Date(iso); return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }); }
+function fmtDateTime(iso) { return fmtDate(iso) + ' ' + fmtTime(iso); }
+function fmtDayShort(iso) { var d = new Date(iso); return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }); }
+function money(n) { return '$' + Number(n).toFixed(2); }
+function firstName(name) { return String(name || '').split(' ')[0]; }
+function docDate(j) { return j.status === 'Completed' && j.completedAt ? j.completedAt : j.scheduledAt; }
+
+/* ---------- Toast / out-of-scope ---------- */
+function toast(msg) {
+  var root = document.getElementById('toastRoot');
+  var t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = msg;
+  root.appendChild(t);
+  setTimeout(function () { t.style.opacity = '0'; t.style.transition = 'opacity 300ms'; }, 2600);
+  setTimeout(function () { t.remove(); }, 3000);
+}
+function outOfScope(what) { toast(what + ' is outside this mockup — the demo covers Work Orders'); }
+
+/* ---------- Modal ---------- */
+function openModal(html) {
+  var root = document.getElementById('modalRoot');
+  var ov = document.createElement('div');
+  ov.className = 'qiq-modal-overlay';
+  ov.innerHTML = '<div class="qiq-modal">' + html + '</div>';
+  ov.addEventListener('click', function (e) { if (e.target === ov) closeModal(); });
+  root.appendChild(ov);
+  return ov;
+}
+function closeModal() {
+  var root = document.getElementById('modalRoot');
+  if (root.lastElementChild) root.lastElementChild.remove();
+}
+var _modalConfirmFn = null;
+function modalConfirm() { var fn = _modalConfirmFn; closeModal(); if (fn) fn(); }
+function confirmModal(opts) {
+  _modalConfirmFn = opts.onConfirm;
+  openModal(
+    '<div class="qiq-modal-head"><span></span><div class="qiq-modal-title">' + esc(opts.title) + '</div>' +
+    '<button class="qiq-modal-x" onclick="closeModal()">' + IC.x + '</button></div>' +
+    '<div class="qiq-modal-body">' + opts.body + '</div>' +
+    '<div class="qiq-modal-foot"><button class="btn" onclick="closeModal()">Cancel</button>' +
+    '<button class="btn ' + (opts.danger ? 'btn-danger' : 'btn-primary') + '" onclick="modalConfirm()">' + esc(opts.confirmLabel || 'Confirm') + '</button></div>'
+  );
+}
+
+/* ---------- Drawer (slide-over) ---------- */
+function openDrawer(title, bodyHtml, opts) {
+  closeDrawer();
+  var root = document.getElementById('drawerRoot');
+  var ov = document.createElement('div');
+  ov.className = 'drawer-overlay';
+  ov.innerHTML =
+    '<div class="drawer ' + ((opts && opts.size) ? opts.size : '') + '">' +
+      '<div class="drawer-head">' +
+        '<button class="drawer-back" onclick="closeDrawer()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="15 18 9 12 15 6"/></svg></button>' +
+        '<div class="drawer-title" id="drawerTitle">' + esc(title) + '</div>' +
+        '<button class="drawer-x" onclick="closeDrawer()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>' +
+      '</div>' +
+      '<div class="drawer-body" id="drawerBody">' + bodyHtml + '</div>' +
+    '</div>';
+  ov.addEventListener('click', function (e) { if (e.target === ov) closeDrawer(); });
+  root.appendChild(ov);
+  document.body.classList.add('drawer-active');
+  return ov;
+}
+function drawerOpen() { return !!document.querySelector('.drawer-overlay'); }
+function closeDrawer() {
+  woDocJobId = null;
+  var root = document.getElementById('drawerRoot');
+  while (root.firstChild) root.firstChild.remove();
+  document.body.classList.remove('drawer-active');
+}
+
+/* ---------- Icons ---------- */
+var IC = {
+  doc: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>',
+  check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="20 6 9 17 4 12"/></svg>',
+  x: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+  back: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="15 18 9 12 15 6"/></svg>',
+  chev: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="9 18 15 12 9 6"/></svg>',
+  chevDown: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="6 9 12 15 18 9"/></svg>',
+  eye: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>',
+  print: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>',
+  download: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
+  send: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>',
+  layers: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>',
+  pen: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>',
+  edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4z"/></svg>',
+  briefcase: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>',
+  user: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
+  list: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>',
+  flask: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 3h6"/><path d="M10 3v6.34L4.62 18.5A2 2 0 006.34 21.5h11.32a2 2 0 001.72-3L14 9.34V3"/><line x1="7.5" y1="15" x2="16.5" y2="15"/></svg>',
+  camera: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>',
+  lock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>',
+  gear: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>',
+  info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>',
+  warn: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+  cal: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
+  phone: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.9.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0122 16.92z"/></svg>',
+  mail: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>',
+  sort: '<span class="sort"><svg viewBox="0 0 10 7"><path d="M5 0l4 5H1z" fill="currentColor"/></svg><svg viewBox="0 0 10 7"><path d="M5 7L1 2h8z" fill="currentColor"/></svg></span>'
+};
+/* Plain header label — only genuinely sortable columns (WO #) get a sort glyph. */
+function th(label) { return '<span class="tbl-h">' + esc(label) + '</span>'; }
+
+/* ---------- Router ---------- */
+var PANEL_RENDER = {};
+var currentPanel = 'dashboard';
+var PANEL_NAV = {
+  'dashboard': 'dashboard',
+  'jobs-list': 'jobs-list', 'job-detail': 'jobs-list',
+  'settings-hub': null, 'wo-settings': null
+};
+function showPanel(pageId) {
+  currentPanel = pageId;
+  document.querySelectorAll('.content-panel').forEach(function (p) { p.classList.remove('active'); });
+  var panel = document.getElementById('panel-' + pageId);
+  if (panel) {
+    if (PANEL_RENDER[pageId]) PANEL_RENDER[pageId]();
+    panel.classList.add('active');
+  }
+  var nav = PANEL_NAV[pageId];
+  document.querySelectorAll('.side-sub-item[data-nav], .side-item[data-nav]').forEach(function (i) {
+    i.classList.toggle('active', i.dataset.nav === nav);
+  });
+  document.querySelectorAll('.seg-tab[data-seg]').forEach(function (t) {
+    t.classList.toggle('active', (nav === 'dashboard' && t.dataset.seg === 'dashboard') || (nav === 'jobs-list' && t.dataset.seg === 'jobs'));
+  });
+  document.getElementById('contentScroll').scrollTop = 0;
+}
+function rerenderCurrent() { showPanel(currentPanel); }
+function toggleSidebar() {
+  var sb = document.getElementById('sidebar');
+  sb.classList.toggle('collapsed');
+  document.getElementById('topbarBurger').classList.toggle('show', sb.classList.contains('collapsed'));
+}
+function toggleGroup(name) {
+  document.getElementById('grp' + name).classList.toggle('open');
+  document.getElementById('sub' + name).classList.toggle('open');
+}
+
+/* ---------- Demo Controls ---------- */
+function toggleDemoPanel(forceOpen) {
+  var p = document.getElementById('demoPanel');
+  if (forceOpen === true) p.classList.add('open');
+  else p.classList.toggle('open');
+  syncDemoPanel();
+}
+function syncDemoPanel() {
+  document.querySelectorAll('#demoRoleSeg button').forEach(function (b) { b.classList.toggle('active', b.dataset.role === woState.demo.role); });
+  var j102 = jobById('j102');
+  document.querySelectorAll('#demoJ102Seg button').forEach(function (b) {
+    b.classList.toggle('active', (b.dataset.status === 'Completed') === (j102.status === 'Completed'));
+  });
+}
+document.querySelectorAll('#demoRoleSeg button').forEach(function (b) {
+  b.addEventListener('click', function () {
+    woState.demo.role = b.dataset.role;
+    save(); syncDemoPanel();
+    toast(b.dataset.role === 'Owner'
+      ? 'Role switched to Owner — full access'
+      : 'Role switched to Tech (Chris Nolan) — settings locked; generate, print, send & sign still work');
+    rerenderCurrent();
+    refreshWoDoc();
+  });
+});
+document.querySelectorAll('#demoJ102Seg button').forEach(function (b) {
+  b.addEventListener('click', function () {
+    var j = jobById('j102');
+    if (b.dataset.status === 'Completed') {
+      if (j.status !== 'Completed') completeJob('j102');
+    } else {
+      if (j.status === 'Completed') reopenJob('j102');
+    }
+    syncDemoPanel();
+  });
+});
+function confirmReset() {
+  confirmModal({
+    title: 'Reset demo data?',
+    body: 'This wipes all mockup data from this browser (localStorage) and restores the pristine seed: 3 jobs (WO-1001/2/3), settings defaults, and the seeded Andy Lopez signature. This cannot be undone.',
+    confirmLabel: 'Reset demo',
+    danger: true,
+    onConfirm: function () {
+      localStorage.removeItem(STORE_KEY);
+      window.woState = buildSeed();
+      save();
+      closeDrawer();
+      document.getElementById('demoPanel').classList.remove('open');
+      syncDemoPanel();
+      showPanel('jobs-list');
+      toast('Demo data reset to pristine seed');
+    }
+  });
+}
+
+/* ---------- Permission lock (per PLAN_LOCKS_AND_PERMISSIONS.md) ---------- */
+function permPlaceholder(extra) {
+  return '<div class="perm-placeholder">' + IC.lock +
+    '<div><div class="perm-placeholder-title">Permission not allowed — contact your account owner for access.</div>' +
+    '<div style="font-size:13px;margin-top:5px;">' + esc(extra || 'Switch to the Owner role in Demo Controls to view this screen.') + '</div></div>' +
+    '<button class="btn btn-sm" onclick="toggleDemoPanel(true)">Open Demo Controls</button></div>';
+}
+
+/* ---------- Shared bits ---------- */
+function statusPill(status) {
+  var cls = status === 'Completed' ? 'pill-success' : (status === 'In Progress' ? 'pill-info' : 'pill-muted');
+  return '<span class="pill ' + cls + '">' + esc(status) + '</span>';
+}
+function woPill(j, clickable) {
+  return '<span class="pill pill-navy mono' + (clickable ? ' pill-clickable' : '') + '"' +
+    (clickable ? ' title="Open work order" onclick="event.stopPropagation();openWoDoc(\'' + j.id + '\')"' : '') + '>' + esc(j.wo) + '</span>';
+}
+function photoSVG(seed) {
+  var hues = [[34, 92], [200, 150], [120, 90], [270, 210], [12, 40], [180, 140]];
+  var h = hues[seed % hues.length];
+  return '<svg viewBox="0 0 100 100" preserveAspectRatio="none"><defs><linearGradient id="pg' + seed + '" x1="0" y1="0" x2="1" y2="1">' +
+    '<stop offset="0" stop-color="hsl(' + h[0] + ',60%,72%)"/><stop offset="1" stop-color="hsl(' + h[1] + ',55%,45%)"/></linearGradient></defs>' +
+    '<rect width="100" height="100" fill="url(#pg' + seed + ')"/>' +
+    '<circle cx="' + (20 + (seed * 13) % 55) + '" cy="' + (25 + (seed * 29) % 45) + '" r="14" fill="rgba(255,255,255,0.25)"/></svg>';
+}
+function sigArtHtml(sig, big) {
+  if (!sig) return '';
+  if (sig.mode === 'draw' && sig.data) return '<img class="sig-img" alt="Customer signature" src="' + sig.data + '">';
+  return '<span class="sig-script"' + (big ? '' : ' style="font-size:30px;"') + '>' + esc(sig.text || sig.name) + '</span>';
+}
+
+/* ============================================================
+   DASHBOARD (demo hub)
+   ============================================================ */
+function renderDashboard() {
+  var flows = [
+    ['Open & print each work order', 'Jobs → open J-101 (Completion hero), J-102 (materials, unsigned), J-103 (Dispatch) → Work Order → Print.', 'jobs-list', 'Open Jobs'],
+    ['Per-doc pricing override', 'On WO-1002: Sections → Show pricing. Price column + Subtotal appear instantly; Reset to defaults reverts.', 'jobs-list', 'Open Jobs'],
+    ['Photos override', 'On WO-1001: Sections → Photos ON reveals the 2-photo strip. Default keeps it absent.', 'jobs-list', 'Open Jobs'],
+    ['Capture signature', 'J-102 → Report → Customer Sign-Off → Capture Signature. Draw (canvas + Clear) or Type — both stamp name + timestamp.', 'jobs-list', 'Open Jobs'],
+    ['Intercept path A — capture', 'Demo Controls → J-102 status → Completed. Intercept fires → Capture signature → job completes signed.', 'demo', 'Demo Controls'],
+    ['Intercept path B — skip', 'Same toggle → “Complete without signature.” Amber Unsigned chip stamps the job and the document.', 'demo', 'Demo Controls'],
+    ['Kill the intercept', 'Settings → Work Orders → Require signature OFF, then complete J-102 again — no intercept.', 'wo-settings', 'Open Settings'],
+    ['Send the work order', 'WO-1001 → Send. Message pre-filled; sent microline persists. Robert Yates (J-103) shows the email chip disabled.', 'jobs-list', 'Open Jobs'],
+    ['Numbering & footer', 'Settings → Work Orders: prefix/next live-preview governs future assignments; footer edit re-renders doc footers.', 'wo-settings', 'Open Settings'],
+    ['Role switch + Reset', 'Demo Controls → Tech: Work Order Settings renders the permission lock; actions still work. Reset restores the seed.', 'demo', 'Demo Controls']
+  ];
+  var flowRows = flows.map(function (f, i) {
+    var action;
+    if (f[2] === 'demo') action = '<button class="btn btn-sm" onclick="toggleDemoPanel(true)">' + esc(f[3]) + '</button>';
+    else action = '<button class="btn btn-sm" onclick="showPanel(\'' + f[2] + '\')">' + esc(f[3]) + '</button>';
+    return '<div class="flow-row"><span class="flow-num">' + (i + 1) + '</span>' +
+      '<div class="flow-body"><div class="flow-name">' + esc(f[0]) + '</div><div class="flow-desc">' + esc(f[1]) + '</div></div>' +
+      '<div style="flex-shrink:0;">' + action + '</div></div>';
+  }).join('');
+
+  var signedCount = woState.jobs.filter(function (j) { return j.signature; }).length;
+  document.getElementById('panel-dashboard').innerHTML =
+    '<div class="hub-banner"><div class="hub-banner-inner">' +
+      '<div class="hub-banner-eyebrow">' + IC.doc.replace('<svg', '<svg style="width:12px;height:12px;stroke-width:2"') + ' Interactive mockup · in-app styling</div>' +
+      '<div class="hub-banner-title">Work Orders</div>' +
+      '<div class="hub-banner-desc">Click-through reference for the QuoteIQ Work Orders feature. The Job IS the work order — a WO number plus a printable, sendable document face on the existing Job. No new nav item: everything lives on Jobs. Use the Demo Controls gear (bottom-right) to switch role and flip J-102’s status.</div>' +
+      '<div class="hub-banner-stats">' +
+        '<div><div class="hub-banner-stat-num">' + woState.jobs.length + '</div><div class="hub-banner-stat-label">Jobs</div></div>' +
+        '<div><div class="hub-banner-stat-num">' + woState.jobs.length + '</div><div class="hub-banner-stat-label">Work orders</div></div>' +
+        '<div><div class="hub-banner-stat-num">' + signedCount + '</div><div class="hub-banner-stat-label">Signed</div></div>' +
+        '<div><div class="hub-banner-stat-num">' + esc(woState.settings.numbering.prefix + woState.settings.numbering.next) + '</div><div class="hub-banner-stat-label">Next WO #</div></div>' +
+      '</div>' +
+    '</div></div>' +
+    '<div class="section-grid mb-16">' +
+      '<div class="section-tile" onclick="showPanel(\'jobs-list\')"><div class="section-tile-top"><span class="section-tile-icon indigo">' + IC.briefcase + '</span><span class="section-tile-name">CRM → Jobs</span></div><div class="section-tile-desc">The only entry point: WO # column on the list, WO pill + Work Order button on the job, Customer Sign-Off on the Report tab.</div></div>' +
+      '<div class="section-tile" onclick="showPanel(\'wo-settings\')"><div class="section-tile-top"><span class="section-tile-icon amber">' + IC.gear + '</span><span class="section-tile-name">Settings → Work Orders</span></div><div class="section-tile-desc">Numbering, default document sections, the signature requirement, and footer text. Owner-only.</div></div>' +
+    '</div>' +
+    '<div class="card"><div class="card-head"><span class="card-icon navy">' + IC.list + '</span>' +
+      '<div class="card-titleblock"><div class="card-title">Demo script — the 10 golden flows</div><div class="card-sub">Run these in order to review every behavior in the mockup.</div></div></div>' +
+    '<div class="card-body" style="padding-top:8px;">' + flowRows + '</div></div>';
+}
+
+/* ============================================================
+   S1 — JOBS LIST (WO # column, sortable)
+   ============================================================ */
+var jobsSortDir = 'asc';
+function toggleWoSort() {
+  jobsSortDir = jobsSortDir === 'asc' ? 'desc' : 'asc';
+  renderJobsList();
+}
+function scheduleCell(j) {
+  if (j.status === 'Completed' && j.completedAt) return 'Completed ' + fmtDate(j.completedAt);
+  var d = new Date(j.scheduledAt);
+  var today = new Date();
+  var sameDay = d.toDateString() === today.toDateString();
+  return (sameDay ? 'Today' : fmtDayShort(j.scheduledAt)) + ' · ' + fmtTime(j.scheduledAt);
+}
+function renderJobsList() {
+  var host = document.getElementById('panel-jobs-list');
+  var grid = 'grid-template-columns: 120px 1.6fr 1.5fr 1.1fr 120px 70px;';
+  var jobs = woState.jobs.slice().sort(function (a, b) {
+    return jobsSortDir === 'asc' ? a.wo.localeCompare(b.wo) : b.wo.localeCompare(a.wo);
+  });
+  var rows = jobs.map(function (j) {
+    return '<div class="tbl-row clickable" style="' + grid + '" onclick="openJob(\'' + j.id + '\')">' +
+      '<div>' + woPill(j, true) + '</div>' +
+      '<div><div class="cell-main">' + esc(j.customer.name) + '</div><div class="cell-sub">' + esc(j.address) + '</div></div>' +
+      '<div class="cell-plain">' + esc(j.title) + '</div>' +
+      '<div class="cell-plain">' + esc(scheduleCell(j)) + '</div>' +
+      '<div>' + statusPill(j.status) + '</div>' +
+      '<div class="acts"><button class="act-btn" title="Open job" onclick="event.stopPropagation();openJob(\'' + j.id + '\')">' + IC.eye + '</button></div>' +
+    '</div>';
+  }).join('');
+  var sortGlyph = '<span class="sort"><svg viewBox="0 0 10 7" class="' + (jobsSortDir === 'asc' ? 'on' : '') + '"><path d="M5 0l4 5H1z" fill="currentColor"/></svg><svg viewBox="0 0 10 7" class="' + (jobsSortDir === 'desc' ? 'on' : '') + '"><path d="M5 7L1 2h8z" fill="currentColor"/></svg></span>';
+  host.innerHTML =
+    '<div class="page-head-row"><div>' +
+      '<div class="page-title">Jobs</div>' +
+      '<div class="page-sub">Every job carries its work order — open a job and use the Work Order button for the document</div>' +
+    '</div></div>' +
+    '<div class="tbl"><div class="tbl-scroll">' +
+      '<div class="tbl-head" style="' + grid + '">' +
+        '<span class="tbl-h sortable" onclick="toggleWoSort()" title="Sort by WO #">WO # ' + sortGlyph + '</span>' +
+        th('Customer') + th('Service') + th('Schedule') + th('Status') +
+        '<span class="tbl-h" style="justify-content:flex-end;">Actions</span></div>' +
+      rows +
+    '</div><div class="tbl-foot"><span class="left">Page 1</span><span>' + woState.jobs.length + ' jobs · sorted by WO # ' + (jobsSortDir === 'asc' ? '↑' : '↓') + '</span></div></div>';
+}
+var currentJobId = null;
+function openJob(id, tab) {
+  currentJobId = id;
+  jobTab = tab || 'report';
+  showPanel('job-detail');
+}
+
+/* ============================================================
+   S2 — JOB DETAIL (Details | Report | Notes) + Sign-Off card
+   ============================================================ */
+var jobTab = 'report';
+var expandState = {};
+function renderJobDetail() {
+  var host = document.getElementById('panel-job-detail');
+  var j = jobById(currentJobId);
+  if (!j) { showPanel('jobs-list'); return; }
+
+  var actions = '<button class="btn btn-primary" onclick="openWoDoc(\'' + j.id + '\')">' + IC.doc + ' Work Order</button>';
+  if (j.status === 'Completed') {
+    actions += '<button class="link-btn" onclick="reopenJob(\'' + j.id + '\')">Reopen job</button>';
+  } else {
+    actions += '<button class="btn" onclick="completeJob(\'' + j.id + '\')">' + IC.check + ' Complete Job</button>';
+  }
+
+  var tabs = [['details', 'Details'], ['report', 'Report'], ['notes', 'Notes']].map(function (t) {
+    return '<button class="subtab ' + (jobTab === t[0] ? 'active' : '') + '" onclick="jobSetTab(\'' + t[0] + '\')">' + t[1] + '</button>';
+  }).join('');
+
+  var body = '';
+  if (jobTab === 'details') body = renderDetailsTab(j);
+  else if (jobTab === 'notes') body = renderNotesTab(j);
+  else body = renderReportTab(j);
+
+  var unsignedChip = (j.unsignedCompleted && !j.signature)
+    ? '<span class="pill pill-amber">' + IC.warn + ' Unsigned</span>' : '';
+
+  host.innerHTML =
+    '<button class="back-link" onclick="showPanel(\'jobs-list\')">' + IC.back + 'Back to Jobs</button>' +
+    '<div class="job-head-card">' +
+      '<div class="job-head-body"><div class="job-head-num"><span>' + esc(j.title) + '</span>' + woPill(j, true) + statusPill(j.status) + unsignedChip + '</div>' +
+      '<div class="job-head-meta">' + esc(j.customer.name) + ' · ' + esc(j.address) + ' · ' + esc(j.customer.phone) + '</div></div>' +
+      '<div class="job-head-actions">' + actions + '</div>' +
+    '</div>' +
+    '<div class="subtabs">' + tabs + '</div>' + body;
+}
+function jobSetTab(t) { jobTab = t; renderJobDetail(); }
+function reopenJob(id) {
+  var j = jobById(id);
+  j.status = 'In Progress';
+  j.completedAt = null;
+  j.unsignedCompleted = null;
+  save();
+  if (currentPanel === 'job-detail') renderJobDetail(); else rerenderCurrent();
+  refreshWoDoc();
+  syncDemoPanel();
+  toast(j.wo + ' — job reopened');
+}
+function toggleExpand(key) { expandState[key] = !expandState[key]; renderJobDetail(); }
+
+function renderDetailsTab(j) {
+  return '<div class="card"><div class="card-head"><span class="card-icon">' + IC.doc + '</span><div class="card-titleblock"><div class="card-title">Job summary</div></div></div>' +
+    '<div class="card-body"><div class="field-grid">' +
+      '<div class="field"><span class="field-label">Customer</span><span style="font-size:15px;font-weight:600;">' + esc(j.customer.name) + '</span></div>' +
+      '<div class="field"><span class="field-label">Service address</span><span style="font-size:15px;font-weight:600;">' + esc(j.address) + '</span></div>' +
+      '<div class="field"><span class="field-label">Phone</span><span style="font-size:15px;font-weight:600;">' + esc(j.customer.phone) + '</span></div>' +
+      '<div class="field"><span class="field-label">Email</span><span style="font-size:15px;font-weight:600;">' + (j.customer.email ? esc(j.customer.email) : '—') + '</span></div>' +
+      '<div class="field"><span class="field-label">Service</span><span style="font-size:15px;font-weight:600;">' + esc(j.title) + (j.recurring ? ' <span class="pill pill-muted">' + esc(j.recurring) + '</span>' : '') + '</span></div>' +
+      '<div class="field"><span class="field-label">Work order #</span><span>' + woPill(j, true) + '</span></div>' +
+      '<div class="field"><span class="field-label">' + (j.status === 'Completed' ? 'Completed' : 'Scheduled') + '</span><span style="font-size:15px;font-weight:600;">' +
+        (j.status === 'Completed' && j.completedAt ? esc(fmtDateTime(j.completedAt)) : esc(fmtDayShort(j.scheduledAt) + ' · ' + j.window)) + '</span></div>' +
+      '<div class="field"><span class="field-label">Assigned tech</span><span style="font-size:15px;font-weight:600;">' + esc(j.tech.name) + '</span></div>' +
+      '<div class="field"><span class="field-label">Status</span><span>' + statusPill(j.status) + '</span></div>' +
+      (j.nextService ? '<div class="field"><span class="field-label">Next service</span><span style="font-size:15px;font-weight:600;">' + esc(fmtDate(j.nextService)) + '</span></div>' : '') +
+    '</div></div></div>';
+}
+
+function renderNotesTab(j) {
+  return '<div class="card"><div class="card-head"><span class="card-icon">' + IC.edit + '</span>' +
+      '<div class="card-titleblock"><div class="card-title-row"><span class="card-title">Internal notes</span><span class="pill pill-muted">' + IC.lock + ' Never prints on documents</span></div>' +
+      '<div class="card-sub">Crew-only context. This text never renders on the work order or any customer surface. Saved as you type.</div></div></div>' +
+    '<div class="card-body"><textarea class="textarea" placeholder="Internal notes for the crew…" oninput="jobSetNote(\'' + j.id + '\',\'internal\',this.value)">' + esc(j.notes.internal) + '</textarea></div></div>' +
+    '<div class="card"><div class="card-head"><span class="card-icon green">' + IC.doc + '</span>' +
+      '<div class="card-titleblock"><div class="card-title-row"><span class="card-title">Customer-facing note</span><span class="pill pill-success">' + IC.check + ' Prints on work order</span></div>' +
+      '<div class="card-sub">What the customer reads in the Notes section of the work order document. Saved as you type.</div></div></div>' +
+    '<div class="card-body"><textarea class="textarea" placeholder="Note the customer will see…" oninput="jobSetNote(\'' + j.id + '\',\'customer\',this.value)">' + esc(j.notes.customer) + '</textarea></div></div>';
+}
+function jobSetNote(jobId, kind, v) { var j = jobById(jobId); j.notes[kind] = v; save(); }
+
+function chemRecordCard(r) {
+  var pills = [];
+  if (r.notified) pills.push('<span class="pill pill-success">' + IC.check + ' Customer notified · ' + esc(r.notified) + '</span>');
+  if (r.photos) pills.push('<span class="pill pill-info">' + IC.camera + ' ' + r.photos + ' photo' + (r.photos > 1 ? 's' : '') + '</span>');
+  return '<div class="rec-card">' +
+    '<div class="rec-head"><span class="status-dot green"></span><span class="rec-name">' + esc(r.product) + '</span>' +
+      '<span class="rec-epa mono">EPA ' + esc(r.epa) + '</span>' +
+      '<span class="pill pill-muted">' + esc(r.category) + '</span></div>' +
+    '<div class="rec-qty">' + esc(r.amount) + ' total · rate ' + esc(r.rate) + '</div>' +
+    '<div class="rec-grid">' +
+      '<div class="rec-kv"><div class="k">Method</div><div class="v">' + esc(r.method) + '</div></div>' +
+      '<div class="rec-kv"><div class="k">Target</div><div class="v">' + esc(r.target) + '</div></div>' +
+      '<div class="rec-kv"><div class="k">Area</div><div class="v">' + esc(r.area) + '</div></div>' +
+      '<div class="rec-kv"><div class="k">Treated</div><div class="v">' + esc(r.sqft) + '</div></div>' +
+      '<div class="rec-kv"><div class="k">REI</div><div class="v">' + esc(r.rei) + '</div></div>' +
+      '<div class="rec-kv"><div class="k">Weather</div><div class="v">' + esc(r.weather) + '</div></div>' +
+      '<div class="rec-kv"><div class="k">Applicator</div><div class="v">' + esc(r.applicator || '—') + '</div></div>' +
+      '<div class="rec-kv"><div class="k">Logged</div><div class="v">' + fmtDateTime(r.loggedAt) + '</div></div>' +
+    '</div>' +
+    (pills.length ? '<div class="rec-pills">' + pills.join('') + '</div>' : '') +
+  '</div>';
+}
+
+function signOffCard(j) {
+  var body;
+  if (j.signature) {
+    body = '<div class="sig-display">' +
+      '<div class="sig-art">' + sigArtHtml(j.signature, true) + '</div>' +
+      '<div><div class="row-flex" style="gap:8px;"><span class="sig-meta-name">' + esc(j.signature.name) + '</span><span class="pill pill-success">' + IC.check + ' Signed</span></div>' +
+      '<div class="sig-meta-time">' + fmtDate(j.signature.at) + ' ' + fmtTime(j.signature.at) + '</div></div>' +
+    '</div>';
+  } else if (j.unsignedCompleted) {
+    body = '<div class="sig-empty">' +
+      '<span class="pill pill-amber">' + IC.warn + ' Unsigned</span>' +
+      '<div>Completed without signature — ' + esc(fmtDate(j.unsignedCompleted)) + '</div>' +
+      '<button class="btn btn-sm" onclick="openSignature(\'' + j.id + '\')">' + IC.pen + ' Capture Signature</button>' +
+    '</div>';
+  } else {
+    body = '<div class="sig-empty">' +
+      '<div>No customer signature on this job yet.</div>' +
+      '<button class="btn btn-primary btn-sm" onclick="openSignature(\'' + j.id + '\')">' + IC.pen + ' Capture Signature</button>' +
+    '</div>';
+  }
+  return '<div class="card"><div class="card-head"><span class="card-icon green">' + IC.pen + '</span>' +
+    '<div class="card-titleblock"><div class="card-title">Customer Sign-Off</div>' +
+    '<div class="card-sub">Lives on the Job; the work order document prints it. Draw or type — stamped with name + date/time.</div></div></div>' +
+    '<div class="card-body">' + body + '</div></div>';
+}
+
+function renderReportTab(j) {
+  var out = '';
+
+  // Line items (services)
+  out += '<div class="card"><div class="card-head"><span class="card-icon">' + IC.list + '</span>' +
+    '<div class="card-titleblock"><div class="card-title">Line Items</div><div class="card-sub">' + j.services.length + ' service' + (j.services.length === 1 ? '' : 's') + '</div></div></div>' +
+    '<div class="card-body">' + j.services.map(function (s) {
+      return '<div class="row-flex" style="justify-content:space-between;"><div><div class="cell-main">' + esc(s.name) + '</div><div class="cell-sub">Qty ' + s.qty + (j.recurring ? ' · ' + esc(j.recurring) : '') + '</div></div><span style="font-weight:700;">' + money(s.price) + '</span></div>';
+    }).join('<div style="height:10px;"></div>') + '</div></div>';
+
+  // Materials
+  if (j.materials.length) {
+    out += '<div class="card expandable ' + (expandState['mat' + j.id] ? 'expanded' : '') + '">' +
+      '<div class="card-head" onclick="toggleExpand(\'mat' + j.id + '\')"><span class="card-icon">' + IC.layers + '</span>' +
+      '<div class="card-titleblock"><div class="card-title">Materials</div><div class="card-sub">' + j.materials.length + ' item' + (j.materials.length === 1 ? '' : 's') + '</div></div>' +
+      '<span class="expand-chev">' + IC.chevDown + '</span></div>' +
+      '<div class="card-body">' + j.materials.map(function (m) {
+        return '<div class="row-flex" style="justify-content:space-between;padding:6px 0;"><div><div class="cell-main">' + esc(m.name) + '</div><div class="cell-sub">Qty ' + m.qty + ' ' + esc(m.unit) + (m.linked ? ' · linked inventory item' : '') + '</div></div><span style="font-weight:700;">' + money(m.price * m.qty) + '</span></div>';
+      }).join('') + '</div></div>';
+  }
+
+  // Chemicals (read-only from the chemical-tracking records)
+  if (j.chemicals.length) {
+    out += '<div class="card"><div class="card-head"><span class="card-icon amber">' + IC.flask + '</span>' +
+      '<div class="card-titleblock"><div class="card-title-row"><span class="card-title">Chemicals</span>' +
+      '<span class="pill pill-success">' + j.chemicals.length + ' logged</span></div>' +
+      '<div class="card-sub">Application records logged via Chemical Tracking — consumed read-only; the work order prints the compliance table from these.</div></div></div>' +
+      '<div class="card-body">' + j.chemicals.map(chemRecordCard).join('') + '</div></div>';
+  }
+
+  // Customer Sign-Off (below Chemicals)
+  out += signOffCard(j);
+
+  // Labor (internal — never prints)
+  if (j.labor.length) {
+    out += '<div class="card expandable ' + (expandState['lab' + j.id] ? 'expanded' : '') + '">' +
+      '<div class="card-head" onclick="toggleExpand(\'lab' + j.id + '\')"><span class="card-icon">' + IC.user + '</span>' +
+      '<div class="card-titleblock"><div class="card-title-row"><span class="card-title">Labor</span><span class="pill pill-muted">Internal · never prints on work order</span></div>' +
+      '<div class="card-sub">' + j.labor.length + ' entr' + (j.labor.length === 1 ? 'y' : 'ies') + '</div></div>' +
+      '<span class="expand-chev">' + IC.chevDown + '</span></div>' +
+      '<div class="card-body">' + j.labor.map(function (l) {
+        return '<div class="row-flex" style="justify-content:space-between;"><div><div class="cell-main">' + esc(l.name) + '</div><div class="cell-sub">' + esc(l.desc) + '</div></div><span style="font-weight:700;">' + money(l.amount) + '</span></div>';
+      }).join('<div style="height:10px;"></div>') + '</div></div>';
+  }
+
+  // Expenses (internal — never prints)
+  if (j.expenses.length) {
+    out += '<div class="card expandable ' + (expandState['exp' + j.id] ? 'expanded' : '') + '">' +
+      '<div class="card-head" onclick="toggleExpand(\'exp' + j.id + '\')"><span class="card-icon">' + IC.doc + '</span>' +
+      '<div class="card-titleblock"><div class="card-title-row"><span class="card-title">Expenses</span><span class="pill pill-muted">Internal · never prints on work order</span></div>' +
+      '<div class="card-sub">' + j.expenses.length + ' entr' + (j.expenses.length === 1 ? 'y' : 'ies') + '</div></div>' +
+      '<span class="expand-chev">' + IC.chevDown + '</span></div>' +
+      '<div class="card-body">' + j.expenses.map(function (x) {
+        return '<div class="row-flex" style="justify-content:space-between;"><div class="cell-main">' + esc(x.name) + '</div><span style="font-weight:700;">' + money(x.amount) + '</span></div>';
+      }).join('<div style="height:10px;"></div>') + '</div></div>';
+  }
+
+  return out;
+}
+
+/* ============================================================
+   COMPLETE JOB + SIGNATURE INTERCEPT (S5 gate)
+   ============================================================ */
+function completeJob(jobId) {
+  var j = jobById(jobId);
+  if (!j || j.status === 'Completed') return;
+  if (woState.settings.requireSignatureOnCompletion && !j.signature) {
+    openModal(
+      '<div class="qiq-modal-head"><span></span><div class="qiq-modal-title">Customer signature required</div>' +
+      '<button class="qiq-modal-x" onclick="closeModal()">' + IC.x + '</button></div>' +
+      '<div class="qiq-modal-body">Work Order Settings require a customer signature on completion, and <b>' + esc(j.wo) + '</b> is unsigned. Capture now?</div>' +
+      '<div class="qiq-modal-foot">' +
+        '<button class="btn" onclick="closeModal();syncDemoPanel()">Cancel</button>' +
+        '<button class="btn" onclick="closeModal();completeWithoutSignature(\'' + jobId + '\')">Complete without signature</button>' +
+        '<button class="btn btn-primary" onclick="closeModal();openSignature(\'' + jobId + '\', {completeAfter:true})">' + IC.pen + ' Capture</button>' +
+      '</div>'
+    );
+    return;
+  }
+  finishComplete(jobId);
+}
+function completeWithoutSignature(jobId) {
+  var j = jobById(jobId);
+  j.unsignedCompleted = new Date().toISOString();
+  finishComplete(jobId);
+}
+function finishComplete(jobId) {
+  var j = jobById(jobId);
+  j.status = 'Completed';
+  j.completedAt = new Date().toISOString();
+  save();
+  if (currentPanel === 'job-detail') renderJobDetail(); else rerenderCurrent();
+  refreshWoDoc();
+  syncDemoPanel();
+  toast(j.wo + ' — job completed' + (j.signature ? '' : (j.unsignedCompleted ? ' without signature' : '')));
+}
+
+/* ============================================================
+   S3/S4 — THE WORK ORDER DOCUMENT (pure render over
+   job + settings + perDocOverrides)
+   ============================================================ */
+var woDocJobId = null;
+var sectionsPopOpen = false;
+
+function docConfig(j) {
+  var d = woState.settings.defaults;
+  var o = woState.perDoc[j.id] || {};
+  return {
+    showPricing: o.showPricing !== undefined ? o.showPricing : d.showPricing,
+    showMaterials: o.showMaterials !== undefined ? o.showMaterials : d.showMaterials,
+    showChemicals: o.showChemicals !== undefined ? o.showChemicals : d.showChemicals,
+    showPhotos: o.showPhotos !== undefined ? o.showPhotos : d.showPhotos,
+    showNextService: o.showNextService !== undefined ? o.showNextService : d.showNextService
+  };
+}
+function docMode(j) { return j.status === 'Scheduled' ? 'dispatch' : 'completion'; }
+
+/* Section registry — the renderer iterates this, it does not hardcode ifs. */
+var WO_SECTIONS = [
+  { key: 'schedule', when: function () { return true; }, render: secSchedule },
+  { key: 'services', when: function () { return true; }, render: secServices },
+  { key: 'materials', when: function (j, cfg, mode) { return mode === 'completion' && cfg.showMaterials && j.materials.length > 0; }, render: secMaterials },
+  { key: 'chemicals', when: function (j, cfg, mode) { return mode === 'completion' && cfg.showChemicals !== 'off' && (j.chemicals.length > 0 || cfg.showChemicals === 'on'); }, render: secChemicals },
+  { key: 'instructions', when: function (j) { return !!j.instructions; }, render: secInstructions },
+  { key: 'notes', when: function (j, cfg, mode) { return mode === 'completion' && !!j.notes.customer; }, render: secNotes },
+  { key: 'nextService', when: function (j, cfg, mode) { return mode === 'completion' && cfg.showNextService && !!j.nextService; }, render: secNextService },
+  { key: 'photos', when: function (j, cfg, mode) { return mode === 'completion' && cfg.showPhotos && j.photos.length > 0; }, render: secPhotos },
+  { key: 'signature', when: function (j, cfg, mode) { return mode === 'completion'; }, render: secSignature },
+  { key: 'invoice', when: function (j) { return !!j.invoice; }, render: secInvoice }
+];
+
+function secSchedule(j, cfg, mode) {
+  var kv = [];
+  if (mode === 'completion' && j.completedAt) {
+    kv.push(['Completed', fmtDateLong(j.completedAt)]);
+  } else {
+    kv.push(['Scheduled', fmtDateLong(j.scheduledAt)]);
+    kv.push(['Arrival window', j.window]);
+  }
+  kv.push(['Assigned tech', j.tech.name]);
+  return '<div class="wo-schedule">' + kv.map(function (p) {
+    return '<div class="wo-schedule-kv"><div class="k">' + esc(p[0]) + '</div><div class="v">' + esc(p[1]) + '</div></div>';
+  }).join('') + '</div>';
+}
+function secServices(j, cfg, mode) {
+  var label = mode === 'dispatch' ? 'Planned Services' : 'Services Performed';
+  var head = '<tr><th>Item</th><th style="width:60px;">Qty</th>' + (cfg.showPricing ? '<th class="r" style="width:90px;">Price</th>' : '') + '</tr>';
+  var rows = j.services.map(function (s) {
+    return '<tr><td><b>' + esc(s.name) + '</b>' + (j.recurring ? '<div class="sub">' + esc(j.recurring) + '</div>' : '') + '</td><td>' + s.qty + '</td>' +
+      (cfg.showPricing ? '<td class="r">' + money(s.price * s.qty) + '</td>' : '') + '</tr>';
+  }).join('');
+  return '<div class="wo-sec-label">' + esc(label) + '</div><table class="wo-table">' + head + rows + '</table>' + subtotalRow(j, cfg, 'services');
+}
+function secMaterials(j, cfg) {
+  var head = '<tr><th>Material</th><th style="width:60px;">Qty</th><th style="width:60px;">Unit</th>' + (cfg.showPricing ? '<th class="r" style="width:90px;">Price</th>' : '') + '</tr>';
+  var rows = j.materials.map(function (m) {
+    return '<tr><td><b>' + esc(m.name) + '</b></td><td>' + m.qty + '</td><td>' + esc(m.unit) + '</td>' +
+      (cfg.showPricing ? '<td class="r">' + money(m.price * m.qty) + '</td>' : '') + '</tr>';
+  }).join('');
+  return '<div class="wo-sec-label">Materials Used</div><table class="wo-table">' + head + rows + '</table>' + subtotalRow(j, cfg, 'materials');
+}
+function subtotalRow(j, cfg, which) {
+  if (!cfg.showPricing) return '';
+  // one subtotal, after the LAST priced section on the doc
+  var lastPriced = (docConfig(j).showMaterials && j.materials.length > 0 && docMode(j) === 'completion') ? 'materials' : 'services';
+  if (which !== lastPriced) return '';
+  var sum = 0;
+  j.services.forEach(function (s) { sum += s.price * s.qty; });
+  if (lastPriced === 'materials') j.materials.forEach(function (m) { sum += m.price * m.qty; });
+  else if (docMode(j) === 'completion' && docConfig(j).showMaterials) j.materials.forEach(function (m) { sum += m.price * m.qty; });
+  return '<div class="wo-subtotal"><span>Subtotal</span><span>' + money(sum) + '</span></div>';
+}
+function secChemicals(j, cfg) {
+  if (!j.chemicals.length) {
+    return '<div class="wo-sec-label">Chemicals Applied</div><div class="wo-note">No chemical applications were recorded on this job.</div>';
+  }
+  var head = '<tr><th>Product</th><th>EPA Reg #</th><th>Amount</th><th>Rate</th><th>Method</th><th>Target Pest</th><th>Area</th><th>Sq Ft/Unit</th><th>REI</th></tr>';
+  var rows = j.chemicals.map(function (r) {
+    return '<tr><td><b>' + esc(r.product) + '</b></td><td class="mono">' + esc(r.epa) + '</td><td>' + esc(r.amount) + '</td><td>' + esc(r.rate) + '</td>' +
+      '<td>' + esc(r.method) + '</td><td>' + esc(r.target) + '</td><td>' + esc(r.area) + '</td><td>' + esc(r.sqft) + '</td><td>' + esc(r.rei) + '</td></tr>';
+  }).join('');
+  return '<div class="wo-sec-label">Chemicals Applied</div><table class="wo-table chem">' + head + rows + '</table>';
+}
+function secInstructions(j, cfg, mode) {
+  var label = mode === 'dispatch' ? 'Access & Instructions' : 'Customer Instructions';
+  return '<div class="wo-sec-label">' + esc(label) + '</div>' +
+    '<div class="wo-callout">' + IC.warn + '<div>' + esc(j.instructions) + '</div></div>';
+}
+function secNotes(j) {
+  return '<div class="wo-sec-label">Notes</div><div class="wo-note">' + esc(j.notes.customer) + '</div>';
+}
+function secNextService(j) {
+  return '<div class="wo-sec-label">Next Service</div>' +
+    '<div class="wo-next-row">' + IC.cal + '<span>Next service date: ' + esc(fmtDateLong(j.nextService)) + '</span></div>';
+}
+function secPhotos(j) {
+  return '<div class="wo-sec-label">Photos</div><div class="photo-strip" style="margin-top:12px;">' +
+    j.photos.map(function (seed) { return '<div class="photo-tile">' + photoSVG(seed) + '</div>'; }).join('') + '</div>';
+}
+function secSignature(j) {
+  var techLine = '<div class="wo-tech-line"><b>' + esc(j.tech.name) + '</b>' +
+    (j.chemicals.length && j.tech.license ? ' — <span style="white-space:nowrap;">Applicator ' + esc(j.tech.license) + '</span>' : '') + '</div>';
+  var inner;
+  if (j.signature) {
+    inner = '<div class="wo-sig-grid">' +
+      '<div><div class="wo-sig-art">' + sigArtHtml(j.signature, true) + '</div>' +
+        '<div class="wo-sig-cap">Customer signature</div>' +
+        '<div class="wo-sig-name">' + esc(j.signature.name) + '</div>' +
+        '<div class="wo-sig-time">' + fmtDate(j.signature.at) + ' ' + fmtTime(j.signature.at) + '</div></div>' +
+      '<div>' + techLine + '<div class="wo-sig-cap" style="margin-top:2px;">Technician</div></div>' +
+    '</div>';
+  } else if (j.unsignedCompleted) {
+    inner = '<div class="wo-sig-pending">' +
+      '<span class="pill pill-amber">' + IC.warn + ' Unsigned</span>' +
+      '<div>Completed without signature — ' + esc(fmtDate(j.unsignedCompleted)) + '</div>' +
+      '<button class="btn btn-sm no-print" onclick="openSignature(\'' + j.id + '\')">' + IC.pen + ' Capture Signature</button>' +
+    '</div>' + '<div class="mt-12">' + techLine + '</div>';
+  } else {
+    inner = '<div class="wo-sig-pending">' +
+      '<div>Customer signature</div>' +
+      '<button class="btn btn-primary btn-sm no-print" onclick="openSignature(\'' + j.id + '\')">' + IC.pen + ' Capture Signature</button>' +
+    '</div>' + '<div class="mt-12">' + techLine + '</div>';
+  }
+  return '<div class="wo-sec-label">Sign-Off</div><div class="wo-sig-zone">' + inner + '</div>';
+}
+function secInvoice(j) {
+  return '<div class="wo-invoice-chip no-print"><span class="pill pill-navy pill-clickable" onclick="invoiceChip()">' + IC.doc + ' Invoice ' + esc(j.invoice) + ' →</span></div>';
+}
+function invoiceChip() { toast('Opens invoice — out of mockup scope'); }
+
+function woPaperHtml(j) {
+  var cfg = docConfig(j);
+  var mode = docMode(j);
+  var c = woState.company;
+  var sections = WO_SECTIONS.map(function (s) {
+    return s.when(j, cfg, mode) ? s.render(j, cfg, mode) : '';
+  }).join('');
+  var footer =
+    '<div class="wo-doc-footer">' +
+      (mode === 'dispatch' ? '<div><span class="wo-watermark">' + IC.cal + ' Work order — scheduled</span></div>' : '') +
+      '<div class="wo-doc-footer-text">' + esc(woState.settings.footerText) + '</div>' +
+      '<div class="wo-doc-footer-micro">Generated by QuoteIQ</div>' +
+    '</div>';
+  return '<div class="wo-paper">' +
+    '<div class="wo-doc-top">' +
+      '<div><div class="wo-brand">Acme <span>Company</span></div>' +
+        '<div class="wo-brand-lines">' + esc(c.address) + '<br>' + esc(c.license) + '</div></div>' +
+      '<div><div class="wo-doc-title">WORK ORDER</div>' +
+        '<div class="wo-doc-meta"><span class="num mono">' + esc(j.wo) + '</span><br>' + esc(fmtDateLong(docDate(j))) + '<br>' + statusPill(j.status) + '</div></div>' +
+    '</div>' +
+    '<div class="wo-parties">' +
+      '<div><div class="wo-party-label">Service Address</div><div class="wo-party"><b>' + esc(j.customer.name) + '</b><br>' + esc(j.address).replace(/, /g, '<br>') + '</div></div>' +
+      '<div><div class="wo-party-label">Primary Contact</div><div class="wo-party"><b>' + esc(j.customer.name) + '</b><br>' + esc(j.customer.phone) + (j.customer.email ? '<br>' + esc(j.customer.email) : '') + '</div></div>' +
+    '</div>' +
+    sections + footer +
+  '</div>';
+}
+
+function sectionsPopHtml(j) {
+  var cfg = docConfig(j);
+  var hasOverride = !!woState.perDoc[j.id];
+  function togRow(key, label, sub) {
+    return '<div class="sections-row"><div><div class="sections-row-label">' + esc(label) + '</div>' +
+      (sub ? '<div class="sections-row-sub">' + esc(sub) + '</div>' : '') + '</div>' +
+      '<button class="toggle mini ' + (cfg[key] ? 'on' : '') + '" onclick="setPerDoc(\'' + j.id + '\',\'' + key + '\',' + (cfg[key] ? 'false' : 'true') + ')"></button></div>';
+  }
+  return '<div class="sections-pop" id="sectionsPop" style="display:' + (sectionsPopOpen ? 'block' : 'none') + ';" onclick="event.stopPropagation()">' +
+    '<div class="sections-pop-title">Sections — this document only</div>' +
+    '<div class="sections-pop-sub">Overrides apply to ' + esc(j.wo) + ' without changing the company defaults. Sections with no data stay absent.</div>' +
+    togRow('showPricing', 'Show pricing', 'Price column + subtotal') +
+    togRow('showMaterials', 'Materials', null) +
+    '<div class="sections-row"><div><div class="sections-row-label">Chemicals</div><div class="sections-row-sub">Auto = only when records exist</div></div>' +
+      '<select onchange="setPerDoc(\'' + j.id + '\',\'showChemicals\',this.value)">' +
+        ['auto', 'on', 'off'].map(function (v) { return '<option value="' + v + '"' + (cfg.showChemicals === v ? ' selected' : '') + '>' + (v === 'auto' ? 'Auto' : v === 'on' ? 'On' : 'Off') + '</option>'; }).join('') +
+      '</select></div>' +
+    togRow('showPhotos', 'Photos', null) +
+    togRow('showNextService', 'Next service date', null) +
+    '<div class="sections-reset">' +
+      (hasOverride
+        ? '<button class="link-btn" onclick="resetPerDoc(\'' + j.id + '\')">Reset to defaults</button>'
+        : '<span class="field-hint">Following company defaults (Settings → Work Orders).</span>') +
+    '</div>' +
+  '</div>';
+}
+function setPerDoc(jobId, key, val) {
+  if (!woState.perDoc[jobId]) woState.perDoc[jobId] = {};
+  woState.perDoc[jobId][key] = val;
+  save();
+  refreshWoDoc();
+}
+function resetPerDoc(jobId) {
+  delete woState.perDoc[jobId];
+  save();
+  refreshWoDoc();
+  toast('Document reset to company defaults');
+}
+function toggleSectionsPop() {
+  sectionsPopOpen = !sectionsPopOpen;
+  var p = document.getElementById('sectionsPop');
+  if (p) p.style.display = sectionsPopOpen ? 'block' : 'none';
+}
+
+function woDocInner(j) {
+  var sent = j.sent
+    ? '<span class="wo-sent-line">' + IC.check + ' Sent · ' + fmtDate(j.sent.at) + ', ' + fmtTime(j.sent.at) + '</span>'
+    : '';
+  return '<div class="wo-toolbar">' +
+      '<button class="btn btn-sm" onclick="event.stopPropagation();printWoDoc(\'' + j.id + '\')">' + IC.print + ' Print</button>' +
+      '<button class="btn btn-sm" onclick="event.stopPropagation();downloadWoPdf(\'' + j.id + '\')">' + IC.download + ' Download PDF</button>' +
+      '<button class="btn btn-sm" onclick="event.stopPropagation();openSend(\'' + j.id + '\')">' + IC.send + ' Send</button>' +
+      sent +
+      '<div class="sections-host" onclick="event.stopPropagation()">' +
+        '<button class="btn btn-sm" onclick="toggleSectionsPop()">' + IC.layers + ' Sections</button>' +
+        sectionsPopHtml(j) +
+      '</div>' +
+    '</div>' +
+    woPaperHtml(j);
+}
+function openWoDoc(jobId) {
+  var j = jobById(jobId);
+  if (!j) return;
+  sectionsPopOpen = false;
+  openDrawer('Work Order — ' + j.wo, '<div id="woDocWrap" onclick="if(sectionsPopOpen)toggleSectionsPop()">' + woDocInner(j) + '</div>', { size: 'xwide' });
+  woDocJobId = jobId;
+}
+function refreshWoDoc() {
+  if (!woDocJobId) return;
+  var wrap = document.getElementById('woDocWrap');
+  var j = jobById(woDocJobId);
+  if (wrap && j) {
+    wrap.innerHTML = woDocInner(j);
+    var t = document.getElementById('drawerTitle');
+    if (t) t.textContent = 'Work Order — ' + j.wo;
+  }
+}
+
+/* ---------- Print / Download PDF ---------- */
+function printWoDoc(jobId) {
+  var j = jobById(jobId);
+  if (!j) return;
+  document.getElementById('printRoot').innerHTML = woPaperHtml(j);
+  window.print();
+}
+function downloadWoPdf(jobId) {
+  toast('Use “Save as PDF” in the print dialog');
+  printWoDoc(jobId);
+}
+
+/* ============================================================
+   S5 — CAPTURE SIGNATURE (Draw | Type)
+   ============================================================ */
+var sigState = null;
+function openSignature(jobId, opts) {
+  var j = jobById(jobId);
+  if (!j) return;
+  sigState = { jobId: jobId, tab: 'draw', name: j.customer.name, typed: '', hasDrawn: false, completeAfter: !!(opts && opts.completeAfter) };
+  openModal(sigModalHtml());
+  initSigCanvas();
+}
+function sigModalHtml() {
+  var s = sigState;
+  var pad;
+  if (s.tab === 'draw') {
+    pad = '<div class="sig-pad-label">Draw your signature below</div>' +
+      '<div class="sig-canvas-wrap"><canvas id="sigCanvas"></canvas>' +
+      '<button class="btn btn-sm sig-clear" onclick="clearSigCanvas()">Clear</button></div>';
+  } else {
+    pad = '<div class="sig-pad-label">Type your full name</div>' +
+      '<input class="qiq-input" id="sigTyped" placeholder="e.g. Jane Doe" value="' + esc(s.typed) + '" oninput="sigTypeInput(this.value)">' +
+      '<div class="sig-type-preview"><span id="sigTypePreview">' + esc(s.typed) + '</span></div>';
+  }
+  return '<div class="qiq-modal-head"><span></span><div class="qiq-modal-title">Capture Signature</div>' +
+    '<button class="qiq-modal-x" onclick="cancelSignature()">' + IC.x + '</button></div>' +
+    '<div class="qiq-modal-body">' +
+      '<div class="sig-tabs">' +
+        '<button class="' + (s.tab === 'draw' ? 'active' : '') + '" onclick="sigSetTab(\'draw\')">Draw</button>' +
+        '<button class="' + (s.tab === 'type' ? 'active' : '') + '" onclick="sigSetTab(\'type\')">Type</button>' +
+      '</div>' +
+      pad +
+      '<div class="send-msg-label">Signer name</div>' +
+      '<input class="qiq-input" id="sigName" value="' + esc(s.name) + '" oninput="sigState.name=this.value">' +
+    '</div>' +
+    '<div class="qiq-modal-foot">' +
+      '<button class="btn" onclick="cancelSignature()">Cancel</button>' +
+      '<button class="btn btn-primary" onclick="confirmSignature()">' + IC.check + ' Confirm Signature</button>' +
+    '</div>';
+}
+function sigSetTab(t) {
+  if (!sigState) return;
+  var nameEl = document.getElementById('sigName');
+  if (nameEl) sigState.name = nameEl.value;
+  sigState.tab = t;
+  sigState.hasDrawn = false;
+  closeModal();
+  openModal(sigModalHtml());
+  if (t === 'draw') initSigCanvas();
+}
+function sigTypeInput(v) {
+  sigState.typed = v;
+  var p = document.getElementById('sigTypePreview');
+  if (p) p.textContent = v;
+}
+var sigCtx = null;
+function initSigCanvas() {
+  var cv = document.getElementById('sigCanvas');
+  if (!cv) return;
+  var dpr = window.devicePixelRatio || 1;
+  var w = cv.clientWidth, h = cv.clientHeight;
+  cv.width = w * dpr; cv.height = h * dpr;
+  sigCtx = cv.getContext('2d');
+  sigCtx.scale(dpr, dpr);
+  sigCtx.lineWidth = 2.4;
+  sigCtx.lineCap = 'round';
+  sigCtx.lineJoin = 'round';
+  sigCtx.strokeStyle = '#1a2340';
+  var drawing = false;
+  function pos(e) {
+    var r = cv.getBoundingClientRect();
+    return { x: e.clientX - r.left, y: e.clientY - r.top };
+  }
+  cv.addEventListener('pointerdown', function (e) {
+    drawing = true;
+    cv.setPointerCapture(e.pointerId);
+    var p = pos(e);
+    sigCtx.beginPath();
+    sigCtx.moveTo(p.x, p.y);
+    e.preventDefault();
+  });
+  cv.addEventListener('pointermove', function (e) {
+    if (!drawing) return;
+    var p = pos(e);
+    sigCtx.lineTo(p.x, p.y);
+    sigCtx.stroke();
+    sigState.hasDrawn = true;
+    e.preventDefault();
+  });
+  cv.addEventListener('pointerup', function () { drawing = false; });
+  cv.addEventListener('pointercancel', function () { drawing = false; });
+}
+function clearSigCanvas() {
+  var cv = document.getElementById('sigCanvas');
+  if (!cv || !sigCtx) return;
+  sigCtx.clearRect(0, 0, cv.width, cv.height);
+  sigState.hasDrawn = false;
+}
+function cancelSignature() {
+  var wasIntercept = sigState && sigState.completeAfter;
+  sigState = null;
+  closeModal();
+  if (wasIntercept) { syncDemoPanel(); toast('Signature discarded — job not completed'); }
+}
+function confirmSignature() {
+  var s = sigState;
+  if (!s) return;
+  var nameEl = document.getElementById('sigName');
+  var name = (nameEl ? nameEl.value : s.name).trim();
+  if (!name) { toast('Enter the signer’s name first'); return; }
+  var sig;
+  if (s.tab === 'draw') {
+    if (!s.hasDrawn) { toast('Draw a signature first — or switch to Type'); return; }
+    var cv = document.getElementById('sigCanvas');
+    sig = { mode: 'draw', data: cv.toDataURL('image/png'), name: name, at: new Date().toISOString() };
+  } else {
+    var typed = (s.typed || '').trim();
+    if (!typed) { toast('Type the full name to sign'); return; }
+    sig = { mode: 'typed', text: typed, name: name, at: new Date().toISOString() };
+  }
+  var j = jobById(s.jobId);
+  j.signature = sig;
+  j.unsignedCompleted = null;
+  var completeAfter = s.completeAfter;
+  sigState = null;
+  save();
+  closeModal();
+  if (completeAfter) {
+    finishComplete(j.id);
+  } else {
+    if (currentPanel === 'job-detail') renderJobDetail();
+    refreshWoDoc();
+  }
+  toast('Signature captured — ' + name + ', ' + fmtDate(sig.at) + ' ' + fmtTime(sig.at));
+}
+
+/* ============================================================
+   S6 — SEND (modal)
+   ============================================================ */
+var sendState = null;
+function openSend(jobId) {
+  var j = jobById(jobId);
+  if (!j) return;
+  sendState = {
+    jobId: jobId,
+    method: 'text',
+    message: 'Hi ' + firstName(j.customer.name) + ' — your work order ' + j.wo + ' from Acme Company: [link]'
+  };
+  openModal(sendModalHtml());
+}
+function sendModalHtml() {
+  var s = sendState;
+  var j = jobById(s.jobId);
+  var hasEmail = !!j.customer.email;
+  var canSend = s.method === 'text' ? !!j.customer.phone : hasEmail;
+  return '<div class="qiq-modal-head"><span></span><div class="qiq-modal-title">Send Work Order — ' + esc(j.wo) + '</div>' +
+    '<button class="qiq-modal-x" onclick="closeModal()">' + IC.x + '</button></div>' +
+    '<div class="qiq-modal-body">' +
+      '<div class="send-msg-label">Send via</div>' +
+      '<div class="sig-tabs" style="margin-bottom:12px;">' +
+        '<button class="' + (s.method === 'text' ? 'active' : '') + '" onclick="sendSetMethod(\'text\')">Text</button>' +
+        '<button class="' + (s.method === 'email' ? 'active' : '') + '" onclick="sendSetMethod(\'email\')">Email</button>' +
+      '</div>' +
+      '<div class="send-msg-label">Recipient</div>' +
+      '<div class="check-chips">' +
+        '<button class="check-chip ' + (s.method === 'text' ? 'on' : '') + '" onclick="sendSetMethod(\'text\')">' + IC.check + IC.phone + ' ' + esc(j.customer.phone) + '</button>' +
+        (hasEmail
+          ? '<button class="check-chip ' + (s.method === 'email' ? 'on' : '') + '" onclick="sendSetMethod(\'email\')">' + IC.check + IC.mail + ' ' + esc(j.customer.email) + '</button>'
+          : '<button class="check-chip disabled" onclick="toast(\'No email on file for ' + esc(firstName(j.customer.name)) + ' — add one on the contact to enable email\')">' + IC.check + IC.mail + ' <span class="sub">No email on file</span></button>') +
+      '</div>' +
+      '<div class="send-msg-label">Message</div>' +
+      '<textarea class="textarea" id="sendMsg" oninput="sendState.message=this.value">' + esc(s.message) + '</textarea>' +
+      (!canSend ? '<div class="send-helper">' + esc(j.customer.name) + ' has no ' + (s.method === 'email' ? 'email address' : 'phone number') + ' on file — pick another method.</div>' : '') +
+    '</div>' +
+    '<div class="qiq-modal-foot">' +
+      '<button class="btn" onclick="closeModal()">Cancel</button>' +
+      '<button class="btn btn-primary" ' + (canSend ? '' : 'disabled ') + 'onclick="doSend()">' + IC.send + ' Send</button>' +
+    '</div>';
+}
+function sendSetMethod(m) {
+  if (!sendState) return;
+  var j = jobById(sendState.jobId);
+  if (m === 'email' && !j.customer.email) {
+    toast('No email on file for ' + firstName(j.customer.name) + ' — add one on the contact to enable email');
+    return;
+  }
+  var msgEl = document.getElementById('sendMsg');
+  if (msgEl) sendState.message = msgEl.value;
+  sendState.method = m;
+  closeModal();
+  openModal(sendModalHtml());
+}
+function doSend() {
+  var s = sendState;
+  if (!s) return;
+  var j = jobById(s.jobId);
+  var recipient = s.method === 'text' ? j.customer.phone : j.customer.email;
+  j.sent = { to: recipient, method: s.method, at: new Date().toISOString() };
+  sendState = null;
+  save();
+  closeModal();
+  refreshWoDoc();
+  toast('Work order sent to ' + recipient);
+}
+
+/* ============================================================
+   S7 — WORK ORDER SETTINGS (inside the Settings area pattern)
+   ============================================================ */
+function renderSettingsHub() {
+  var host = document.getElementById('panel-settings-hub');
+  host.innerHTML =
+    '<div class="page-head-row"><div>' +
+      '<div class="page-title">Settings</div>' +
+      '<div class="page-sub">Company configuration — this mockup covers the Work Orders panel; the full Settings experience ships in the Settings handoff</div>' +
+    '</div></div>' +
+    '<div class="all-group-title">Documents</div>' +
+    '<div class="sub-tile" onclick="showPanel(\'wo-settings\')">' +
+      '<span class="sub-tile-icon">' + IC.doc + '</span>' +
+      '<div class="sub-tile-body"><div class="sub-tile-title">Work Orders</div>' +
+      '<div class="sub-tile-desc">Numbering, default document sections, signature requirement, and footer text.</div></div>' +
+      '<span class="sub-tile-arrow">' + IC.chev + '</span>' +
+    '</div>';
+}
+
+function renderWoSettings() {
+  var host = document.getElementById('panel-wo-settings');
+  var back = '<button class="back-link" onclick="showPanel(\'settings-hub\')">' + IC.back + 'Back to Settings</button>';
+  if (!isOwner()) {
+    host.innerHTML = back +
+      '<div class="page-head-row"><div><div class="page-title">Work Order Settings</div></div></div>' +
+      '<div class="card"><div class="card-body">' + permPlaceholder('Work Order Settings requires Settings Access — owner-only in this demo. Generate, print, send, and capture signature remain available on the job.') + '</div></div>';
+    return;
+  }
+  var s = woState.settings;
+  var d = s.defaults;
+  host.innerHTML = back +
+    '<div class="page-head-row"><div>' +
+      '<div class="page-title">Work Order Settings</div>' +
+      '<div class="page-sub">Numbering, default document sections, signature requirement, and footer</div>' +
+    '</div></div>' +
+
+    '<div class="warn-banner info">' + IC.info + '<div class="warn-banner-body"><span class="warn-banner-title">Open product decisions (non-blocking):</span> ' +
+      '<b>O1</b> — plan placement: all plans vs. Pro+ (Mike/Justin). Mockup renders as available on the seeded MAX account, no tier locks. · ' +
+      '<b>O2</b> — WO # assignment moment: on job creation vs. first document open (Mike/Justin + Szymon). · ' +
+      '<b>O3</b> — customer-facing WO web page vs. PDF-only send (Mike/Justin). Mockup sends a link preview only.</div></div>' +
+
+    '<div class="card"><div class="card-head"><span class="card-icon">' + IC.list + '</span>' +
+      '<div class="card-titleblock"><div class="card-title">Numbering</div><div class="card-sub">Prefix + next number for future assignments. Existing WO numbers never change.</div></div>' +
+      '<div class="card-meta"><span class="pill pill-navy mono" id="woNumPreview">Next: ' + esc(s.numbering.prefix + s.numbering.next) + '</span></div></div>' +
+    '<div class="card-body"><div class="field-grid">' +
+      '<div class="field"><span class="field-label">Prefix</span><input class="qiq-input" value="' + esc(s.numbering.prefix) + '" oninput="setNumbering(\'prefix\', this.value)"></div>' +
+      '<div class="field"><span class="field-label">Next number</span><input class="qiq-input" type="number" min="1" value="' + s.numbering.next + '" oninput="setNumbering(\'next\', this.value)"></div>' +
+    '</div><div class="field-hint mt-12">Changing these affects only future assignments — WO-1001/2/3 keep their numbers.</div></div></div>' +
+
+    '<div class="card"><div class="card-head"><span class="card-icon">' + IC.gear + '</span>' +
+      '<div class="card-titleblock"><div class="card-title">Auto-assign WO number</div><div class="card-sub">Assign the number when a job is created. Off = assign on first document open.</div></div>' +
+      '<div class="card-meta"><button class="toggle ' + (s.autoAssign ? 'on' : '') + '" onclick="toggleSetting(\'autoAssign\')"></button></div></div>' +
+    '<div class="card-body"><div class="warn-banner info" style="margin:0;">' + IC.info + '<div class="warn-banner-body"><span class="warn-banner-title">Open decision O2.</span> On job creation (every job gets one) vs. on first document generation (only jobs that need paper). Flagged for Mike/Justin + Szymon — non-blocking for this mockup.</div></div></div></div>' +
+
+    '<div class="card"><div class="card-head"><span class="card-icon">' + IC.layers + '</span>' +
+      '<div class="card-titleblock"><div class="card-title">Default document sections</div><div class="card-sub">Applies to every newly opened work order document. Per-document overrides (the Sections button on a doc) win for that doc.</div></div></div>' +
+    '<div class="card-body">' +
+      settingToggleRow('showPricing', 'Show pricing', 'Off by default — the work order is an operational document; invoices own money.', d.showPricing) +
+      settingToggleRow('showMaterials', 'Materials', 'List materials used on completion documents.', d.showMaterials) +
+      '<div class="toggle-row" style="padding:12px 0;border-bottom:1px solid var(--line-2);"><div><div class="toggle-row-title">Chemicals</div><div class="toggle-row-sub">Auto renders the compliance table only when application records exist.</div></div>' +
+        '<select class="qiq-select" style="width:130px;" onchange="setDefault(\'showChemicals\', this.value)">' +
+          ['auto', 'on', 'off'].map(function (v) { return '<option value="' + v + '"' + (d.showChemicals === v ? ' selected' : '') + '>' + (v === 'auto' ? 'Auto' : v === 'on' ? 'On' : 'Off') + '</option>'; }).join('') +
+        '</select></div>' +
+      settingToggleRow('showPhotos', 'Photos', 'Include the job photo strip on completion documents.', d.showPhotos) +
+      settingToggleRow('showNextService', 'Next service date', 'Print the next visit date from the recurrence.', d.showNextService, true) +
+    '</div></div>' +
+
+    '<div class="card"><div class="card-head"><span class="card-icon amber">' + IC.pen + '</span>' +
+      '<div class="card-titleblock"><div class="card-title">Require signature on completion</div><div class="card-sub">When on, completing an unsigned job fires the capture intercept.</div></div>' +
+      '<div class="card-meta"><button class="toggle ' + (s.requireSignatureOnCompletion ? 'on' : '') + '" onclick="toggleSetting(\'requireSignatureOnCompletion\')"></button></div></div></div>' +
+
+    '<div class="card"><div class="card-head"><span class="card-icon">' + IC.doc + '</span>' +
+      '<div class="card-titleblock"><div class="card-title">Footer text</div><div class="card-sub">Prints at the bottom of every work order, above the “Generated by QuoteIQ” line.</div></div></div>' +
+    '<div class="card-body">' +
+      '<textarea class="textarea" oninput="setFooter(this.value)">' + esc(s.footerText) + '</textarea>' +
+      '<div class="field-hint mt-12">Live preview:</div>' +
+      '<div class="wo-doc-footer" style="margin-top:6px;text-align:left;border-top:none;padding-top:0;"><div class="wo-doc-footer-text" id="footerPreview">' + esc(s.footerText) + '</div><div class="wo-doc-footer-micro" style="text-align:left;">Generated by QuoteIQ</div></div>' +
+    '</div></div>';
+}
+function settingToggleRow(key, title, sub, on, last) {
+  return '<div class="toggle-row" style="padding:12px 0;' + (last ? '' : 'border-bottom:1px solid var(--line-2);') + '">' +
+    '<div><div class="toggle-row-title">' + esc(title) + '</div><div class="toggle-row-sub">' + esc(sub) + '</div></div>' +
+    '<button class="toggle ' + (on ? 'on' : '') + '" onclick="setDefault(\'' + key + '\', ' + (on ? 'false' : 'true') + ')"></button></div>';
+}
+function setNumbering(key, val) {
+  if (key === 'next') {
+    var n = parseInt(val, 10);
+    if (!isNaN(n) && n > 0) woState.settings.numbering.next = n;
+  } else {
+    woState.settings.numbering.prefix = val;
+  }
+  save();
+  var p = document.getElementById('woNumPreview');
+  if (p) p.textContent = 'Next: ' + woState.settings.numbering.prefix + woState.settings.numbering.next;
+}
+function setDefault(key, val) {
+  woState.settings.defaults[key] = val;
+  save();
+  renderWoSettings();
+  toast('Default updated — future document opens use it; per-doc overrides still win');
+}
+function toggleSetting(key) {
+  woState.settings[key] = !woState.settings[key];
+  save();
+  renderWoSettings();
+  if (key === 'requireSignatureOnCompletion') {
+    toast('Signature on completion ' + (woState.settings[key] ? 'required — completing an unsigned job now fires the intercept' : 'not required — the intercept is off'));
+  } else if (key === 'autoAssign') {
+    toast('WO numbers now assigned ' + (woState.settings[key] ? 'when a job is created' : 'on first document open') + ' (O2 — open decision)');
+  }
+}
+function setFooter(v) {
+  woState.settings.footerText = v;
+  save();
+  var p = document.getElementById('footerPreview');
+  if (p) p.textContent = v;
+}
+
+/* ---------- Wire up + init ---------- */
+PANEL_RENDER['dashboard'] = renderDashboard;
+PANEL_RENDER['jobs-list'] = renderJobsList;
+PANEL_RENDER['job-detail'] = renderJobDetail;
+PANEL_RENDER['settings-hub'] = renderSettingsHub;
+PANEL_RENDER['wo-settings'] = renderWoSettings;
+
+window.addEventListener('afterprint', function () {
+  document.getElementById('printRoot').innerHTML = '';
+});
+
+showPanel('dashboard');
+syncDemoPanel();
+</script>
+</body>
+</html>
