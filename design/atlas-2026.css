@@ -667,6 +667,99 @@ a{ color:inherit; }
 .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
 .toast .toast-icon{ width:22px; height:22px; border-radius:50%; background:var(--green); display:flex; align-items:center; justify-content:center; }
 
+/* ===================== QUOTEIQ DESKTOP SHELL ===================== */
+/* consolidated icon rail (default) + universal header wrapping the Atlas app */
+.qiq-shell{ display:flex; height:100vh; width:100%; overflow:hidden; background:var(--bg); }
+
+.qiq-rail{ width:64px; flex:0 0 64px; background:#fff; border-right:1px solid var(--line); display:flex; flex-direction:column;
+  position:relative; z-index:1300; transition:width .22s cubic-bezier(.4,0,.2,1); }
+.qiq-rail.expanded{ width:252px; flex-basis:252px; box-shadow:10px 0 34px rgba(17,22,34,.10); }
+
+.qiq-rail-head{ height:56px; flex:none; display:flex; align-items:center; gap:9px; padding:0 14px; border-bottom:1px solid var(--line-soft); }
+.qiq-rail:not(.expanded) .qiq-rail-head{ justify-content:center; padding:0; }
+.qiq-elite{ display:none; align-items:center; gap:5px; padding:4px 9px; border-radius:8px;
+  background:linear-gradient(135deg,#ffa233,#ef7a1a); color:#fff; font-size:11px; font-weight:800; letter-spacing:.02em; }
+.qiq-elite svg{ width:13px; height:13px; }
+.qiq-rail.expanded .qiq-elite{ display:inline-flex; }
+.qiq-burger{ width:36px; height:36px; border-radius:9px; border:none; background:transparent; color:var(--ink-2); cursor:pointer;
+  display:flex; align-items:center; justify-content:center; margin-left:auto; transition:.15s; }
+.qiq-rail:not(.expanded) .qiq-burger{ margin:0; }
+.qiq-burger:hover{ background:var(--surface-3); color:var(--ink); }
+.qiq-burger svg{ width:20px; height:20px; }
+
+.qiq-company{ display:none; align-items:center; gap:10px; padding:12px 14px 6px; }
+.qiq-rail.expanded .qiq-company{ display:flex; }
+.qiq-company .co-logo{ width:36px; height:36px; border-radius:10px; flex:none; display:flex; align-items:center; justify-content:center;
+  background:linear-gradient(150deg,#3b82f6,#1d4ed8); color:#fff; font-size:12px; font-weight:900; letter-spacing:-.02em; }
+.qiq-company .co-name{ flex:1; min-width:0; }
+.qiq-company .co-name b{ display:block; font-size:13.5px; font-weight:800; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.qiq-company .co-name span{ font-size:11px; color:var(--ink-3); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:block; }
+.qiq-company .co-gear{ background:none; border:none; color:var(--ink-4); cursor:pointer; padding:4px; border-radius:7px; }
+.qiq-company .co-gear:hover{ background:var(--surface-3); color:var(--ink-2); }
+.qiq-company .co-gear svg{ width:16px; height:16px; }
+.qiq-addco{ display:none; margin:2px 14px 8px; align-items:center; justify-content:center; gap:7px; padding:9px; border-radius:10px;
+  border:1px solid var(--line-2); background:#fff; color:var(--ink-2); font-size:12.5px; font-weight:600; cursor:pointer; font-family:inherit; }
+.qiq-rail.expanded .qiq-addco{ display:flex; }
+.qiq-addco:hover{ background:var(--surface-3); color:var(--ink); }
+.qiq-addco svg{ width:15px; height:15px; }
+
+.qiq-rail-nav{ flex:1; overflow-y:auto; overflow-x:hidden; padding:8px; display:flex; flex-direction:column; gap:2px; }
+.qiq-rail-foot{ flex:none; padding:8px; border-top:1px solid var(--line-soft); display:flex; flex-direction:column; gap:2px; }
+.qiq-item{ position:relative; display:flex; align-items:center; gap:13px; padding:10px; border-radius:10px; cursor:pointer; color:var(--ink-2);
+  font-size:13.5px; font-weight:600; white-space:nowrap; transition:.14s; border:none; background:transparent; font-family:inherit; text-align:left; width:100%; }
+.qiq-item:hover{ background:var(--surface-3); color:var(--ink); }
+.qiq-item.active{ background:var(--gold-tint); color:var(--gold-lo); }
+.qiq-item .qi-ico{ width:24px; height:24px; flex:none; display:flex; align-items:center; justify-content:center; }
+.qiq-item .qi-ico svg{ width:21px; height:21px; }
+.qiq-item .qi-label{ flex:1; }
+.qiq-item .qi-badge{ font-size:9.5px; font-weight:800; padding:2px 7px; border-radius:999px; background:var(--gold); color:#fff; }
+.qiq-item .qi-badge.count{ background:var(--ink); }
+.qiq-item .qi-chev{ width:15px; height:15px; color:var(--ink-4); flex:none; }
+.qiq-rail:not(.expanded) .qiq-item{ justify-content:center; padding:11px 0; }
+.qiq-rail:not(.expanded) .qi-label,
+.qiq-rail:not(.expanded) .qi-badge,
+.qiq-rail:not(.expanded) .qi-chev,
+.qiq-rail:not(.expanded) .qiq-sub{ display:none !important; }
+/* collapsed hover tooltip */
+.qiq-rail:not(.expanded) .qiq-item:hover::after{ content:attr(data-tip); position:absolute; left:calc(100% + 12px); top:50%;
+  transform:translateY(-50%); background:var(--ink); color:#fff; padding:7px 11px; border-radius:8px; font-size:12px; font-weight:600;
+  white-space:nowrap; z-index:1400; box-shadow:var(--sh-2); pointer-events:none; }
+
+.qiq-sub{ display:flex; flex-direction:column; gap:1px; margin:1px 0 4px 22px; padding-left:13px; border-left:1px solid var(--line); }
+.qiq-sub a{ padding:8px 11px; border-radius:8px; font-size:12.5px; font-weight:600; color:var(--ink-2); cursor:pointer; text-decoration:none; white-space:nowrap; }
+.qiq-sub a:hover{ background:var(--surface-3); color:var(--ink); }
+.qiq-sub a.active{ background:#fff; color:var(--ink); border:1px solid var(--line-2); box-shadow:var(--sh-1); }
+
+/* right-hand body: universal header + Atlas content */
+.qiq-body{ flex:1; min-width:0; display:flex; flex-direction:column; height:100vh; }
+.qiq-header{ height:56px; flex:none; display:flex; align-items:center; gap:14px; padding:0 18px; z-index:1100;
+  background:var(--glass-strong); -webkit-backdrop-filter:var(--blur); backdrop-filter:var(--blur); border-bottom:1px solid var(--line); }
+.qiq-nav{ margin:0 auto; display:flex; align-items:center; gap:2px; background:var(--surface-3); border:1px solid var(--line);
+  border-radius:var(--r-pill); padding:4px; }
+.qiq-nav a{ display:inline-flex; align-items:center; gap:7px; padding:8px 15px; border-radius:var(--r-pill); font-size:13px; font-weight:600;
+  color:var(--ink-2); cursor:pointer; text-decoration:none; transition:.14s; white-space:nowrap; }
+.qiq-nav a:hover{ color:var(--ink); }
+.qiq-nav a.active{ background:#fff; color:var(--ink); box-shadow:var(--sh-1); font-weight:700; }
+.qiq-nav a svg{ width:16px; height:16px; }
+.qiq-head-right{ display:flex; align-items:center; gap:11px; }
+/* credits pill styled like the QuoteIQ header pill (white, ⚡ + number + boost) */
+.qiq-head-right .credits-chip{ background:#fff; border:1px solid var(--line); color:var(--ink); box-shadow:var(--sh-1); font-size:13px; }
+.qiq-head-right .credits-chip::before{ color:var(--gold); filter:none; }
+.cred-boost{ display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; border-radius:6px;
+  background:linear-gradient(135deg,#ffa233,#ef7a1a); color:#fff; font-size:11px; margin-left:2px; }
+.qiq-iconbtn{ width:38px; height:38px; border-radius:10px; border:1px solid var(--line); background:#fff; color:var(--ink-2); cursor:pointer;
+  display:flex; align-items:center; justify-content:center; position:relative; transition:.15s; box-shadow:var(--sh-1); }
+.qiq-iconbtn:hover{ color:var(--ink); border-color:var(--line-2); }
+.qiq-iconbtn svg{ width:19px; height:19px; }
+.qiq-badge{ position:absolute; top:-6px; right:-6px; background:#ef4b63; color:#fff; font-size:9px; font-weight:800; padding:1px 5px;
+  border-radius:999px; border:2px solid #fff; }
+
+/* Atlas app now lives inside the shell body */
+.qiq-body .main{ height:auto; flex:1 1 auto; min-height:0; }
+.qiq-body .topbar{ z-index:1000; }
+
+@media (max-width:900px){ .qiq-rail{ display:none; } }
+
 /* ===================== HELP / GUIDE ===================== */
 /* floating "?" button, bottom-left of the map */
 .help-fab{

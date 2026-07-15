@@ -1337,6 +1337,99 @@ a{ color:inherit; }
 .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
 .toast .toast-icon{ width:22px; height:22px; border-radius:50%; background:var(--green); display:flex; align-items:center; justify-content:center; }
 
+/* ===================== QUOTEIQ DESKTOP SHELL ===================== */
+/* consolidated icon rail (default) + universal header wrapping the Atlas app */
+.qiq-shell{ display:flex; height:100vh; width:100%; overflow:hidden; background:var(--bg); }
+
+.qiq-rail{ width:64px; flex:0 0 64px; background:#fff; border-right:1px solid var(--line); display:flex; flex-direction:column;
+  position:relative; z-index:1300; transition:width .22s cubic-bezier(.4,0,.2,1); }
+.qiq-rail.expanded{ width:252px; flex-basis:252px; box-shadow:10px 0 34px rgba(17,22,34,.10); }
+
+.qiq-rail-head{ height:56px; flex:none; display:flex; align-items:center; gap:9px; padding:0 14px; border-bottom:1px solid var(--line-soft); }
+.qiq-rail:not(.expanded) .qiq-rail-head{ justify-content:center; padding:0; }
+.qiq-elite{ display:none; align-items:center; gap:5px; padding:4px 9px; border-radius:8px;
+  background:linear-gradient(135deg,#ffa233,#ef7a1a); color:#fff; font-size:11px; font-weight:800; letter-spacing:.02em; }
+.qiq-elite svg{ width:13px; height:13px; }
+.qiq-rail.expanded .qiq-elite{ display:inline-flex; }
+.qiq-burger{ width:36px; height:36px; border-radius:9px; border:none; background:transparent; color:var(--ink-2); cursor:pointer;
+  display:flex; align-items:center; justify-content:center; margin-left:auto; transition:.15s; }
+.qiq-rail:not(.expanded) .qiq-burger{ margin:0; }
+.qiq-burger:hover{ background:var(--surface-3); color:var(--ink); }
+.qiq-burger svg{ width:20px; height:20px; }
+
+.qiq-company{ display:none; align-items:center; gap:10px; padding:12px 14px 6px; }
+.qiq-rail.expanded .qiq-company{ display:flex; }
+.qiq-company .co-logo{ width:36px; height:36px; border-radius:10px; flex:none; display:flex; align-items:center; justify-content:center;
+  background:linear-gradient(150deg,#3b82f6,#1d4ed8); color:#fff; font-size:12px; font-weight:900; letter-spacing:-.02em; }
+.qiq-company .co-name{ flex:1; min-width:0; }
+.qiq-company .co-name b{ display:block; font-size:13.5px; font-weight:800; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.qiq-company .co-name span{ font-size:11px; color:var(--ink-3); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:block; }
+.qiq-company .co-gear{ background:none; border:none; color:var(--ink-4); cursor:pointer; padding:4px; border-radius:7px; }
+.qiq-company .co-gear:hover{ background:var(--surface-3); color:var(--ink-2); }
+.qiq-company .co-gear svg{ width:16px; height:16px; }
+.qiq-addco{ display:none; margin:2px 14px 8px; align-items:center; justify-content:center; gap:7px; padding:9px; border-radius:10px;
+  border:1px solid var(--line-2); background:#fff; color:var(--ink-2); font-size:12.5px; font-weight:600; cursor:pointer; font-family:inherit; }
+.qiq-rail.expanded .qiq-addco{ display:flex; }
+.qiq-addco:hover{ background:var(--surface-3); color:var(--ink); }
+.qiq-addco svg{ width:15px; height:15px; }
+
+.qiq-rail-nav{ flex:1; overflow-y:auto; overflow-x:hidden; padding:8px; display:flex; flex-direction:column; gap:2px; }
+.qiq-rail-foot{ flex:none; padding:8px; border-top:1px solid var(--line-soft); display:flex; flex-direction:column; gap:2px; }
+.qiq-item{ position:relative; display:flex; align-items:center; gap:13px; padding:10px; border-radius:10px; cursor:pointer; color:var(--ink-2);
+  font-size:13.5px; font-weight:600; white-space:nowrap; transition:.14s; border:none; background:transparent; font-family:inherit; text-align:left; width:100%; }
+.qiq-item:hover{ background:var(--surface-3); color:var(--ink); }
+.qiq-item.active{ background:var(--gold-tint); color:var(--gold-lo); }
+.qiq-item .qi-ico{ width:24px; height:24px; flex:none; display:flex; align-items:center; justify-content:center; }
+.qiq-item .qi-ico svg{ width:21px; height:21px; }
+.qiq-item .qi-label{ flex:1; }
+.qiq-item .qi-badge{ font-size:9.5px; font-weight:800; padding:2px 7px; border-radius:999px; background:var(--gold); color:#fff; }
+.qiq-item .qi-badge.count{ background:var(--ink); }
+.qiq-item .qi-chev{ width:15px; height:15px; color:var(--ink-4); flex:none; }
+.qiq-rail:not(.expanded) .qiq-item{ justify-content:center; padding:11px 0; }
+.qiq-rail:not(.expanded) .qi-label,
+.qiq-rail:not(.expanded) .qi-badge,
+.qiq-rail:not(.expanded) .qi-chev,
+.qiq-rail:not(.expanded) .qiq-sub{ display:none !important; }
+/* collapsed hover tooltip */
+.qiq-rail:not(.expanded) .qiq-item:hover::after{ content:attr(data-tip); position:absolute; left:calc(100% + 12px); top:50%;
+  transform:translateY(-50%); background:var(--ink); color:#fff; padding:7px 11px; border-radius:8px; font-size:12px; font-weight:600;
+  white-space:nowrap; z-index:1400; box-shadow:var(--sh-2); pointer-events:none; }
+
+.qiq-sub{ display:flex; flex-direction:column; gap:1px; margin:1px 0 4px 22px; padding-left:13px; border-left:1px solid var(--line); }
+.qiq-sub a{ padding:8px 11px; border-radius:8px; font-size:12.5px; font-weight:600; color:var(--ink-2); cursor:pointer; text-decoration:none; white-space:nowrap; }
+.qiq-sub a:hover{ background:var(--surface-3); color:var(--ink); }
+.qiq-sub a.active{ background:#fff; color:var(--ink); border:1px solid var(--line-2); box-shadow:var(--sh-1); }
+
+/* right-hand body: universal header + Atlas content */
+.qiq-body{ flex:1; min-width:0; display:flex; flex-direction:column; height:100vh; }
+.qiq-header{ height:56px; flex:none; display:flex; align-items:center; gap:14px; padding:0 18px; z-index:1100;
+  background:var(--glass-strong); -webkit-backdrop-filter:var(--blur); backdrop-filter:var(--blur); border-bottom:1px solid var(--line); }
+.qiq-nav{ margin:0 auto; display:flex; align-items:center; gap:2px; background:var(--surface-3); border:1px solid var(--line);
+  border-radius:var(--r-pill); padding:4px; }
+.qiq-nav a{ display:inline-flex; align-items:center; gap:7px; padding:8px 15px; border-radius:var(--r-pill); font-size:13px; font-weight:600;
+  color:var(--ink-2); cursor:pointer; text-decoration:none; transition:.14s; white-space:nowrap; }
+.qiq-nav a:hover{ color:var(--ink); }
+.qiq-nav a.active{ background:#fff; color:var(--ink); box-shadow:var(--sh-1); font-weight:700; }
+.qiq-nav a svg{ width:16px; height:16px; }
+.qiq-head-right{ display:flex; align-items:center; gap:11px; }
+/* credits pill styled like the QuoteIQ header pill (white, ⚡ + number + boost) */
+.qiq-head-right .credits-chip{ background:#fff; border:1px solid var(--line); color:var(--ink); box-shadow:var(--sh-1); font-size:13px; }
+.qiq-head-right .credits-chip::before{ color:var(--gold); filter:none; }
+.cred-boost{ display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; border-radius:6px;
+  background:linear-gradient(135deg,#ffa233,#ef7a1a); color:#fff; font-size:11px; margin-left:2px; }
+.qiq-iconbtn{ width:38px; height:38px; border-radius:10px; border:1px solid var(--line); background:#fff; color:var(--ink-2); cursor:pointer;
+  display:flex; align-items:center; justify-content:center; position:relative; transition:.15s; box-shadow:var(--sh-1); }
+.qiq-iconbtn:hover{ color:var(--ink); border-color:var(--line-2); }
+.qiq-iconbtn svg{ width:19px; height:19px; }
+.qiq-badge{ position:absolute; top:-6px; right:-6px; background:#ef4b63; color:#fff; font-size:9px; font-weight:800; padding:1px 5px;
+  border-radius:999px; border:2px solid #fff; }
+
+/* Atlas app now lives inside the shell body */
+.qiq-body .main{ height:auto; flex:1 1 auto; min-height:0; }
+.qiq-body .topbar{ z-index:1000; }
+
+@media (max-width:900px){ .qiq-rail{ display:none; } }
+
 /* ===================== HELP / GUIDE ===================== */
 /* floating "?" button, bottom-left of the map */
 .help-fab{
@@ -1543,6 +1636,31 @@ a{ color:inherit; }
 </head>
 <body>
 
+<div class="qiq-shell">
+  <aside class="qiq-rail" id="qiqRail">
+    <div class="qiq-rail-head">
+      <span class="qiq-elite"><svg viewBox="0 0 24 24" fill="currentColor"><path d="m12 2 2.2 5.8L20 10l-5.8 2.2L12 18l-2.2-5.8L4 10l5.8-2.2z"/></svg>ELITE</span>
+      <button class="qiq-burger" onclick="qiqToggleRail()" aria-label="Toggle menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+    </div>
+    <div class="qiq-company">
+      <span class="co-logo">AA</span>
+      <span class="co-name"><b>All American Clean</b><span>cleansavannah.com</span></span>
+      <button class="co-gear" onclick="qiqStub('Settings')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+    </div>
+    <button class="qiq-addco" onclick="qiqStub('Add Company')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add Company</button>
+    <div class="qiq-rail-nav"><button class="qiq-item" data-tip="Create" onclick="qiqStub('Create')"><span class="qi-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span><span class="qi-label">Create</span></button><button class="qiq-item" data-tip="AI AutoPilot" onclick="qiqStub('AI AutoPilot')"><span class="qi-ico"><svg viewBox="0 0 24 24" fill="currentColor"><path d="m12 2 2.2 5.8L20 10l-5.8 2.2L12 18l-2.2-5.8L4 10l5.8-2.2z"/></svg></span><span class="qi-label">AI AutoPilot</span><span class="qi-badge">NEW</span></button><button class="qiq-item" data-tip="Dashboard" onclick="qiqStub('Dashboard')"><span class="qi-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9.5 12 3l9 6.5V21a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/></svg></span><span class="qi-label">Dashboard</span></button><button class="qiq-item" data-tip="CRM" onclick="qiqStub('CRM')"><span class="qi-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span><span class="qi-label">CRM</span><span class="qi-chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="6 9 12 15 18 9"/></svg></span></button><div class="qiq-sub"><a class="active" onclick="qiqStub('Contacts')">Contacts</a><a onclick="qiqStub('Jobs')">Jobs</a><a onclick="qiqStub('Estimates')">Estimates</a><a onclick="qiqStub('Invoices')">Invoices</a><a onclick="qiqStub('Expenses')">Expenses</a><a onclick="qiqStub('Price Book')">Price Book (Services)</a><a onclick="qiqStub('Client Portal')">Client Portal</a></div><button class="qiq-item" data-tip="Tools" onclick="qiqStub('Tools')"><span class="qi-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg></span><span class="qi-label">Tools</span><span class="qi-chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="6 9 12 15 18 9"/></svg></span></button><button class="qiq-item" data-tip="Inbox" onclick="qiqStub('Inbox')"><span class="qi-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="14" rx="2"/><path d="M8 21h8M12 18v3"/></svg></span><span class="qi-label">Inbox</span><span class="qi-badge count">2</span><span class="qi-chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="6 9 12 15 18 9"/></svg></span></button><button class="qiq-item" data-tip="Phone" onclick="qiqStub('Phone')"><span class="qi-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.1 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7 12.8 12.8 0 0 0 .7 2.8 2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4 12.8 12.8 0 0 0 2.8.7 2 2 0 0 1 1.7 2z"/></svg></span><span class="qi-label">Phone</span><span class="qi-chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="6 9 12 15 18 9"/></svg></span></button><button class="qiq-item" data-tip="Employees" onclick="qiqStub('Employees')"><span class="qi-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span><span class="qi-label">Employees</span><span class="qi-chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="6 9 12 15 18 9"/></svg></span></button><button class="qiq-item" data-tip="Marketing" onclick="qiqStub('Marketing')"><span class="qi-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></svg></span><span class="qi-label">Marketing</span></button><button class="qiq-item" data-tip="Academy" onclick="qiqStub('Academy')"><span class="qi-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span><span class="qi-label">Academy</span></button></div>
+    <div class="qiq-rail-foot"><button class="qiq-item" data-tip="Log out" onclick="qiqStub('Log out')"><span class="qi-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></span><span class="qi-label">Log out</span></button><button class="qiq-item" data-tip="Contact Support" onclick="qiqStub('Contact Support')"><span class="qi-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12" y2="17"/></svg></span><span class="qi-label">Contact Support</span></button></div>
+  </aside>
+  <div class="qiq-body">
+    <header class="qiq-header">
+      <nav class="qiq-nav"><a class="" onclick="qiqNav('Home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9.5 12 3l9 6.5V21a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/></svg>Home</a><a class="" onclick="qiqNav('Calendar')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Calendar</a><a class="" onclick="qiqNav('Jobs')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>Jobs</a><a class="" onclick="qiqNav('Estimates')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Estimates</a><a class="" onclick="qiqNav('Invoices')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 2v20l2.5-1.5L9 22l3-1.5L15 22l2.5-1.5L20 22V2l-2.5 1.5L15 2l-3 1.5L9 2 6.5 3.5z"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/></svg>Invoices</a><a class="active" onclick="qiqNav('Map')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 8 3 16 6 23 3 23 18 16 21 8 18 1 21"/><line x1="8" y1="3" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="21"/></svg>Map</a><a class="" onclick="qiqNav('Cam')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>Cam</a></nav>
+      <div class="qiq-head-right">
+        <div class="credits-chip" id="creditsChip" title="IQ Credits"><span id="creditsBalance">5000</span><span class="cred-boost"><svg viewBox="0 0 24 24" fill="currentColor"><path d="m12 2 2.2 5.8L20 10l-5.8 2.2L12 18l-2.2-5.8L4 10l5.8-2.2z"/></svg></span></div>
+        <button class="qiq-iconbtn" onclick="qiqStub('Notifications')" aria-label="Notifications"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg><span class="qiq-badge">99+</span></button>
+        <button class="qiq-iconbtn" onclick="qiqStub('Account')" aria-label="Account"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 12 0v1"/></svg></button>
+      </div>
+    </header>
+
 <!-- TOP BAR -->
 <div class="topbar">
   <div class="logo">
@@ -1582,8 +1700,6 @@ a{ color:inherit; }
   </div>
 
   <div class="topbar-right">
-    <!-- ATLAS: IQ Credits chip (demo starts intentionally low at 180 so the paywall is hit in a walkthrough) -->
-    <div class="credits-chip" id="creditsChip" title="IQ Credits — demo balance"><span id="creditsBalance">5000</span>&nbsp;IQC</div>
     <div class="count-pill"><strong id="resultCount">0</strong> shown</div>
     <div class="pipeline-pill" id="pipelinePill" style="display:none;" onclick="openPipelinePanel()">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 13l4 4L19 7"/></svg>
@@ -1684,6 +1800,9 @@ a{ color:inherit; }
   </div>
 
 </div>
+
+  </div><!-- /qiq-body -->
+</div><!-- /qiq-shell -->
 
 <!-- TOAST -->
 <div class="toast" id="toast">
@@ -3345,6 +3464,24 @@ function addSweepButton(wrap){
 // refresh chips so the sweep button appears, and clear the (now unpulled) list
 renderChips();
 if (typeof renderList === 'function') renderList();
+</script>
+
+<script id="qiq-shell-js">
+function qiqToggleRail(){
+  var r = document.getElementById('qiqRail'); if (!r) return;
+  r.classList.toggle('expanded');
+  setTimeout(function(){ if (typeof map !== 'undefined' && map) map.invalidateSize(); }, 260);
+}
+function qiqNav(name){
+  if (name === 'Map') return;                 // Atlas IS the Map section
+  if (typeof showToast === 'function') showToast('Demo — this is Atlas, the Map section of QuoteIQ');
+}
+function qiqStub(name){
+  if (typeof showToast === 'function') showToast(name + ' lives in the full QuoteIQ app — this demo is the Map (Atlas) section');
+}
+// keep Leaflet correctly sized inside the shell
+setTimeout(function(){ if (typeof map !== 'undefined' && map) map.invalidateSize(); }, 450);
+window.addEventListener('resize', function(){ if (typeof map !== 'undefined' && map) map.invalidateSize(); });
 </script>
 
 </body>

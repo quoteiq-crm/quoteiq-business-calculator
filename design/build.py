@@ -216,7 +216,10 @@ sub("cartocdn.com/dark_all/", "cartocdn.com/light_all/", 1, "light-basemap")
 
 # 7b) demo starting balance -> 5000 IQC (enough to exercise everything incl. Full City Sweep)
 sub("let atlasCredits = 180;", "let atlasCredits = 5000;", 1, "credits-5000")
-sub('<span id="creditsBalance">180</span>', '<span id="creditsBalance">5000</span>', 1, "credits-chip-5000")
+# the IQ-credits chip moves into the QuoteIQ universal header (built in step 11) — drop it from the Atlas toolbar
+sub('    <!-- ATLAS: IQ Credits chip (demo starts intentionally low at 180 so the paywall is hit in a walkthrough) -->\n'
+    '    <div class="credits-chip" id="creditsChip" title="IQ Credits — demo balance"><span id="creditsBalance">180</span>&nbsp;IQC</div>\n',
+    '', 1, "remove-topbar-credits")
 
 # ---------------------------------------------------------------------------
 # 8) "Your customers" -> person silhouette (keep the green outline)
@@ -588,6 +591,126 @@ if (typeof renderList === 'function') renderList();
 '''
 
 sub("\n</body>", PULL_SCRIPT + "\n</body>", 1, "pull-spec-script")
+
+# ---------------------------------------------------------------------------
+# 11) QUOTEIQ DESKTOP SHELL — consolidated icon rail + universal header
+S = {  # 24x24 stroke icons
+ "burger":'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>',
+ "plus":'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>',
+ "sparkle":'<svg viewBox="0 0 24 24" fill="currentColor"><path d="m12 2 2.2 5.8L20 10l-5.8 2.2L12 18l-2.2-5.8L4 10l5.8-2.2z"/></svg>',
+ "home":'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9.5 12 3l9 6.5V21a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/></svg>',
+ "users":'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+ "briefcase":'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>',
+ "inbox":'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="14" rx="2"/><path d="M8 21h8M12 18v3"/></svg>',
+ "phone":'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.1 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7 12.8 12.8 0 0 0 .7 2.8 2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4 12.8 12.8 0 0 0 2.8.7 2 2 0 0 1 1.7 2z"/></svg>',
+ "megaphone":'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></svg>',
+ "book":'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>',
+ "logout":'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>',
+ "help":'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12" y2="17"/></svg>',
+ "gear":'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>',
+ "chev":'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="6 9 12 15 18 9"/></svg>',
+ "bolt":'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z"/></svg>',
+ # header nav
+ "calendar":'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
+ "clipboard":'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>',
+ "filetext":'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>',
+ "receipt":'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 2v20l2.5-1.5L9 22l3-1.5L15 22l2.5-1.5L20 22V2l-2.5 1.5L15 2l-3 1.5L9 2 6.5 3.5z"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/></svg>',
+ "map":'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 8 3 16 6 23 3 23 18 16 21 8 18 1 21"/><line x1="8" y1="3" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="21"/></svg>',
+ "cam":'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>',
+ "bell":'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>',
+ "account":'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 12 0v1"/></svg>',
+}
+
+def rail_item(key, icon, label, sub="", badge="", chev=False):
+    ex = ""
+    if badge: ex += badge
+    if chev:  ex += '<span class="qi-chev">' + S["chev"] + '</span>'
+    return ('<button class="qiq-item" data-tip="' + label + '" onclick="qiqStub(\'' + label + '\')">'
+            '<span class="qi-ico">' + icon + '</span><span class="qi-label">' + label + '</span>' + ex + '</button>' + sub)
+
+CRM_SUB = ('<div class="qiq-sub">'
+  '<a class="active" onclick="qiqStub(\'Contacts\')">Contacts</a>'
+  '<a onclick="qiqStub(\'Jobs\')">Jobs</a>'
+  '<a onclick="qiqStub(\'Estimates\')">Estimates</a>'
+  '<a onclick="qiqStub(\'Invoices\')">Invoices</a>'
+  '<a onclick="qiqStub(\'Expenses\')">Expenses</a>'
+  '<a onclick="qiqStub(\'Price Book\')">Price Book (Services)</a>'
+  '<a onclick="qiqStub(\'Client Portal\')">Client Portal</a>'
+  '</div>')
+
+RAIL_NAV = (
+  rail_item("create", S["plus"], "Create")
+  + rail_item("ai", S["sparkle"], "AI AutoPilot", badge='<span class="qi-badge">NEW</span>')
+  + rail_item("dash", S["home"], "Dashboard")
+  + rail_item("crm", S["users"], "CRM", sub=CRM_SUB, chev=True)
+  + rail_item("tools", S["briefcase"], "Tools", chev=True)
+  + rail_item("inbox", S["inbox"], "Inbox", badge='<span class="qi-badge count">2</span>', chev=True)
+  + rail_item("phone", S["phone"], "Phone", chev=True)
+  + rail_item("emp", S["users"], "Employees", chev=True)
+  + rail_item("mkt", S["megaphone"], "Marketing")
+  + rail_item("academy", S["book"], "Academy")
+)
+RAIL_FOOT = (
+  rail_item("logout", S["logout"], "Log out")
+  + rail_item("support", S["help"], "Contact Support")
+)
+
+NAVBAR = [("Home",S["home"]),("Calendar",S["calendar"]),("Jobs",S["clipboard"]),("Estimates",S["filetext"]),
+          ("Invoices",S["receipt"]),("Map",S["map"]),("Cam",S["cam"])]
+nav_html = "".join(
+  '<a class="' + ("active" if n=="Map" else "") + '" onclick="qiqNav(\'' + n + '\')">' + ic + n + '</a>'
+  for n,ic in NAVBAR)
+
+SHELL_OPEN = (
+'<div class="qiq-shell">\n'
+'  <aside class="qiq-rail" id="qiqRail">\n'
+'    <div class="qiq-rail-head">\n'
+'      <span class="qiq-elite">' + S["sparkle"] + 'ELITE</span>\n'
+'      <button class="qiq-burger" onclick="qiqToggleRail()" aria-label="Toggle menu">' + S["burger"] + '</button>\n'
+'    </div>\n'
+'    <div class="qiq-company">\n'
+'      <span class="co-logo">AA</span>\n'
+'      <span class="co-name"><b>All American Clean</b><span>cleansavannah.com</span></span>\n'
+'      <button class="co-gear" onclick="qiqStub(\'Settings\')">' + S["gear"] + '</button>\n'
+'    </div>\n'
+'    <button class="qiq-addco" onclick="qiqStub(\'Add Company\')">' + S["plus"] + ' Add Company</button>\n'
+'    <div class="qiq-rail-nav">' + RAIL_NAV + '</div>\n'
+'    <div class="qiq-rail-foot">' + RAIL_FOOT + '</div>\n'
+'  </aside>\n'
+'  <div class="qiq-body">\n'
+'    <header class="qiq-header">\n'
+'      <nav class="qiq-nav">' + nav_html + '</nav>\n'
+'      <div class="qiq-head-right">\n'
+'        <div class="credits-chip" id="creditsChip" title="IQ Credits"><span id="creditsBalance">5000</span><span class="cred-boost">' + S["sparkle"] + '</span></div>\n'
+'        <button class="qiq-iconbtn" onclick="qiqStub(\'Notifications\')" aria-label="Notifications">' + S["bell"] + '<span class="qiq-badge">99+</span></button>\n'
+'        <button class="qiq-iconbtn" onclick="qiqStub(\'Account\')" aria-label="Account">' + S["account"] + '</button>\n'
+'      </div>\n'
+'    </header>\n'
+)
+
+sub("<!-- TOP BAR -->", SHELL_OPEN + "\n<!-- TOP BAR -->", 1, "shell-open")
+sub("\n<!-- TOAST -->", "\n  </div><!-- /qiq-body -->\n</div><!-- /qiq-shell -->\n\n<!-- TOAST -->", 1, "shell-close")
+
+QIQ_SCRIPT = r'''
+<script id="qiq-shell-js">
+function qiqToggleRail(){
+  var r = document.getElementById('qiqRail'); if (!r) return;
+  r.classList.toggle('expanded');
+  setTimeout(function(){ if (typeof map !== 'undefined' && map) map.invalidateSize(); }, 260);
+}
+function qiqNav(name){
+  if (name === 'Map') return;                 // Atlas IS the Map section
+  if (typeof showToast === 'function') showToast('Demo — this is Atlas, the Map section of QuoteIQ');
+}
+function qiqStub(name){
+  if (typeof showToast === 'function') showToast(name + ' lives in the full QuoteIQ app — this demo is the Map (Atlas) section');
+}
+// keep Leaflet correctly sized inside the shell
+setTimeout(function(){ if (typeof map !== 'undefined' && map) map.invalidateSize(); }, 450);
+window.addEventListener('resize', function(){ if (typeof map !== 'undefined' && map) map.invalidateSize(); });
+</script>
+'''
+sub("\n</body>", QIQ_SCRIPT + "\n</body>", 1, "shell-js")
 
 OUT.write_text(html)
 print(f"built -> {OUT}  ({len(html)} bytes)")

@@ -32,6 +32,16 @@ not a rewrite.
   are dark ink discs that pop on the light map.
 - **Credits "reactor" chip** — pulses each time the balance changes (spend feedback).
 
+**QuoteIQ desktop shell**
+- Atlas is wrapped in the real QuoteIQ desktop chrome: a **consolidated icon rail**
+  (default collapsed; the hamburger expands it to the full labeled menu — ELITE, company,
+  Add Company, Create, AI AutoPilot, Dashboard, CRM + sub-items, Tools, Inbox, Phone,
+  Employees, Marketing, Academy, Log out, Contact Support) and the **universal header**
+  (Home · Calendar · Jobs · Estimates · Invoices · **Map** (active) · Cam, plus the live
+  IQ-credits pill, a 99+ notifications bell, and the account button). Atlas is the Map
+  section; the credits chip lives in the header and stays fully functional. Leaflet
+  re-sizes when the rail toggles.
+
 **Pull behaves per the operating spec**
 - The demo's Pull now honors the front-end-observable rules of `ATLASPULLSPEC`:
   viewport-bounded + 60-cap pulls, a free "All" view of already-pulled categories, a
