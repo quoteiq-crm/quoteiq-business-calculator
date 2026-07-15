@@ -1,9 +1,9 @@
-# Atlas — 2026 UI Redesign ("Nightwatch / Obsidian Command")
+# Atlas — 2026 UI Redesign ("Daylight Command", light/white theme)
 
 A full visual redesign of the **Atlas** prospecting map (`atlas-demo.html`). The old
-light-cream theme with 1px-bordered cards and a cramped, 4-row-wrapping top bar was
-replaced with a dark, glass **mission-control** interface — designed to harmonize with
-the dark map instead of fighting it.
+theme (1px-bordered cards, flat gray, and a cramped top bar whose filter chips wrapped
+into ~4 messy rows) was replaced with a bright, premium **light/white** interface, paired
+with a light CARTO Positron basemap so the map and chrome read as one clean surface.
 
 **Nothing about the product logic changed.** All behavior, data, scoring, IQ-Credits
 metering, door-knock statuses, route builder, AI intro, CSV import, and localStorage
@@ -13,19 +13,23 @@ not a rewrite.
 ## What changed
 
 **Look & feel**
-- OLED-black canvas with a subtle gold/green/blue ambient aurora bleeding from the edges.
-- Depth comes from **layered translucency and glow**, not gray hairlines — floating
-  glass on the map controls, popups, modals, toast, and pipeline panel.
+- Bright white surfaces on a soft warm-white field (a faint gold/green ambient wash).
+- Depth from **soft layered shadows and generous whitespace**, not gray hairlines.
+- Frosted-white glass for floating map controls, popups, modals, toast, and the pipeline
+  panel.
 - Tight, tabular display typography; large expressive data numbers.
-- A strict color contract: **gold = "act now"**, **green = "yours / secured"**, the 11
-  category hues appear only as emitted light (pin glow, chip dots, gauge arcs).
+- A clear color language: **gold = "act now"**, **green = "yours / secured"**, the 11
+  category hues carry identity on thumbs, chips, pins, and the score arc.
+- Light **CARTO Positron** basemap (was dark), so pins and chrome sit on a clean map.
 
 **Signature elements**
 - **Radial Route-Match score gauge** — a conic-gradient ring that animates 0→score on
   open (via a registered `@property --val`), with a leading tick and a counting number.
 - **Score breakdown as an instrument readout** — the three weighted factors
   (proximity / density / category fit) render as animated fill-bars.
-- **Glowing map pins** — category-colored halos; high-opportunity pins pulse.
+- **Map pins tuned for a light basemap** — white pills with a category-colored border and
+  icon; high-opportunity pins pulse; customers are white discs with a green ring; clusters
+  are dark ink discs that pop on the light map.
 - **Credits "reactor" chip** — pulses each time the balance changes (spend feedback).
 
 **Layout fixes**
@@ -37,8 +41,8 @@ not a rewrite.
 **Small correctness fixes made along the way**
 - `Banks` used `icon:'building'`, which doesn't exist in the icon set (pins/thumbs
   rendered empty). Corrected to `icon:'bank'`.
-- Category palette retuned for legibility on a dark basemap.
-- Removed a leftover light (`#fafbfc`) panel background inside the customer detail view.
+- Retuned the category palette for the light basemap.
+- Removed a leftover light panel background inside the customer detail view.
 
 ## How it's built
 
@@ -48,7 +52,7 @@ The redesign is applied deterministically so the diff is reviewable and reproduc
 design/
   atlas-demo.orig.html   # pristine reference demo (the "before")
   atlas-2026.css         # the new design system (edit this to tweak the look)
-  build.py               # swaps the 3 legacy <style> blocks + a few structural edits
+  build.py               # swaps the 3 legacy <style> blocks, structural edits, light basemap
 atlas-demo.html          # the shipped, self-contained result (the "after")
 ```
 
@@ -59,5 +63,5 @@ python3 design/build.py        # regenerates ./atlas-demo.html
 ```
 
 `atlas-demo.html` is fully self-contained (Leaflet + data are inlined) — just open it
-in a browser. It loads Inter and the CARTO dark basemap over the network, exactly as
+in a browser. It loads Inter and the CARTO light basemap over the network, exactly as
 the original did.

@@ -211,5 +211,8 @@ sub(
  "};",
  1, "categories")
 
+# 7) light theme wants a light basemap — swap CARTO dark tiles for Positron (light)
+sub("cartocdn.com/dark_all/", "cartocdn.com/light_all/", 1, "light-basemap")
+
 OUT.write_text(html)
 print(f"built -> {OUT}  ({len(html)} bytes)")
