@@ -923,6 +923,15 @@ a{ color:inherit; }
 .chip .chip-loadmore:hover{ background:#000; }
 .chip.active .chip-loadmore{ background:rgba(0,0,0,.28); }
 
+/* Full City Sweep — pull all 11 categories in the current viewport (400 IQC) */
+.sweep-btn{ flex-basis:100%; margin-top:8px; display:inline-flex; align-items:center; justify-content:center; gap:9px;
+  padding:11px 14px; border-radius:var(--r-pill); cursor:pointer; font-size:12.5px; font-weight:700; color:var(--gold-lo);
+  background:linear-gradient(135deg, var(--gold-tint), rgba(239,159,43,.04)); border:1px dashed rgba(239,159,43,.5);
+  transition:.15s; font-family:inherit; }
+.sweep-btn:hover{ background:var(--gold-tint); border-color:var(--gold); box-shadow:var(--glow-gold); }
+.sweep-btn .sweep-ic{ font-size:13px; filter:drop-shadow(0 0 5px rgba(239,159,43,.5)); }
+.sweep-btn .sweep-price{ font-family:var(--mono); font-size:10px; font-weight:700; padding:2px 7px; border-radius:6px; background:rgba(239,159,43,.18); color:var(--gold-lo); }
+
 /* legend */
 .inline-legend{
   display:flex; flex-wrap:wrap; align-items:center; gap:15px; padding:11px 18px;
@@ -1864,7 +1873,7 @@ function computeTiers() {
   // Filter by category + search (NOT by tier — tier is what we're computing)
   const filtered = PROSPECTS
     .map((p, idx) => ({ p, idx }))
-    .filter(({ p }) => activeFilters.has(p.category))
+    .filter(({ p }) => activeFilters.has(p.category) && p._loaded)
     .filter(({ p }) => !searchVal || p.name.toLowerCase().includes(searchVal) || (p.city || '').toLowerCase().includes(searchVal));
 
   // Reset computed tiers on ALL prospects
@@ -1942,7 +1951,7 @@ function renderMarkers() {
   PROSPECTS.forEach((p, idx) => {
     const isSavedContact = savedContacts.has(idx); // ATLAS: saved prospects are the contractor's data — stay visible regardless of filters
     if (!isSavedContact) {
-      if (!activeFilters.has(p.category)) return;
+      if (!activeFilters.has(p.category) || !p._loaded) return;
       if (!p.computed_tier) return;
       if (activeTier !== 'all' && p.computed_tier !== activeTier) return;
     }
@@ -2050,6 +2059,9 @@ function renderChips() {
     chip.onclick = () => handleCategoryChipClick(name, chip);
     wrap.appendChild(chip);
   });
+
+  // PULL SPEC §3: Full City Sweep — pull all 11 categories in view at once (400 IQC)
+  if (typeof addSweepButton === 'function') addSweepButton(wrap);
 }
 
 // ===== LIST =====
@@ -2061,7 +2073,7 @@ function renderList() {
 
   let filtered = PROSPECTS
     .map((p, idx) => ({ p, idx }))
-    .filter(({ p }) => activeFilters.has(p.category))
+    .filter(({ p }) => activeFilters.has(p.category) && p._loaded)
     .filter(({ p }) => !searchVal || p.name.toLowerCase().includes(searchVal) || (p.city || '').toLowerCase().includes(searchVal))
     .filter(({ p }) => p.computed_tier && (activeTier === 'all' || p.computed_tier === activeTier));
 
@@ -2147,8 +2159,9 @@ function selectProspect(idx, flyTo=false) {
   const isContacted = contactedSet.has(idx);
   // ATLAS: merge demo-revealed contact info (stored separately — never mutates ROUTE_DATA)
   const _rev = revealedContacts.get(idx);
-  const effPhone = p.phone || (_rev ? _rev.phone : '');
-  const effWebsite = p.website || (_rev ? _rev.website : '');
+  const _hasContact = !!_rev || savedContacts.has(idx); // PULL SPEC §2: pulls return locations only
+  const effPhone = _hasContact ? (p.phone || (_rev ? _rev.phone : '')) : '';
+  const effWebsite = _hasContact ? (p.website || (_rev ? _rev.website : '')) : '';
   const isSavedC = savedContacts.has(idx);
   const websiteUrl = effWebsite ? (effWebsite.startsWith('http') ? effWebsite : 'http://' + effWebsite) : '';
   const websiteDomain = websiteUrl ? new URL(websiteUrl).hostname.replace('www.', '') : '';
@@ -2299,7 +2312,7 @@ function selectCustomer(idx, flyTo=false) {
   // Find prospects within 2 miles of this customer
   const nearbyProspects = PROSPECTS
     .map((p, pIdx) => ({ p, pIdx, dist: haversineMiles(c.lat, c.lng, p.lat, p.lng) }))
-    .filter(x => x.dist <= 2.0)
+    .filter(x => x.dist <= 2.0 && x.p._loaded)
     .sort((a,b) => a.dist - b.dist)
     .slice(0, 6);
 
@@ -2627,7 +2640,7 @@ function buildRoute() {
     // route builder must not leak locked-category prospects past the paywall,
     // and must not draw routes to pins that aren't on the map.
     .filter(x => !contactedSet.has(x.idx) && x.distToCenter <= 5
-      && (unlockedCategories.has(x.p.category) || savedContacts.has(x.idx)))
+      && (x.p._loaded || savedContacts.has(x.idx)))
     .sort((a,b) => b.p.opportunity_score - a.p.opportunity_score)
     .slice(0, numProsp);
 
@@ -3004,8 +3017,8 @@ Bay Office Tower, 32.08, -81.09"></textarea>
       </div>
       <div class="help-scroll" id="helpScroll">
         <section class="help-sec" id="help-overview"><h3><span class="hs-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="16.2 7.8 14.1 14.1 7.8 16.2 9.9 9.9 16.2 7.8"/></svg></span>What is Atlas?</h3><p>Atlas turns the map into a <strong>lead machine</strong>. Pull real local businesses onto the map, see which ones best fit the routes you <em>already</em> drive, work them, and convert them into customers.</p><p>There are two layers on one map:</p><ul><li><strong>My Map</strong> — your existing customers &amp; jobs, plus door-knock pins you drop yourself.</li><li><strong>Prospects</strong> — commercial leads you pull by category (restaurants, hotels, gas stations…). Each one is scored on how well it fits your business.</li></ul><div class="help-card"><div class="hc-t">The 30-second version</div>Pull a category → the best-fit businesses light up on the map → tap one to see why it scores well, call it, save it, or add it to your pipeline.</div></section>
-        <section class="help-sec" id="help-credits"><h3><span class="hs-ico"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z"/></svg></span>IQ Credits — your prospecting fuel</h3><p>Pulling real business data costs <strong>IQ Credits (IQC)</strong> — your balance sits at the top-right <span class="hcost">⚡ IQC</span> chip. Everything you do with your <em>own</em> data (customers, notes, door knocks, pipeline) is always free.</p><ul><li><span class="hcost">50 IQC</span> &nbsp;<strong>Pull a category</strong> — loads up to ~60 businesses in view.</li><li><span class="hcost">+25 IQC</span> &nbsp;<strong>Load more</strong> — the next batch of results for a category.</li><li><span class="hcost">10 IQC</span> &nbsp;<strong>Reveal contact info</strong> — a prospect’s phone &amp; website.</li><li><span class="hcost free">FREE</span> &nbsp;Contact info is <strong>included free</strong> when you Save a prospect to Contacts.</li></ul><p>If you don’t have enough, the credits chip gives a shake and nothing is charged — top up and try again.</p></section>
-        <section class="help-sec" id="help-pull"><h3><span class="hs-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg></span>Pulling prospects onto the map</h3><p>Open the <strong>“Atlas · Prospects”</strong> deck at the top of the left panel. Each category chip (Restaurants, Hotels, Gas Stations, Banks, Schools, Shopping Centers, Apartments, Hospitals, Auto Dealerships, Self-Storage, Churches) starts <strong>locked</strong> with a <span class="hcost">50 IQC</span> price.</p><ul><li><strong>Tap a locked chip</strong> to pull it — pins drop on the map and the list fills with ranked results.</li><li>Once pulled, the chip toggles the layer <strong>on / off for free</strong>. Tap <span class="hcost">+25 IQC</span> on it to load more.</li><li>Pull as many categories as you like — they stack on the same map, colour-coded.</li></ul></section>
+        <section class="help-sec" id="help-credits"><h3><span class="hs-ico"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z"/></svg></span>IQ Credits — your prospecting fuel</h3><p>Pulling real business data costs <strong>IQ Credits (IQC)</strong> — your balance sits at the top-right <span class="hcost">⚡ IQC</span> chip. Everything you do with your <em>own</em> data (customers, notes, door knocks, pipeline) is always free.</p><ul><li><span class="hcost">50 IQC</span> &nbsp;<strong>Pull a category</strong> — loads up to ~60 businesses in view.</li><li><span class="hcost">+25 IQC</span> &nbsp;<strong>Load more</strong> — the next batch of results for a category.</li><li><span class="hcost">400 IQC</span> &nbsp;<strong>Full City Sweep</strong> — pull all 11 categories in the current view at once.</li><li><span class="hcost">10 IQC</span> &nbsp;<strong>Reveal contact info</strong> — a prospect’s phone &amp; website.</li><li><span class="hcost free">FREE</span> &nbsp;Contact info is <strong>included free</strong> when you Save a prospect to Contacts.</li><li><span class="hcost free">FREE</span> &nbsp;Re-showing categories you’ve <strong>already pulled</strong> — that’s just a view toggle, no fetch, no charge.</li></ul><p>If you don’t have enough, the credits chip gives a shake and nothing is charged — top up and try again.</p></section>
+        <section class="help-sec" id="help-pull"><h3><span class="hs-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg></span>Pulling prospects onto the map</h3><p>Open the <strong>“Atlas · Prospects”</strong> deck at the top of the left panel. Each category chip (Restaurants, Hotels, Gas Stations, Banks, Schools, Shopping Centers, Apartments, Hospitals, Auto Dealerships, Self-Storage, Churches) starts <strong>locked</strong> with a <span class="hcost">50 IQC</span> price.</p><div class="help-card"><div class="hc-t">The golden rule</div>Every pull is bounded <strong>two ways at once</strong>: the <strong>map area you’re viewing</strong> and a hard cap of <strong>60 businesses per category</strong>. Atlas never pulls the whole world — pan / zoom to the neighbourhood you want, then pull.</div><ul><li><strong>Tap a locked chip</strong> to pull it — the in-view businesses drop as pins and the list fills with ranked results.</li><li>Got the full 60 and want more of the same category here? Tap <span class="hcost">+25 IQC</span> on the chip to load the next batch in the same area.</li><li>Once pulled, the chip toggles that layer <strong>on / off for free</strong> — re-showing it never costs credits.</li><li><strong>Full City Sweep</strong> <span class="hcost">400 IQC</span> pulls <strong>all 11 categories in the current view</strong> in one go.</li><li>Pull as many categories as you like — they stack on the same map, colour-coded.</li></ul></section>
         <section class="help-sec" id="help-score"><h3><span class="hs-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span>Route Match Score (0–100)</h3><p>Every prospect gets a <strong>Route Match Score</strong> — how well it fits <em>your</em> business, not generic popularity. It’s built from three real signals:</p><div class="hbars"><div class="hbar"><span class="hb-l">Proximity</span><div class="hb-track"><div class="hb-fill" style="width:100%;background:linear-gradient(90deg,#0ea371,#12b981)"></div></div><span class="hb-max">/ 60</span></div><div class="hbar"><span class="hb-l">Customer density</span><div class="hb-track"><div class="hb-fill" style="width:42%;background:linear-gradient(90deg,#2f6fd0,#3b82f6)"></div></div><span class="hb-max">/ 25</span></div><div class="hbar"><span class="hb-l">Category fit</span><div class="hb-track"><div class="hb-fill" style="width:25%;background:linear-gradient(90deg,#7c5cf0,#a78bff)"></div></div><span class="hb-max">/ 15</span></div></div><ul><li><strong>Proximity</strong> — how close it is to your nearest customer.</li><li><strong>Customer density</strong> — how many of your customers sit within 2 miles.</li><li><strong>Category fit</strong> — how well that category historically converts for your trade.</li></ul><p>Open any prospect to see its <strong>“How this score was calculated”</strong> breakdown. Star ratings and review counts are shown for context but do <strong>not</strong> affect the score.</p><p>Prospects are then tiered <em>relative to what’s on screen</em>:</p><div class="hlegend"><div class="hlegend-row"><span class="hswatch" style="background:var(--green-tint);color:var(--green-hi);font-weight:800">A</span><div><strong>Excellent fit</strong> — top ~20%. Chase these first.</div></div><div class="hlegend-row"><span class="hswatch" style="background:var(--gold-tint);color:var(--gold-lo);font-weight:800">B</span><div><strong>Strong fit</strong> — next ~30%. Worth a sales call.</div></div><div class="hlegend-row"><span class="hswatch" style="background:var(--surface-3);color:var(--ink-3);font-weight:800">C</span><div><strong>Skip for now</strong> — outside your routes.</div></div></div></section>
         <section class="help-sec" id="help-mapkey"><h3><span class="hs-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 7-8 13-8 13s-8-6-8-13a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></svg></span>Reading the map</h3><div class="hlegend"><div class="hlegend-row"><span class="hswatch round" style="background:#fff;border:2px solid #12b981"><svg width="13" height="13" viewBox="0 0 24 24" fill="#12b981"><path d="M12 12a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9zm0 2.2c-3.9 0-7 2-7 4.5V21h14v-2.3c0-2.5-3.1-4.5-7-4.5z"/></svg></span><div><strong>Your customer</strong> — white circle with a green ring.</div></div><div class="hlegend-row"><span class="hswatch round" style="background:#fff;border:2px solid #ffa02e;position:relative"><span style="position:absolute;top:-3px;right:-3px;width:9px;height:9px;border-radius:50%;background:#12b981;border:2px solid #fff"></span></span><div><strong>Prospect pin</strong> — coloured by category. A <span style="color:#12b981;font-weight:700">green dot</span> = high opportunity (it gently pulses); a <span style="color:#d9861a;font-weight:700">gold dot</span> = medium.</div></div><div class="hlegend-row"><span class="hswatch diamond" style="background:#fff;border:3px solid #f2b148"></span><div><strong>Door knock</strong> — a diamond, coloured by its status.</div></div><div class="hlegend-row"><span class="hswatch round" style="background:#0d1220;color:#fff;font-weight:800;font-size:11px">12</span><div><strong>Cluster</strong> — many pins grouped together. Zoom in (or click) to split it.</div></div><div class="hlegend-row"><span class="hswatch round" style="background:rgba(18,185,129,.12);border:2px dashed #12b981"></span><div><strong>Service zone</strong> — a dashed ~2-mile ring around each of your customer clusters.</div></div></div><p>Tap a pin (or its card in the list) to open the full detail view. Use <strong>“What’s near me?”</strong> (bottom-right) to jump to your location.</p></section>
         <section class="help-sec" id="help-work"><h3><span class="hs-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.1 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7 12.8 12.8 0 0 0 .7 2.8 2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4 12.8 12.8 0 0 0 2.8.7 2 2 0 0 1 1.7 2z"/></svg></span>Working a lead</h3><p>Tap any prospect to open its detail panel. From there you can:</p><ul><li><strong>Call Now</strong> — one tap to dial (once the phone is known).</li><li><strong>Save to Contacts</strong> — turns the prospect into <em>your</em> record. Its contact info comes free, the pin gets a green ring, and it stays on the map regardless of filters.</li><li><strong>Add to Pipeline</strong> — queues it as a lead. <strong>No outreach is ever sent automatically.</strong></li><li><strong>AI Intro</strong> — draft a tailored email, text, or call script in one click.</li><li><strong>Mark Contacted</strong> &amp; <strong>Notes</strong> — track your progress; notes auto-save.</li></ul></section>
@@ -3222,6 +3235,116 @@ map.on('click', handleDropPinClick);
     if (chipCb) chipCb.checked = e.target.checked;
   });
 })();
+</script>
+
+<script id="atlas-pull-spec">
+/* ============================================================
+   PULL OPERATING SPEC — front-end-observable behaviour.
+   Every pull is bounded by (a) the current map viewport and
+   (b) a hard cap of 60 results per category. There is no
+   unbounded "fetch everything" path. Backend concerns (real
+   Places API, server-side key, Firestore 30-day TTL, per-hour
+   abuse brake, audit ledger, name+address dedupe) live on the
+   server — see ATLASPULLSPEC.md; they cannot run in a static demo.
+   ============================================================ */
+const PULL_CAP = 60;                 // §1 hard cap per category per pull (3 pages x 20)
+const PULL_PRICE = 50;               // §1
+const LOADMORE_PRICE = 25;           // §4
+const SWEEP_PRICE = 400;             // §3 Full City Sweep
+
+// §10 category -> Places (New) includedType (server-side config; shown here for reference)
+const PLACES_TYPE_MAP = {
+  'Restaurants':'restaurant','Hotels':'lodging','Gas Stations':'gas_station','Banks':'bank',
+  'Schools':'school','Hospitals':'hospital','Churches':'church','Shopping Centers':'shopping_mall',
+  'Auto Dealerships':'car_dealer','Apartments':'apartment_complex','Self-Storage':'storage'
+};
+
+// nothing is "on the map" until it is pulled
+PROSPECTS.forEach(function(p){ p._loaded = false; });
+
+function inCurrentBounds(p){ return !map || map.getBounds().contains([p.lat, p.lng]); }
+
+// pick up to `limit` in-bounds, not-yet-loaded prospects of a category
+// (ordered by opportunity as a stand-in for Places text-search relevance)
+function pickPullBatch(cat, limit){
+  return PROSPECTS
+    .map(function(p, idx){ return { p: p, idx: idx }; })
+    .filter(function(x){ return x.p.category === cat && !x.p._loaded && inCurrentBounds(x.p); })
+    .sort(function(a, b){ return b.p.opportunity_score - a.p.opportunity_score; })
+    .slice(0, limit)
+    .map(function(x){ return x.idx; });
+}
+function inBoundsRemaining(cat){
+  return PROSPECTS.filter(function(p){ return p.category === cat && !p._loaded && inCurrentBounds(p); }).length;
+}
+
+// §1 a category pull is viewport-bounded, capped at 60, costs 50 IQC.
+// §5 check balance first; never partially unlock; deduct then "fetch".
+function handleCategoryChipClick(name, chipEl){
+  if (pullingCategories.has(name)) return;
+  if (!unlockedCategories.has(name)){
+    if (atlasCredits < PULL_PRICE){ creditFail(); return; }        // §5 not-enough-credits
+    var batch = pickPullBatch(name, PULL_CAP);
+    atlasCredits -= PULL_PRICE; updateCreditsChip();
+    pullingCategories.add(name); renderChips();
+    setTimeout(function(){
+      pullingCategories.delete(name);
+      unlockedCategories.add(name); activeFilters.add(name);
+      batch.forEach(function(i){ PROSPECTS[i]._loaded = true; });
+      window.__staggerCat = name;
+      renderChips(); renderList();
+      setTimeout(function(){ window.__staggerCat = null; }, 1200);
+      showToast(batch.length
+        ? ('Pulled ' + batch.length + ' ' + name + ' in this area — ' + PULL_PRICE + ' IQC')
+        : ('No ' + name + ' in this map area — pan or zoom out and try again'));
+    }, 800);
+  } else {
+    // §3 already pulled -> free on/off VIEW toggle (no fetch, no credits)
+    if (activeFilters.has(name)) activeFilters.delete(name); else activeFilters.add(name);
+    renderChips(); renderList();
+  }
+}
+
+// §4 Load more = a new bounded pull, +60 increment, 25 IQC, same category & area
+function loadMoreCategory(name, ev){
+  if (ev) ev.stopPropagation();
+  if (inBoundsRemaining(name) === 0){ showToast('No more ' + name + ' in this area — pan or zoom out'); return; }
+  if (atlasCredits < LOADMORE_PRICE){ creditFail(); return; }
+  var batch = pickPullBatch(name, PULL_CAP);
+  atlasCredits -= LOADMORE_PRICE; updateCreditsChip();
+  batch.forEach(function(i){ PROSPECTS[i]._loaded = true; });
+  window.__staggerCat = name;
+  renderChips(); renderList();
+  setTimeout(function(){ window.__staggerCat = null; }, 1200);
+  showToast('Loaded ' + batch.length + ' more ' + name + ' — ' + LOADMORE_PRICE + ' IQC');
+}
+
+// §3 Full City Sweep — all 11 categories in the CURRENT viewport at once, 400 IQC
+function fullCitySweep(){
+  if (atlasCredits < SWEEP_PRICE){ creditFail(); return; }
+  atlasCredits -= SWEEP_PRICE; updateCreditsChip();
+  var total = 0;
+  Object.keys(CATEGORIES).forEach(function(name){
+    var batch = pickPullBatch(name, PULL_CAP);
+    batch.forEach(function(i){ PROSPECTS[i]._loaded = true; });
+    if (batch.length){ unlockedCategories.add(name); activeFilters.add(name); total += batch.length; }
+  });
+  renderChips(); renderList();
+  showToast('Full City Sweep — ' + total + ' prospects across ' + Object.keys(CATEGORIES).length + ' categories · ' + SWEEP_PRICE + ' IQC');
+}
+
+function addSweepButton(wrap){
+  var b = document.createElement('button');
+  b.className = 'sweep-btn';
+  b.innerHTML = '<span class="sweep-ic">⚡</span> Full City Sweep <span class="sweep-price">400 IQC</span>';
+  b.title = 'Pull all 11 categories in the current map area at once';
+  b.onclick = fullCitySweep;
+  wrap.appendChild(b);
+}
+
+// refresh chips so the sweep button appears, and clear the (now unpulled) list
+renderChips();
+if (typeof renderList === 'function') renderList();
 </script>
 
 </body>

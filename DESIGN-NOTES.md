@@ -32,6 +32,14 @@ not a rewrite.
   are dark ink discs that pop on the light map.
 - **Credits "reactor" chip** — pulses each time the balance changes (spend feedback).
 
+**Pull behaves per the operating spec**
+- The demo's Pull now honors the front-end-observable rules of `ATLASPULLSPEC`:
+  viewport-bounded + 60-cap pulls, a free "All" view of already-pulled categories, a
+  `+25 IQC` bounded load-more, a **Full City Sweep** (all 11 categories in view, 400 IQC),
+  balance-checked metering with no partial unlock, and "locations only" (phone/website
+  withheld until Reveal/Save). Backend-only pieces are documented in
+  [`PULL-SPEC-COMPLIANCE.md`](./PULL-SPEC-COMPLIANCE.md).
+
 **In-app guide**
 - A floating **"?"** button (bottom-left of the map) opens a **field-guide** modal — a
   two-pane walkthrough (TOC + rich sections) covering what Atlas is, IQ Credits and their

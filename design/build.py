@@ -306,17 +306,25 @@ HELP_HTML = f'''
           '<ul>'
           '<li><span class="hcost">50 IQC</span> &nbsp;<strong>Pull a category</strong> — loads up to ~60 businesses in view.</li>'
           '<li><span class="hcost">+25 IQC</span> &nbsp;<strong>Load more</strong> — the next batch of results for a category.</li>'
+          '<li><span class="hcost">400 IQC</span> &nbsp;<strong>Full City Sweep</strong> — pull all 11 categories in the current view at once.</li>'
           '<li><span class="hcost">10 IQC</span> &nbsp;<strong>Reveal contact info</strong> — a prospect’s phone &amp; website.</li>'
           '<li><span class="hcost free">FREE</span> &nbsp;Contact info is <strong>included free</strong> when you Save a prospect to Contacts.</li>'
+          '<li><span class="hcost free">FREE</span> &nbsp;Re-showing categories you’ve <strong>already pulled</strong> — that’s just a view toggle, no fetch, no charge.</li>'
           '</ul>'
           '<p>If you don’t have enough, the credits chip gives a shake and nothing is charged — top up and try again.</p>')}
         {sec("pull","Pulling prospects onto the map",
           '<p>Open the <strong>“Atlas · Prospects”</strong> deck at the top of the left panel. Each category chip '
           '(Restaurants, Hotels, Gas Stations, Banks, Schools, Shopping Centers, Apartments, Hospitals, Auto '
           'Dealerships, Self-Storage, Churches) starts <strong>locked</strong> with a <span class="hcost">50 IQC</span> price.</p>'
+          '<div class="help-card"><div class="hc-t">The golden rule</div>'
+          'Every pull is bounded <strong>two ways at once</strong>: the <strong>map area you’re viewing</strong> and a hard cap '
+          'of <strong>60 businesses per category</strong>. Atlas never pulls the whole world — pan / zoom to the neighbourhood '
+          'you want, then pull.</div>'
           '<ul>'
-          '<li><strong>Tap a locked chip</strong> to pull it — pins drop on the map and the list fills with ranked results.</li>'
-          '<li>Once pulled, the chip toggles the layer <strong>on / off for free</strong>. Tap <span class="hcost">+25 IQC</span> on it to load more.</li>'
+          '<li><strong>Tap a locked chip</strong> to pull it — the in-view businesses drop as pins and the list fills with ranked results.</li>'
+          '<li>Got the full 60 and want more of the same category here? Tap <span class="hcost">+25 IQC</span> on the chip to load the next batch in the same area.</li>'
+          '<li>Once pulled, the chip toggles that layer <strong>on / off for free</strong> — re-showing it never costs credits.</li>'
+          '<li><strong>Full City Sweep</strong> <span class="hcost">400 IQC</span> pulls <strong>all 11 categories in the current view</strong> in one go.</li>'
           '<li>Pull as many categories as you like — they stack on the same map, colour-coded.</li>'
           '</ul>')}
         {sec("score","Route Match Score (0–100)",
@@ -422,6 +430,160 @@ sub('<div class="map-wrap">\n    <div id="map"></div>',
     '    <button class="help-fab" onclick="openHelp()" aria-label="How Atlas works">?'
     '<span class="help-tip">How Atlas works</span></button>',
     1, "help-fab")
+
+# ---------------------------------------------------------------------------
+# 10) PULL OPERATING SPEC — make the demo's Pull obey the spec's observable rules:
+#     viewport-bounded + 60-cap pulls, free "All" view, +25 load-more, 400-IQC
+#     Full City Sweep, and "locations only" (phone/website lazily revealed).
+
+# gate every render path on a per-prospect "_loaded" flag (set by a pull)
+sub(".filter(({ p }) => activeFilters.has(p.category))",
+    ".filter(({ p }) => activeFilters.has(p.category) && p._loaded)",
+    2, "gate-loaded-filters")               # computeTiers + renderList
+sub("if (!activeFilters.has(p.category)) return;",
+    "if (!activeFilters.has(p.category) || !p._loaded) return;",
+    1, "gate-loaded-markers")               # renderMarkers (saved contacts still bypass)
+
+# customer "nearby prospects" only surfaces what's been pulled
+sub(".filter(x => x.dist <= 2.0)",
+    ".filter(x => x.dist <= 2.0 && x.p._loaded)",
+    1, "gate-loaded-nearby")
+
+# route builder only routes over pulled prospects
+sub("&& (unlockedCategories.has(x.p.category) || savedContacts.has(x.idx)))",
+    "&& (x.p._loaded || savedContacts.has(x.idx)))",
+    1, "gate-loaded-route")
+
+# §2/§6 locations only: phone/website hidden until Reveal (10 IQC) or Save (free)
+sub("const _rev = revealedContacts.get(idx);\n"
+    "  const effPhone = p.phone || (_rev ? _rev.phone : '');\n"
+    "  const effWebsite = p.website || (_rev ? _rev.website : '');",
+    "const _rev = revealedContacts.get(idx);\n"
+    "  const _hasContact = !!_rev || savedContacts.has(idx); // PULL SPEC §2: pulls return locations only\n"
+    "  const effPhone = _hasContact ? (p.phone || (_rev ? _rev.phone : '')) : '';\n"
+    "  const effWebsite = _hasContact ? (p.website || (_rev ? _rev.website : '')) : '';",
+    1, "locations-only")
+
+# add the Full City Sweep button at the end of the category chips
+sub("    chip.onclick = () => handleCategoryChipClick(name, chip);\n    wrap.appendChild(chip);\n  });\n}",
+    "    chip.onclick = () => handleCategoryChipClick(name, chip);\n    wrap.appendChild(chip);\n  });\n"
+    "\n  // PULL SPEC §3: Full City Sweep — pull all 11 categories in view at once (400 IQC)\n"
+    "  if (typeof addSweepButton === 'function') addSweepButton(wrap);\n}",
+    1, "sweep-in-chips")
+
+PULL_SCRIPT = r'''
+<script id="atlas-pull-spec">
+/* ============================================================
+   PULL OPERATING SPEC — front-end-observable behaviour.
+   Every pull is bounded by (a) the current map viewport and
+   (b) a hard cap of 60 results per category. There is no
+   unbounded "fetch everything" path. Backend concerns (real
+   Places API, server-side key, Firestore 30-day TTL, per-hour
+   abuse brake, audit ledger, name+address dedupe) live on the
+   server — see ATLASPULLSPEC.md; they cannot run in a static demo.
+   ============================================================ */
+const PULL_CAP = 60;                 // §1 hard cap per category per pull (3 pages x 20)
+const PULL_PRICE = 50;               // §1
+const LOADMORE_PRICE = 25;           // §4
+const SWEEP_PRICE = 400;             // §3 Full City Sweep
+
+// §10 category -> Places (New) includedType (server-side config; shown here for reference)
+const PLACES_TYPE_MAP = {
+  'Restaurants':'restaurant','Hotels':'lodging','Gas Stations':'gas_station','Banks':'bank',
+  'Schools':'school','Hospitals':'hospital','Churches':'church','Shopping Centers':'shopping_mall',
+  'Auto Dealerships':'car_dealer','Apartments':'apartment_complex','Self-Storage':'storage'
+};
+
+// nothing is "on the map" until it is pulled
+PROSPECTS.forEach(function(p){ p._loaded = false; });
+
+function inCurrentBounds(p){ return !map || map.getBounds().contains([p.lat, p.lng]); }
+
+// pick up to `limit` in-bounds, not-yet-loaded prospects of a category
+// (ordered by opportunity as a stand-in for Places text-search relevance)
+function pickPullBatch(cat, limit){
+  return PROSPECTS
+    .map(function(p, idx){ return { p: p, idx: idx }; })
+    .filter(function(x){ return x.p.category === cat && !x.p._loaded && inCurrentBounds(x.p); })
+    .sort(function(a, b){ return b.p.opportunity_score - a.p.opportunity_score; })
+    .slice(0, limit)
+    .map(function(x){ return x.idx; });
+}
+function inBoundsRemaining(cat){
+  return PROSPECTS.filter(function(p){ return p.category === cat && !p._loaded && inCurrentBounds(p); }).length;
+}
+
+// §1 a category pull is viewport-bounded, capped at 60, costs 50 IQC.
+// §5 check balance first; never partially unlock; deduct then "fetch".
+function handleCategoryChipClick(name, chipEl){
+  if (pullingCategories.has(name)) return;
+  if (!unlockedCategories.has(name)){
+    if (atlasCredits < PULL_PRICE){ creditFail(); return; }        // §5 not-enough-credits
+    var batch = pickPullBatch(name, PULL_CAP);
+    atlasCredits -= PULL_PRICE; updateCreditsChip();
+    pullingCategories.add(name); renderChips();
+    setTimeout(function(){
+      pullingCategories.delete(name);
+      unlockedCategories.add(name); activeFilters.add(name);
+      batch.forEach(function(i){ PROSPECTS[i]._loaded = true; });
+      window.__staggerCat = name;
+      renderChips(); renderList();
+      setTimeout(function(){ window.__staggerCat = null; }, 1200);
+      showToast(batch.length
+        ? ('Pulled ' + batch.length + ' ' + name + ' in this area — ' + PULL_PRICE + ' IQC')
+        : ('No ' + name + ' in this map area — pan or zoom out and try again'));
+    }, 800);
+  } else {
+    // §3 already pulled -> free on/off VIEW toggle (no fetch, no credits)
+    if (activeFilters.has(name)) activeFilters.delete(name); else activeFilters.add(name);
+    renderChips(); renderList();
+  }
+}
+
+// §4 Load more = a new bounded pull, +60 increment, 25 IQC, same category & area
+function loadMoreCategory(name, ev){
+  if (ev) ev.stopPropagation();
+  if (inBoundsRemaining(name) === 0){ showToast('No more ' + name + ' in this area — pan or zoom out'); return; }
+  if (atlasCredits < LOADMORE_PRICE){ creditFail(); return; }
+  var batch = pickPullBatch(name, PULL_CAP);
+  atlasCredits -= LOADMORE_PRICE; updateCreditsChip();
+  batch.forEach(function(i){ PROSPECTS[i]._loaded = true; });
+  window.__staggerCat = name;
+  renderChips(); renderList();
+  setTimeout(function(){ window.__staggerCat = null; }, 1200);
+  showToast('Loaded ' + batch.length + ' more ' + name + ' — ' + LOADMORE_PRICE + ' IQC');
+}
+
+// §3 Full City Sweep — all 11 categories in the CURRENT viewport at once, 400 IQC
+function fullCitySweep(){
+  if (atlasCredits < SWEEP_PRICE){ creditFail(); return; }
+  atlasCredits -= SWEEP_PRICE; updateCreditsChip();
+  var total = 0;
+  Object.keys(CATEGORIES).forEach(function(name){
+    var batch = pickPullBatch(name, PULL_CAP);
+    batch.forEach(function(i){ PROSPECTS[i]._loaded = true; });
+    if (batch.length){ unlockedCategories.add(name); activeFilters.add(name); total += batch.length; }
+  });
+  renderChips(); renderList();
+  showToast('Full City Sweep — ' + total + ' prospects across ' + Object.keys(CATEGORIES).length + ' categories · ' + SWEEP_PRICE + ' IQC');
+}
+
+function addSweepButton(wrap){
+  var b = document.createElement('button');
+  b.className = 'sweep-btn';
+  b.innerHTML = '<span class="sweep-ic">⚡</span> Full City Sweep <span class="sweep-price">400 IQC</span>';
+  b.title = 'Pull all 11 categories in the current map area at once';
+  b.onclick = fullCitySweep;
+  wrap.appendChild(b);
+}
+
+// refresh chips so the sweep button appears, and clear the (now unpulled) list
+renderChips();
+if (typeof renderList === 'function') renderList();
+</script>
+'''
+
+sub("\n</body>", PULL_SCRIPT + "\n</body>", 1, "pull-spec-script")
 
 OUT.write_text(html)
 print(f"built -> {OUT}  ({len(html)} bytes)")
