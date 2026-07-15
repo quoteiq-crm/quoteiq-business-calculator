@@ -32,6 +32,17 @@ not a rewrite.
   are dark ink discs that pop on the light map.
 - **Credits "reactor" chip** — pulses each time the balance changes (spend feedback).
 
+**In-app guide**
+- A floating **"?"** button (bottom-left of the map) opens a **field-guide** modal — a
+  two-pane walkthrough (TOC + rich sections) covering what Atlas is, IQ Credits and their
+  costs, pulling prospects, the Route Match Score math, a full map key, working a lead,
+  door-knock statuses, filtering/sorting, and routes/pipeline. Closes on ✕, backdrop
+  click, or Esc; the nav highlights the section you're reading.
+
+**Customer marker**
+- "Your customers" now use a **person silhouette** (kept the green ring) instead of a
+  checkmark — on the map pin, the legend, and the customer detail header.
+
 **Layout fixes**
 - The filter chips that used to wrap into ~4 messy rows in the top bar were relocated
   into a proper **"Atlas · Prospects" control deck** at the top of the left panel. The
