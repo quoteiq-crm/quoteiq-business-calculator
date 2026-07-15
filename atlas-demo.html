@@ -1583,7 +1583,7 @@ a{ color:inherit; }
 
   <div class="topbar-right">
     <!-- ATLAS: IQ Credits chip (demo starts intentionally low at 180 so the paywall is hit in a walkthrough) -->
-    <div class="credits-chip" id="creditsChip" title="IQ Credits — demo balance"><span id="creditsBalance">180</span>&nbsp;IQC</div>
+    <div class="credits-chip" id="creditsChip" title="IQ Credits — demo balance"><span id="creditsBalance">5000</span>&nbsp;IQC</div>
     <div class="count-pill"><strong id="resultCount">0</strong> shown</div>
     <div class="pipeline-pill" id="pipelinePill" style="display:none;" onclick="openPipelinePanel()">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 13l4 4L19 7"/></svg>
@@ -1786,7 +1786,7 @@ let currentAiTone = 'email';
 // ===== ATLAS STATE (additive — see BUILD-NOTES.md) =====
 // In-memory on purpose: every load starts the demo fresh at 180 IQC with
 // categories locked, so the paywall walkthrough is always reproducible.
-let atlasCredits = 180;
+let atlasCredits = 5000;
 const unlockedCategories = new Set();
 const pullingCategories = new Set();
 const savedContacts = new Set();        // prospect idx → saved as contact

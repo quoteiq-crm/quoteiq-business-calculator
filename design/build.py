@@ -214,6 +214,10 @@ sub(
 # 7) light theme wants a light basemap — swap CARTO dark tiles for Positron (light)
 sub("cartocdn.com/dark_all/", "cartocdn.com/light_all/", 1, "light-basemap")
 
+# 7b) demo starting balance -> 5000 IQC (enough to exercise everything incl. Full City Sweep)
+sub("let atlasCredits = 180;", "let atlasCredits = 5000;", 1, "credits-5000")
+sub('<span id="creditsBalance">180</span>', '<span id="creditsBalance">5000</span>', 1, "credits-chip-5000")
+
 # ---------------------------------------------------------------------------
 # 8) "Your customers" -> person silhouette (keep the green outline)
 CHECK_DEF = ("  check:     '<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" "
