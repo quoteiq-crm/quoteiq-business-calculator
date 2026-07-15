@@ -311,8 +311,7 @@ HELP_HTML = f'''
           'top-right <span class="hcost">⚡ IQC</span> chip. Everything you do with your <em>own</em> data '
           '(customers, notes, door knocks, pipeline) is always free.</p>'
           '<ul>'
-          '<li><span class="hcost">50 IQC</span> &nbsp;<strong>Pull a category</strong> — loads up to ~60 businesses in view.</li>'
-          '<li><span class="hcost">+25 IQC</span> &nbsp;<strong>Load more</strong> — the next batch of results for a category.</li>'
+          '<li><span class="hcost">50 IQC</span> &nbsp;<strong>Pull a category</strong> — a one-time charge that loads every business of that type in view and keeps the category yours all session.</li>'
           '<li><span class="hcost">400 IQC</span> &nbsp;<strong>Full City Sweep</strong> — pull all 11 categories in the current view at once.</li>'
           '<li><span class="hcost">10 IQC</span> &nbsp;<strong>Reveal contact info</strong> — a prospect’s phone &amp; website.</li>'
           '<li><span class="hcost free">FREE</span> &nbsp;Contact info is <strong>included free</strong> when you Save a prospect to Contacts.</li>'
@@ -324,13 +323,11 @@ HELP_HTML = f'''
           '(Restaurants, Hotels, Gas Stations, Banks, Schools, Shopping Centers, Apartments, Hospitals, Auto '
           'Dealerships, Self-Storage, Churches) starts <strong>locked</strong> with a <span class="hcost">50 IQC</span> price.</p>'
           '<div class="help-card"><div class="hc-t">The golden rule</div>'
-          'Every pull is bounded <strong>two ways at once</strong>: the <strong>map area you’re viewing</strong> and a hard cap '
-          'of <strong>60 businesses per category</strong>. Atlas never pulls the whole world — pan / zoom to the neighbourhood '
-          'you want, then pull.</div>'
+          'A pull is bounded to the <strong>map area you’re viewing</strong>, and it loads <strong>every business of that type '
+          'in that area</strong> — 100% of what Google lists there, not a sample. Pan / zoom to the neighbourhood you want, then pull.</div>'
           '<ul>'
-          '<li><strong>Tap a locked chip</strong> to pull it — the in-view businesses drop as pins and the list fills with ranked results.</li>'
-          '<li>Got the full 60 and want more of the same category here? Tap <span class="hcost">+25 IQC</span> on the chip to load the next batch in the same area.</li>'
-          '<li>Once pulled, the chip toggles that layer <strong>on / off for free</strong> — re-showing it never costs credits.</li>'
+          '<li><strong>Tap a locked chip</strong> to pull it — every in-view business of that type drops as pins and the list fills with ranked results.</li>'
+          '<li>Pay <strong>once</strong> — after that the category is <strong>yours for the whole session</strong>. Its chip becomes a free show/hide toggle (marked <strong>Saved</strong>) and is never charged again.</li>'
           '<li><strong>Full City Sweep</strong> <span class="hcost">400 IQC</span> pulls <strong>all 11 categories in the current view</strong> in one go.</li>'
           '<li>Pull as many categories as you like — they stack on the same map, colour-coded.</li>'
           '</ul>')}
@@ -478,20 +475,46 @@ sub("    chip.onclick = () => handleCategoryChipClick(name, chip);\n    wrap.app
     "  if (typeof addSweepButton === 'function') addSweepButton(wrap);\n}",
     1, "sweep-in-chips")
 
+# owned category chip: no price, show a free show/hide "Saved" tag (replaces load-more)
+sub('    else                  extra = `<span class="chip-loadmore" title="Load more — next 60 results (25 IQC)" onclick="loadMoreCategory(\'${name}\', event)">+25 IQC</span>`;',
+    '    else                  extra = `<span class="chip-saved">${ICONS.eye} Saved</span>`;',
+    1, "owned-chip-saved")
+
+# empty-state hint: a pull loads 100% of the category in-area (not "up to 60")
+sub("Each category pull costs 50 IQC and loads up to 60 businesses in this area.",
+    "Each category pull loads every business of that type in the current map area — 100% of what Google lists there, not a sample.",
+    1, "empty-hint-100")
+
+# nothing expires — drop the 30-day expiry line from the prospect action hint
+sub("Prospect data expires in 30 days unless saved. Saving creates a contact record — it becomes your data.",
+    "Saving creates a contact record — it becomes your data, yours to keep.",
+    1, "no-expiry-copy")
+
+# remove the original loadMoreCategory (load-more is gone entirely)
+sub("function loadMoreCategory(name, ev) {\n"
+    "  if (ev) ev.stopPropagation();\n"
+    "  if (atlasCredits < 25) { creditFail(); return; }\n"
+    "  atlasCredits -= 25;\n"
+    "  updateCreditsChip();\n"
+    "  showToast('Demo: full version pulls the next 60 results');\n"
+    "}",
+    "// (load-more removed — a pull now loads 100% of the category in-area, nothing left to load)",
+    1, "remove-loadmore-orig")
+
 PULL_SCRIPT = r'''
 <script id="atlas-pull-spec">
 /* ============================================================
    PULL OPERATING SPEC — front-end-observable behaviour.
-   Every pull is bounded by (a) the current map viewport and
-   (b) a hard cap of 60 results per category. There is no
-   unbounded "fetch everything" path. Backend concerns (real
-   Places API, server-side key, Firestore 30-day TTL, per-hour
-   abuse brake, audit ledger, name+address dedupe) live on the
-   server — see ATLASPULLSPEC.md; they cannot run in a static demo.
+   A category pull is viewport-bounded and loads EVERY business of
+   that type in the current map area (100% of what Google lists
+   there, not a sample). Pay 50 IQC ONCE and you OWN that category
+   for the whole session — toggling its chip only shows/hides pins,
+   it is never charged or re-pulled. Backend concerns (real Places
+   API, server-side key, Firestore, audit ledger, name+address
+   dedupe) live on the server — see ATLASPULLSPEC.md; they cannot
+   run in a static demo.
    ============================================================ */
-const PULL_CAP = 60;                 // §1 hard cap per category per pull (3 pages x 20)
-const PULL_PRICE = 50;               // §1
-const LOADMORE_PRICE = 25;           // §4
+const PULL_PRICE = 50;               // §1 one-time charge to own a category
 const SWEEP_PRICE = 400;             // §3 Full City Sweep
 
 // §10 category -> Places (New) includedType (server-side config; shown here for reference)
@@ -506,27 +529,23 @@ PROSPECTS.forEach(function(p){ p._loaded = false; });
 
 function inCurrentBounds(p){ return !map || map.getBounds().contains([p.lat, p.lng]); }
 
-// pick up to `limit` in-bounds, not-yet-loaded prospects of a category
-// (ordered by opportunity as a stand-in for Places text-search relevance)
-function pickPullBatch(cat, limit){
+// EVERY in-bounds, not-yet-loaded prospect of a category (100% — no cap)
+// ordered by opportunity as a stand-in for Places text-search relevance
+function pickPullBatch(cat){
   return PROSPECTS
     .map(function(p, idx){ return { p: p, idx: idx }; })
     .filter(function(x){ return x.p.category === cat && !x.p._loaded && inCurrentBounds(x.p); })
     .sort(function(a, b){ return b.p.opportunity_score - a.p.opportunity_score; })
-    .slice(0, limit)
     .map(function(x){ return x.idx; });
 }
-function inBoundsRemaining(cat){
-  return PROSPECTS.filter(function(p){ return p.category === cat && !p._loaded && inCurrentBounds(p); }).length;
-}
 
-// §1 a category pull is viewport-bounded, capped at 60, costs 50 IQC.
+// §1 a pull is viewport-bounded and loads 100% of the category; pay 50 IQC ONCE.
 // §5 check balance first; never partially unlock; deduct then "fetch".
 function handleCategoryChipClick(name, chipEl){
   if (pullingCategories.has(name)) return;
-  if (!unlockedCategories.has(name)){
+  if (!unlockedCategories.has(name)){                              // not yet owned
     if (atlasCredits < PULL_PRICE){ creditFail(); return; }        // §5 not-enough-credits
-    var batch = pickPullBatch(name, PULL_CAP);
+    var batch = pickPullBatch(name);
     atlasCredits -= PULL_PRICE; updateCreditsChip();
     pullingCategories.add(name); renderChips();
     setTimeout(function(){
@@ -541,24 +560,10 @@ function handleCategoryChipClick(name, chipEl){
         : ('No ' + name + ' in this map area — pan or zoom out and try again'));
     }, 800);
   } else {
-    // §3 already pulled -> free on/off VIEW toggle (no fetch, no credits)
+    // OWNED for good -> free show/hide toggle. Never charge, re-pull, or show "Pulling…".
     if (activeFilters.has(name)) activeFilters.delete(name); else activeFilters.add(name);
     renderChips(); renderList();
   }
-}
-
-// §4 Load more = a new bounded pull, +60 increment, 25 IQC, same category & area
-function loadMoreCategory(name, ev){
-  if (ev) ev.stopPropagation();
-  if (inBoundsRemaining(name) === 0){ showToast('No more ' + name + ' in this area — pan or zoom out'); return; }
-  if (atlasCredits < LOADMORE_PRICE){ creditFail(); return; }
-  var batch = pickPullBatch(name, PULL_CAP);
-  atlasCredits -= LOADMORE_PRICE; updateCreditsChip();
-  batch.forEach(function(i){ PROSPECTS[i]._loaded = true; });
-  window.__staggerCat = name;
-  renderChips(); renderList();
-  setTimeout(function(){ window.__staggerCat = null; }, 1200);
-  showToast('Loaded ' + batch.length + ' more ' + name + ' — ' + LOADMORE_PRICE + ' IQC');
 }
 
 // §3 Full City Sweep — all 11 categories in the CURRENT viewport at once, 400 IQC
@@ -567,7 +572,7 @@ function fullCitySweep(){
   atlasCredits -= SWEEP_PRICE; updateCreditsChip();
   var total = 0;
   Object.keys(CATEGORIES).forEach(function(name){
-    var batch = pickPullBatch(name, PULL_CAP);
+    var batch = pickPullBatch(name);
     batch.forEach(function(i){ PROSPECTS[i]._loaded = true; });
     if (batch.length){ unlockedCategories.add(name); activeFilters.add(name); total += batch.length; }
   });

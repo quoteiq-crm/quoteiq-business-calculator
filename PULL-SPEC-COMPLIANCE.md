@@ -6,22 +6,23 @@ self-contained front-end demo with no server — so this pass made the demo's **
 simulation obey every rule a front-end can observably honor**, and documents the pieces
 that can only live on the server.
 
-Verified headless (`pull-smoke.js`): bounded pull loads 43/43 at metro zoom but only 11
-in a tight view; 50-IQC pull; free re-toggle costs 0; 60 cap honored; Full City Sweep
-blocked at 130 IQC and pulls all 11 categories at 400 IQC; graceful "no more in area";
-phone hidden until reveal. No JS errors.
+Verified headless: a pull loads 100% of the category in the current viewport (fewer when
+zoomed in) for a one-time 50 IQC; once owned, toggling the chip 5× costs 0 and never
+re-shows "Pulling…"; Full City Sweep blocks when short and pulls all 11 categories at
+400 IQC; contact reveal is a one-time 10 IQC (free re-open); phone hidden until
+reveal/save; nothing expires. No JS errors.
 
 | Spec | In the demo now | Backend-only (documented, not runnable here) |
 |---|---|---|
-| **§1** One pull | Sends nothing unbounded — a pull loads only category prospects **inside the current map viewport**, capped at **60**, costs **50 IQC**, then the chip becomes a free on/off toggle. | `atlasPull` cloud fn; Places API (New) Text Search (≤3 pages); **server-side key only**. |
+| **§1** One pull | A pull loads **every** category prospect **inside the current map viewport** (100% of what's listed there — no cap), costs **50 IQC once**, and the category is then **owned for the whole session** — its chip is a free show/hide toggle (marked "Saved") that is never charged or re-pulled. | `atlasPull` cloud fn; Places API (New) Text Search; **server-side key only**. |
 | **§2** Locations only | Pulled prospects expose **location only**; phone/website are withheld until Reveal/Save (Call-Now no longer appears until then). | Places field mask `place_id,displayName,formattedAddress,location,primaryType,types`. |
 | **§3** "All" vs Full City Sweep | Re-showing a pulled category is a **free view toggle** (no fetch). **Full City Sweep** button pulls **all 11 categories in view** for **400 IQC**. | — |
-| **§4** Load more | `+25 IQC` runs a **new bounded pull** for the next batch of the same category/area; graceful message when none remain. | Next Places page token. |
+| **§4** Load more | **Removed** — a pull already loads 100% of the category in-area, so there is nothing left to load (no "+25 IQC" / "next batch"). | — |
 | **§5** Metering order | Balance is checked **before** the pull; credits deduct **before** the "fetch"; **never a partial unlock**; insufficient funds → shake + top-up path. | Refund on total failure; per-pull **audit ledger**; **≤30 pulls/workspace/hour** abuse brake. |
 | **§6** Reveal contact | `10 IQC` reveal, **free on Save**; keeps the existing "no phone/website" info state. | Single Place Details call for one place. |
 | **§7** Save to Contacts | Copies name/address into the contractor's own record; contact info free at save; persists across restart. | First-party CRM record; never re-syncs from Google. |
 | **§8** Dedupe | Customers and prospects are separate datasets in the demo, so a customer never appears as a prospect. | Name + normalized-address match against existing contacts. |
-| **§9** 30-day expiry | Copy states prospect data "expires in 30 days unless saved." | `place_id` kept forever; Google display fields cached with `fetched_at` + 30-day TTL; expired → "refresh to view" = new metered pull. |
+| **§9** Expiry | **Nothing expires** (product decision): once pulled/revealed/saved, data persists for the entire session with no TTL, staleness, or "refresh to view." | If a TTL is ever reintroduced server-side, it would be a `fetched_at` cache window — not enabled today. |
 | **§10** Category → Places type | Mapping embedded as a reference `PLACES_TYPE_MAP` const (all 11). | Lives in server config; new categories = config-only. |
 | **Build-time checks** | — | Verify live Places (New) SKU/field prices and the current 30-day ToS clause before locking economics. |
 

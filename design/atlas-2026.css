@@ -246,12 +246,11 @@ a{ color:inherit; }
 .chip.active .chip-price{ background:rgba(255,255,255,.22); color:#fff; }
 .chip.pulling{ pointer-events:none; }
 .chip.pulling .chip-price{ color:var(--ink-3); background:var(--surface-3); }
-.chip .chip-loadmore{
-  font-family:var(--mono); font-size:10px; font-weight:700; padding:2px 7px; border-radius:6px;
-  background:var(--ink); color:var(--gold-hi); margin-left:1px; cursor:pointer; transition:.14s;
-}
-.chip .chip-loadmore:hover{ background:#000; }
-.chip.active .chip-loadmore{ background:rgba(0,0,0,.28); }
+/* owned-category indicator (free show/hide) — replaces the price on pulled chips */
+.chip .chip-saved{ display:inline-flex; align-items:center; gap:4px; font-size:10px; font-weight:700; padding:2px 7px; border-radius:6px;
+  background:var(--surface-3); color:var(--ink-3); margin-left:1px; }
+.chip .chip-saved svg{ width:11px; height:11px; }
+.chip.active .chip-saved{ background:rgba(255,255,255,.18); color:#fff; }
 
 /* Full City Sweep — pull all 11 categories in the current viewport (400 IQC) */
 .sweep-btn{ flex-basis:100%; margin-top:8px; display:inline-flex; align-items:center; justify-content:center; gap:9px;
