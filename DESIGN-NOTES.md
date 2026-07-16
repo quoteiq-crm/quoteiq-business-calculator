@@ -94,3 +94,28 @@ python3 design/build.py        # regenerates ./atlas-demo.html
 `atlas-demo.html` is fully self-contained (Leaflet + data are inlined) — just open it
 in a browser. It loads Inter and the CARTO light basemap over the network, exactly as
 the original did.
+
+## Redesign pass — entity model, compact panel, lead card, deal/task/reminder (Sections 1–7)
+
+- **Map color model:** customers = **blue** pins (person icon + hover name-tag), active jobs =
+  **green** briefcase pins (new demo layer + toggle), prospect heat = **orange / amber / gray**
+  (deep orange for high-opp so it stands out from the gold CTAs). Door-knock status colors
+  unchanged. `MY MAP` split into **Customers / Active Jobs / Door Knocks** toggles; legend now
+  Customers · Active Jobs · High opp · Medium · Lower.
+- **Compact Prospects panel:** the 11-category grid is gone — default shows only pulled
+  categories as **Saved** chips plus a **＋ Add businesses** button that opens a popover with the
+  full 11-category picker (50 IQC each) + **Full City Sweep (400 IQC)**. Pull-once / Saved /
+  never-expire behavior preserved.
+- **Collapsible panel:** the old "Live map" label is now the collapse toggle; collapsed hides the
+  panel and shows a floating **Live Map** pill at the top-left of the map (~180ms animation).
+- **Lead detail card** (replaces the radial) on door-knock click: Change Status, then Call · Text ·
+  Navigate · Create Task · Create Deal · Reminder, a note, and **Delete pin**. No Timer / Check-In /
+  separate View-Details. Saved-contact/prospect detail gets the same Text/Navigate/Task/Deal/Reminder
+  actions (non-destructive).
+- **Create Deal modal:** Pipeline dropdown + dependent Stage dropdown (Sales vs Service pipelines have
+  different stages), deal name/amount/start/priority/note, pre-filled Attach Customer, estimate + create-new,
+  employee. **Create Task / Reminder** modals match the provided references.
+- **Quick fixes:** removed the QuoteIQ wordmark + "New" badge; customer-pin hover name tags; dropped/manual
+  pins are deletable from the lead card.
+
+Verified in a local server (`python3 -m http.server`) headless — 23/23 checks pass, no console errors.

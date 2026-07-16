@@ -229,20 +229,39 @@ sub(CHECK_DEF, CHECK_DEF + "\n"
     "  person:    '<svg viewBox=\"0 0 24 24\" fill=\"currentColor\"><path d=\"M12 12a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9zm0 2.25c-3.87 0-7 2.02-7 4.5V21h14v-2.25c0-2.48-3.13-4.5-7-4.5z\"/></svg>',",
     1, "icon-person")
 
-# customer map pin
+# customer map pin — person icon (blue via CSS) + hover name tag (Section 7)
 sub('class="pin-customer" data-idx="${idx}" style="${isSelected ? \'transform:scale(1.2);box-shadow:0 4px 16px rgba(16,185,129,.6);\' : \'\'}">${ICONS.check}</div>',
-    'class="pin-customer" data-idx="${idx}" style="${isSelected ? \'transform:scale(1.2);box-shadow:0 4px 16px rgba(16,185,129,.6);\' : \'\'}">${ICONS.person}</div>',
+    'class="pin-customer" data-idx="${idx}" style="${isSelected ? \'transform:scale(1.2);box-shadow:0 4px 16px rgba(16,185,129,.6);\' : \'\'}">${ICONS.person}<span class="pin-name-tag">${escapeHtml(c.name)}</span></div>',
     1, "customer-pin-person")
 
-# legend swatch
-sub('<span class="ll-dot ll-cust"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></span> Your customers',
-    '<span class="ll-dot ll-cust"><svg width="10" height="10" viewBox="0 0 24 24" fill="#12b981"><path d="M12 12a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9zm0 2.25c-3.87 0-7 2.02-7 4.5V21h14v-2.25c0-2.48-3.13-4.5-7-4.5z"/></svg></span> Your customers',
-    1, "legend-person")
+# legend (Section 1): Customers (blue), Active Jobs (green), High opp (orange), Medium (amber), Lower (gray)
+sub('      <span class="ll-item"><span class="ll-dot ll-cust"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></span> Your customers</span>\n'
+    '      <span class="ll-item"><span class="ll-dot ll-high"></span> High opp</span>\n'
+    '      <span class="ll-item"><span class="ll-dot ll-med"></span> Medium</span>\n'
+    '      <span class="ll-item"><span class="ll-dot ll-low"></span> Lower</span>',
+    '      <span class="ll-item"><span class="ll-dot ll-custD"></span> Customers</span>\n'
+    '      <span class="ll-item"><span class="ll-dot ll-job"></span> Active Jobs</span>\n'
+    '      <span class="ll-item"><span class="ll-dot ll-high"></span> High opp</span>\n'
+    '      <span class="ll-item"><span class="ll-dot ll-med"></span> Medium</span>\n'
+    '      <span class="ll-item"><span class="ll-dot ll-low"></span> Lower</span>',
+    1, "legend-5")
 
-# customer detail strip
+# customer detail strip — person icon + blue disc
 sub('color:#fff;"><div style="width:20px;height:20px;">${ICONS.check}</div></div>',
     'color:#fff;"><div style="width:20px;height:20px;">${ICONS.person}</div></div>',
     1, "customer-strip-person")
+sub('width:42px;height:42px;border-radius:50%;background:#10b981;display:flex;align-items:center;justify-content:center;flex:none;color:#fff;',
+    'width:42px;height:42px;border-radius:50%;background:#2f74f0;display:flex;align-items:center;justify-content:center;flex:none;color:#fff;',
+    1, "customer-strip-blue")
+
+# Section 7: remove the QuoteIQ wordmark + "NEW" badge (app already has its own header)
+sub('  <div class="logo">\n'
+    '    <div class="logo-mark">Q</div>\n'
+    '    <span>QuoteIQ</span>\n'
+    '    <span class="logo-sub">ATLAS<span class="badge-new">NEW</span></span>\n'
+    '  </div>',
+    '  <div class="logo"><span class="logo-sub" style="border:none;padding:0;margin:0;letter-spacing:.14em;color:var(--ink-2);">Atlas</span></div>',
+    1, "remove-wordmark")
 
 # ---------------------------------------------------------------------------
 # 9) HELP / GUIDE — floating "?" button + full walkthrough modal
@@ -716,6 +735,280 @@ window.addEventListener('resize', function(){ if (typeof map !== 'undefined' && 
 </script>
 '''
 sub("\n</body>", QIQ_SCRIPT + "\n</body>", 1, "shell-js")
+
+# ---------------------------------------------------------------------------
+# 12) REDESIGN PASS (Sections 2–7 behavior): compact Prospects panel, collapsible
+#     panel, lead detail card, Active-Job pins, Create Deal / Task / Reminder modals.
+REDESIGN = r'''
+<!-- REDESIGN modal shells (filled in JS) -->
+<div class="modal-overlay lead-card" id="leadCardModal" onclick="if(event.target===this)closeOverlay('leadCardModal')"><div class="modal" id="leadCardInner"></div></div>
+<div class="modal-overlay" id="createDealModal" onclick="if(event.target===this)closeOverlay('createDealModal')"><div class="modal" id="createDealInner"></div></div>
+<div class="modal-overlay" id="createTaskModal" onclick="if(event.target===this)closeOverlay('createTaskModal')"><div class="modal" id="createTaskInner"></div></div>
+<div class="modal-overlay" id="reminderModal2" onclick="if(event.target===this)closeOverlay('reminderModal2')"><div class="modal" id="reminderInner"></div></div>
+
+<script id="atlas-redesign">
+(function(){
+const ICO={
+ x:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+ nav:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>',
+ brief:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>',
+ trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m5 0V4a2 2 0 0 1 2-2h0a2 2 0 0 1 2 2v2"/></svg>',
+ task:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>',
+ deal:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>',
+ bell:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>',
+};
+
+// ---------- Active Jobs (green) ----------
+const JOBS=[
+ {name:'Bay Street Office Tower — pressure wash', lat:32.0668, lng:-81.0907, when:'Today · 2:00 PM'},
+ {name:'Forsyth Park Plaza — monthly', lat:32.0762, lng:-81.0889, when:'Tomorrow · 9:00 AM'},
+ {name:'Oglethorpe Mall — lot striping', lat:32.0246, lng:-81.1122, when:'Wed · 7:30 AM'},
+ {name:'River Street Group — exterior', lat:32.0811, lng:-81.0902, when:'Thu · 11:00 AM'},
+ {name:'Historic Inn at Telfair', lat:32.0803, lng:-81.0925, when:'Fri · 1:00 PM'},
+ {name:'Abercorn Commerce Center', lat:32.0146, lng:-81.1098, when:'Mon · 8:00 AM'},
+];
+window.showJobs=true; let jobMarkers=[];
+function renderJobs(){
+ jobMarkers.forEach(m=>map.removeLayer(m)); jobMarkers=[];
+ if(!window.showJobs||!map) return;
+ JOBS.forEach((j)=>{
+  const html='<div class="pin-job">'+ICO.brief+'<span class="pin-name-tag">'+escapeHtml(j.name)+' · '+escapeHtml(j.when)+'</span></div>';
+  const icon=L.divIcon({html,className:'',iconSize:[40,40],iconAnchor:[20,20]});
+  const marker=L.marker([j.lat,j.lng],{icon,zIndexOffset:150});
+  marker.on('click',()=>showToast('Active job — '+j.name+' · '+j.when));
+  marker.addTo(map); jobMarkers.push(marker);
+ });
+}
+const _origRenderMarkers=renderMarkers;
+renderMarkers=function(){ _origRenderMarkers(); renderJobs(); };
+
+// ---------- overlays ----------
+window.openOverlay=function(id){ const el=document.getElementById(id); if(el) el.classList.add('show'); };
+window.closeOverlay=function(id){ const el=document.getElementById(id); if(el) el.classList.remove('show'); };
+
+// ---------- Section 2: compact Prospects panel ----------
+renderChips=function(){
+ const wrap=document.getElementById('filterChips'); if(!wrap) return; wrap.innerHTML='';
+ [{key:'all',label:'All',klass:''},{key:'high',label:'Excellent',klass:'tier-high'},{key:'medium',label:'Strong',klass:'tier-med'},{key:'low',label:'Skip',klass:'tier-low'}].forEach(t=>{
+  const chip=document.createElement('button'); chip.className='chip '+t.klass+' '+(activeTier===t.key?'active':'');
+  chip.textContent=t.label; chip.onclick=()=>{ activeTier=t.key; renderChips(); renderMarkers(); renderList(); };
+  wrap.appendChild(chip);
+ });
+ wrap.appendChild(Object.assign(document.createElement('div'),{className:'chip-divider'}));
+ const myMap=document.createElement('span'); myMap.className='layer-group';
+ myMap.innerHTML='<span class="group-label">My Map</span>'+
+  '<label class="layer-toggle"><input type="checkbox" id="tgCustomers" '+(showCustomers?'checked':'')+'/> Customers</label>'+
+  '<label class="layer-toggle"><input type="checkbox" id="tgJobs" '+(window.showJobs?'checked':'')+'/> Active Jobs</label>'+
+  '<label class="layer-toggle"><input type="checkbox" id="tgKnocks" '+(showDoorKnocks?'checked':'')+'/> Door Knocks</label>';
+ wrap.appendChild(myMap);
+ myMap.querySelector('#tgCustomers').addEventListener('change',e=>{ showCustomers=e.target.checked; const t=document.getElementById('showCustomersToggle'); if(t)t.checked=showCustomers; renderMarkers(); });
+ myMap.querySelector('#tgJobs').addEventListener('change',e=>{ window.showJobs=e.target.checked; renderJobs(); });
+ myMap.querySelector('#tgKnocks').addEventListener('change',e=>{ showDoorKnocks=e.target.checked; renderDoorKnocks(); });
+ wrap.appendChild(Object.assign(document.createElement('div'),{className:'chip-divider'}));
+ const lbl=document.createElement('span'); lbl.className='group-label'; lbl.textContent='Prospects'; wrap.appendChild(lbl);
+ const row=document.createElement('span'); row.className='saved-row';
+ const owned=Object.keys(CATEGORIES).filter(n=>unlockedCategories.has(n));
+ if(!owned.length){ const e=document.createElement('span'); e.className='addbiz-empty'; e.textContent='No businesses pulled yet.'; row.appendChild(e); }
+ owned.forEach(name=>{
+  const cfg=CATEGORIES[name]; const chip=document.createElement('button');
+  chip.className='chip'+(activeFilters.has(name)?' active':'');
+  chip.innerHTML='<span style="width:8px;height:8px;border-radius:50%;background:'+cfg.color+';display:inline-block;"></span>'+name+'<span class="chip-saved">'+ICONS.eye+' Saved</span>';
+  chip.onclick=()=>handleCategoryChipClick(name,chip); row.appendChild(chip);
+ });
+ const awrap=document.createElement('span'); awrap.className='addbiz-wrap';
+ const btn=document.createElement('button'); btn.className='addbiz-btn'; btn.innerHTML=ICONS.plus+' Add businesses';
+ btn.onclick=(ev)=>{ ev.stopPropagation(); const p=awrap.querySelector('.addbiz-pop'); closeAddBiz(); if(p) p.classList.add('show'); };
+ awrap.appendChild(btn); awrap.appendChild(buildAddBizPop()); row.appendChild(awrap);
+ wrap.appendChild(row);
+};
+function buildAddBizPop(){
+ const pop=document.createElement('div'); pop.className='addbiz-pop';
+ let h='<h4>Pull businesses — 50 IQC each</h4><div class="addbiz-grid">';
+ Object.entries(CATEGORIES).forEach(([name,cfg])=>{
+  const owned=unlockedCategories.has(name);
+  h+='<button class="addbiz-cat" data-owned="'+(owned?1:0)+'" data-cat="'+name+'"><span class="ac-dot" style="background:'+cfg.color+'"></span><span class="ac-name">'+name+'</span><span class="ac-price">'+(owned?'Saved':'50 IQC')+'</span></button>';
+ });
+ h+='</div><button class="btn btn-primary addbiz-sweep" id="addbizSweep">⚡ Full City Sweep <span style="opacity:.85;font-family:var(--mono);font-size:11px;margin-left:6px;">400 IQC</span></button>';
+ pop.innerHTML=h;
+ pop.querySelectorAll('.addbiz-cat').forEach(b=>{ b.onclick=()=>{ const nm=b.getAttribute('data-cat'); closeAddBiz(); if(!unlockedCategories.has(nm)) handleCategoryChipClick(nm,null); }; });
+ pop.querySelector('#addbizSweep').onclick=()=>{ closeAddBiz(); fullCitySweep(); };
+ return pop;
+}
+window.closeAddBiz=function(){ document.querySelectorAll('.addbiz-pop.show').forEach(p=>p.classList.remove('show')); };
+document.addEventListener('click',e=>{ if(!e.target.closest('.addbiz-wrap')) closeAddBiz(); });
+
+// ---------- Section 3: collapsible panel ----------
+window.togglePanelCollapse=function(){
+ const p=document.getElementById('leftPanel'); const pill=document.getElementById('livePill');
+ const collapsed=p.classList.toggle('collapsed');
+ if(pill) pill.classList.toggle('show',collapsed);
+ setTimeout(()=>{ if(map) map.invalidateSize(); },210);
+};
+(function(){
+ const live=document.querySelector('.deck-title .live');
+ if(live){ live.style.cursor='pointer'; live.title='Collapse panel'; live.onclick=window.togglePanelCollapse;
+  const c=document.createElement('span'); c.innerHTML='<svg class="live-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:12px;height:12px;margin-left:2px;"><polyline points="15 18 9 12 15 6"/></svg>'; live.appendChild(c); }
+ const mw=document.querySelector('.map-wrap');
+ if(mw && !document.getElementById('livePill')){
+  const pill=document.createElement('button'); pill.id='livePill'; pill.className='live-pill'; pill.textContent='Live Map'; pill.onclick=window.togglePanelCollapse; mw.appendChild(pill);
+ }
+})();
+
+// ---------- Section 4: lead detail card (door-knock leads) ----------
+function knockPhone(k){ if(!k.phone){ const s=Math.abs(String(k.name||'').split('').reduce((a,c)=>a+c.charCodeAt(0),0)); k.phone='(912) 555-0'+String(100+(s%900)).slice(-3); } return k.phone; }
+window.openLeadCard=function(ctx){
+ const k=DOOR_KNOCKS[ctx.i]; if(!k) return;
+ const phone=knockPhone(k); const digits=phone.replace(/\D/g,'');
+ window.__leadCtx={name:k.name, phone, lat:k.lat, lng:k.lng};
+ const opts=KNOCK_STATUSES.map(s=>'<option value="'+escapeHtml(s.key)+'" '+(s.key===k.status?'selected':'')+'>'+escapeHtml(s.key)+'</option>').join('');
+ const nav='https://www.google.com/maps/dir/?api=1&destination='+k.lat+','+k.lng;
+ document.getElementById('leadCardInner').innerHTML=
+  '<div class="lead-head"><div class="lh-body"><div class="lh-title">'+escapeHtml(k.name)+'</div><div class="lh-sub">Door-knock lead · My Map</div></div>'+
+  '<button class="lh-close" onclick="closeOverlay(\'leadCardModal\')">'+ICO.x+'</button></div>'+
+  '<div class="lead-body"><label class="lead-label">Change status</label>'+
+  '<select class="lead-status-sel" onchange="cardSetKnockStatus('+ctx.i+', this.value)">'+opts+'</select>'+
+  '<div class="lead-actions">'+
+   '<a class="lead-act call" href="tel:'+digits+'"><span class="la-ico">'+ICONS.phone+'</span>Call</a>'+
+   '<a class="lead-act text" href="sms:'+digits+'"><span class="la-ico">'+ICONS.message+'</span>Text</a>'+
+   '<a class="lead-act nav" href="'+nav+'" target="_blank" rel="noopener"><span class="la-ico">'+ICO.nav+'</span>Navigate</a>'+
+   '<button class="lead-act task" onclick="openCreateTask()"><span class="la-ico">'+ICO.task+'</span>Create Task</button>'+
+   '<button class="lead-act deal" onclick="openCreateDeal()"><span class="la-ico">'+ICO.deal+'</span>Create Deal</button>'+
+   '<button class="lead-act rem" onclick="openReminder()"><span class="la-ico">'+ICO.bell+'</span>Reminder</button>'+
+  '</div>'+
+  '<div class="lead-note">Manual pins create a lightweight contact record in QuoteIQ — not an orphan map object.</div>'+
+  '<button class="lead-delete" onclick="deleteKnock('+ctx.i+')">'+ICO.trash+' Delete pin</button></div>';
+ openOverlay('leadCardModal');
+};
+window.cardSetKnockStatus=function(i,val){ DOOR_KNOCKS[i].status=val; renderDoorKnocks(); };
+window.deleteKnock=function(i){ DOOR_KNOCKS.splice(i,1); renderDoorKnocks(); closeOverlay('leadCardModal'); showToast('Pin deleted'); };
+
+// door-knock pins now open the card (no popup); dropped pins too
+renderDoorKnocks=function(){
+ knockMarkers.forEach(m=>map.removeLayer(m)); knockMarkers=[];
+ if(!showDoorKnocks||!map) return;
+ DOOR_KNOCKS.forEach((k,i)=>{
+  const isDNK=k.status==='Do Not Knock';
+  const html='<div class="pin-knock" data-knock="'+i+'" style="--kc:'+knockColor(k.status)+'">'+(isDNK?'<span class="knock-x">✕</span>':'')+'</div>';
+  const icon=L.divIcon({html,className:'',iconSize:[20,20],iconAnchor:[10,10]});
+  const marker=L.marker([k.lat,k.lng],{icon,zIndexOffset:200});
+  marker.on('click',()=>openLeadCard({i:i}));
+  marker.addTo(map); knockMarkers.push(marker);
+ });
+};
+handleDropPinClick=function(e){
+ if(!dropPinMode) return;
+ const lat=e.latlng.lat, lng=e.latlng.lng;
+ DOOR_KNOCKS.push({ name:'Dropped pin · '+lat.toFixed(4)+', '+lng.toFixed(4), status:'Knocked — No Answer', lat:lat, lng:lng, manual:true });
+ toggleDropPinMode(false);
+ if(!showDoorKnocks){ showDoorKnocks=true; const cb=document.getElementById('tgKnocks'); if(cb) cb.checked=true; }
+ renderDoorKnocks(); showToast('Pin dropped — contact record created');
+ openLeadCard({i:DOOR_KNOCKS.length-1});
+};
+
+// saved-contact / prospect detail gets the same lead actions (non-destructive)
+const _origSelectProspect=selectProspect;
+selectProspect=function(idx,flyTo){
+ _origSelectProspect(idx,flyTo);
+ const p=PROSPECTS[idx]; if(!p) return;
+ const rev=revealedContacts.get(idx);
+ const phone=p.phone||(rev&&rev.phone)||knockPhone({name:p.name});
+ window.__leadCtx={name:p.name, phone, lat:p.lat, lng:p.lng};
+ const bar=document.querySelector('#detailContent .action-bar');
+ if(bar && !bar.querySelector('.lead-actions')){
+  const nav='https://www.google.com/maps/dir/?api=1&destination='+p.lat+','+p.lng;
+  const row=document.createElement('div'); row.className='lead-actions'; row.style.marginTop='10px';
+  row.innerHTML='<a class="lead-act text" href="sms:'+phone.replace(/\D/g,'')+'"><span class="la-ico">'+ICONS.message+'</span>Text</a>'+
+   '<a class="lead-act nav" href="'+nav+'" target="_blank" rel="noopener"><span class="la-ico">'+ICO.nav+'</span>Navigate</a>'+
+   '<button class="lead-act task" onclick="openCreateTask()"><span class="la-ico">'+ICO.task+'</span>Task</button>'+
+   '<button class="lead-act deal" onclick="openCreateDeal()"><span class="la-ico">'+ICO.deal+'</span>Deal</button>'+
+   '<button class="lead-act rem" onclick="openReminder()"><span class="la-ico">'+ICO.bell+'</span>Reminder</button>';
+  bar.appendChild(row);
+ }
+};
+
+// ---------- Section 5: Create Deal ----------
+const PIPELINES={'Sales Pipeline':['New Lead','Contacted','Quoted','Won','Lost'],'Service Pipeline':['Request','Scheduled','In Progress','Complete']};
+const EMPLOYEES=['emma1obiechina@gmail.com','mike@allamericanclean.com','crew@allamericanclean.com'];
+const ESTIMATES=['EST #2664 · $537.00','EST #2662 · $500.00','EST #2652 · $410.00'];
+function stageOpts(pipe){ return (PIPELINES[pipe]||[]).map(s=>'<option>'+s+'</option>').join(''); }
+window.onDealPipelineChange=function(){ document.getElementById('dealStage').innerHTML=stageOpts(document.getElementById('dealPipeline').value); };
+window.openCreateDeal=function(){
+ const ctx=window.__leadCtx||{name:'Map lead'}; const today=new Date().toISOString().slice(0,10);
+ const pipes=Object.keys(PIPELINES).map(p=>'<option>'+p+'</option>').join('');
+ document.getElementById('createDealInner').innerHTML=
+  '<div class="modal-header"><h3>Create Deal</h3><p>Add '+escapeHtml(ctx.name)+' to a pipeline.</p></div>'+
+  '<div class="modal-body">'+
+  '<div class="form-row"><div class="form-group req"><label>Pipeline</label><select id="dealPipeline" onchange="onDealPipelineChange()">'+pipes+'</select></div>'+
+  '<div class="form-group req"><label>Stage</label><select id="dealStage">'+stageOpts(Object.keys(PIPELINES)[0])+'</select></div></div>'+
+  '<div class="form-group req"><label>Deal name</label><input type="text" id="dealName" value="'+escapeHtml(ctx.name)+' — new deal"/></div>'+
+  '<div class="form-row"><div class="form-group"><label>Amount</label><input type="text" id="dealAmount" placeholder="$0.00"/></div>'+
+  '<div class="form-group"><label>Start date</label><input type="date" id="dealStart" value="'+today+'"/></div></div>'+
+  '<div class="form-group"><label>Priority level</label><select id="dealPriority"><option>Low</option><option selected>Medium</option><option>High</option><option>Priority</option></select></div>'+
+  '<div class="form-group"><label>Additional note</label><textarea id="dealNote" style="min-height:64px;font-family:inherit;font-size:13.5px;" placeholder="Context for this deal…"></textarea></div>'+
+  '<div class="form-group"><label>Customer</label><div class="attached-cust"><span class="ac-ava">'+ICONS.person+'</span><b>'+escapeHtml(ctx.name)+'</b><button class="ac-change" onclick="showToast(\'Demo — change customer\')">Change</button></div></div>'+
+  '<div class="form-group"><label>Estimate (optional)</label><select id="dealEstimate"><option value="">None</option>'+ESTIMATES.map(e=>'<option>'+e+'</option>').join('')+'</select><button class="mini-link" onclick="showToast(\'Demo — opens estimate builder\')">'+ICONS.plus+' Create New Estimate</button></div>'+
+  '<div class="form-group"><label>Employee (optional)</label><select id="dealEmployee"><option value="">Unassigned</option>'+EMPLOYEES.map(e=>'<option>'+e+'</option>').join('')+'</select></div>'+
+  '</div>'+
+  '<div class="modal-footer"><button class="btn btn-secondary" onclick="closeOverlay(\'createDealModal\')">Cancel</button><button class="btn btn-primary" onclick="submitDeal()">Create Deal</button></div>';
+ openOverlay('createDealModal');
+};
+window.submitDeal=function(){
+ const name=document.getElementById('dealName').value.trim();
+ const pipe=document.getElementById('dealPipeline').value, stage=document.getElementById('dealStage').value;
+ if(!name){ showToast('Deal name is required'); return; }
+ if(!pipe||!stage){ showToast('Pick a pipeline and stage'); return; }
+ closeOverlay('createDealModal'); showToast('Deal created in '+pipe+' · '+stage);
+};
+
+// ---------- Section 6a: Create Task ----------
+window.pickPri=function(btn){ btn.parentElement.querySelectorAll('.pri-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); };
+window.openCreateTask=function(){
+ const ctx=window.__leadCtx||{name:'Lead'};
+ const el=document.getElementById('createTaskInner'); el.style.maxWidth='680px';
+ el.innerHTML=
+  '<div class="modal-header"><h3>New Task</h3></div>'+
+  '<div class="modal-body"><div class="form-row" style="grid-template-columns:1.15fr 1fr;">'+
+  '<div><div class="form-group req"><label>Title</label><input type="text" id="taskTitle" value="Follow up: '+escapeHtml(ctx.name)+'"/></div>'+
+  '<div class="form-group"><label>Notes</label><textarea id="taskNotes" style="min-height:64px;font-family:inherit;font-size:13.5px;" placeholder="Additional details…"></textarea></div>'+
+  '<div class="form-row"><div class="form-group"><label>Due date</label><input type="date" id="taskDue"/></div><div class="form-group"><label>Due time</label><input type="text" id="taskTime" placeholder="Select time"/></div></div>'+
+  '<div class="form-group"><label>Priority</label><div class="pri-group"><button class="pri-btn active" onclick="pickPri(this)">None</button><button class="pri-btn" onclick="pickPri(this)">Low</button><button class="pri-btn" onclick="pickPri(this)">Medium</button><button class="pri-btn" onclick="pickPri(this)">High</button></div></div>'+
+  '<div class="form-group"><label>Assign to</label><select id="taskAssign">'+EMPLOYEES.map(e=>'<option>'+e+'</option>').join('')+'</select></div>'+
+  '<div class="form-group"><label>Reminder — when</label><select id="taskRemind"><option>No reminder</option><option>At time of task</option><option>10 minutes before</option><option>1 hour before</option><option>1 day before</option></select></div></div>'+
+  '<div><div class="form-group"><label>Link to — Deal</label><select><option>Select Deal</option></select></div>'+
+  '<div class="form-group"><label>Customer</label><select><option selected>'+escapeHtml(ctx.name)+'</option><option>Select Customer</option></select></div>'+
+  '<div class="form-group"><label>Job / Schedule</label><select><option>Select Job</option></select></div>'+
+  '<div class="form-group"><label>Estimate</label><select><option>Select Estimate</option>'+ESTIMATES.map(e=>'<option>'+e+'</option>').join('')+'</select></div>'+
+  '<div class="form-group"><label>Invoice</label><select><option>Select Invoice</option></select></div></div>'+
+  '</div></div>'+
+  '<div class="modal-footer"><button class="btn btn-secondary" onclick="closeOverlay(\'createTaskModal\')">Cancel</button><button class="btn btn-primary" onclick="submitTask()">Create Task</button></div>';
+ openOverlay('createTaskModal');
+};
+window.submitTask=function(){ const t=document.getElementById('taskTitle').value.trim(); if(!t){ showToast('Title is required'); return; } closeOverlay('createTaskModal'); showToast('Task created'); };
+
+// ---------- Section 6b: Reminder ----------
+window.openReminder=function(){
+ const ctx=window.__leadCtx||{name:'Lead'};
+ document.getElementById('reminderInner').innerHTML=
+  '<div class="modal-header"><h3>New Reminder</h3><p>'+escapeHtml(ctx.name)+'</p></div>'+
+  '<div class="modal-body">'+
+  '<div class="form-group"><label>Note</label><textarea id="remNote" style="min-height:64px;font-family:inherit;font-size:13.5px;">Follow up with '+escapeHtml(ctx.name)+'</textarea></div>'+
+  '<div class="form-row"><div class="form-group"><label>Remind me — date</label><input type="date" id="remDate"/></div><div class="form-group"><label>Time</label><input type="text" id="remTime" placeholder="Select time"/></div></div>'+
+  '<div class="form-group"><label>Send to</label><select id="remSend"><option>Me</option>'+EMPLOYEES.map(e=>'<option>'+e+'</option>').join('')+'</select></div>'+
+  '<div class="form-group"><label>Via</label><div class="pri-group" style="max-width:150px;"><button class="pri-btn active" onclick="event.preventDefault()">🔔 Push</button></div></div>'+
+  '</div>'+
+  '<div class="modal-footer"><button class="btn btn-secondary" onclick="closeOverlay(\'reminderModal2\')">Cancel</button><button class="btn btn-primary" onclick="submitReminder()">Set Reminder</button></div>';
+ openOverlay('reminderModal2');
+};
+window.submitReminder=function(){ closeOverlay('reminderModal2'); showToast('Reminder set'); };
+
+// ---------- boot: rebind + re-render with new logic ----------
+if(map){ map.off('click'); map.on('click', handleDropPinClick); }
+renderChips(); renderMarkers();
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ ['leadCardModal','createDealModal','createTaskModal','reminderModal2'].forEach(closeOverlay); } });
+})();
+</script>
+'''
+sub("\n</body>", REDESIGN + "\n</body>", 1, "redesign-block")
 
 OUT.write_text(html)
 print(f"built -> {OUT}  ({len(html)} bytes)")
