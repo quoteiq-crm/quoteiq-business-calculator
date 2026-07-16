@@ -119,3 +119,22 @@ the original did.
   pins are deletable from the lead card.
 
 Verified in a local server (`python3 -m http.server`) headless — 23/23 checks pass, no console errors.
+
+## Feature + fix pass — Locate, dynamic sweep, saved-pin/knock polish, **Areas**
+
+- **Locate control** replaces "What's near me?" — a round crosshair button (bottom-right) that
+  recenters on GPS, or toasts "Location unavailable" and returns to the starting view on denial.
+- **Topbar trimmed:** the city selector (and its CSV-import entry + modal) and the Route Builder
+  entry point are gone (the Route Builder modal stays dormant in the file).
+- **Dynamic Full City Sweep price:** `min(400, 50 × still-locked categories)`, shown live on the
+  button; disables to "All categories pulled" once you own all 11. Owned categories never re-charge.
+- **Saved-to-Contacts pins** now get a **navy ring + bookmark badge** (green is reserved for Active
+  Jobs). **Door-knock pins** get a hover name+status tag matching the customer tag. Door-knock copy
+  says "Knock".
+- **Areas** — draw a named polygon (◇ Draw area) assigned to an employee. Saved Areas render as a
+  dashed violet shape, list in an **AREAS** panel row (assignee initials, coverage % bar, prospect/
+  knock counts, Edit/Zoom/Delete), and **activate** as a pull boundary ("Pulling within: {name} ✕"):
+  while active, `pickPullBatch` scopes by point-in-polygon and the list/count/pins show only what's
+  inside. Coverage = worked ÷ (in-polygon prospects + knocks). Areas persist across reload.
+
+Verified headless — 36/36 Section-A/B/C checks pass, no console errors.

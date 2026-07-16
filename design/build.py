@@ -379,14 +379,14 @@ HELP_HTML = f'''
           '<div class="hlegend-row"><span class="hswatch round" style="background:#0d1220;color:#fff;font-weight:800;font-size:11px">12</span><div><strong>Cluster</strong> — many pins grouped together. Zoom in (or click) to split it.</div></div>'
           '<div class="hlegend-row"><span class="hswatch round" style="background:rgba(18,185,129,.12);border:2px dashed #12b981"></span><div><strong>Service zone</strong> — a dashed ~2-mile ring around each of your customer clusters.</div></div>'
           '</div>'
-          '<p>Tap a pin (or its card in the list) to open the full detail view. Use <strong>“What’s near me?”</strong> '
-          '(bottom-right) to jump to your location.</p>')}
+          '<p>Tap a pin (or its card in the list) to open the full detail view. Use the <strong>Locate</strong> button '
+          '(bottom-right) to center the map on your current location.</p>')}
         {sec("work","Working a lead",
           '<p>Tap any prospect to open its detail panel. From there you can:</p>'
           '<ul>'
           '<li><strong>Call Now</strong> — one tap to dial (once the phone is known).</li>'
           '<li><strong>Save to Contacts</strong> — turns the prospect into <em>your</em> record. Its contact info comes '
-          'free, the pin gets a green ring, and it stays on the map regardless of filters.</li>'
+          'free, the pin gets a navy ring with a bookmark badge, and it stays on the map regardless of filters.</li>'
           '<li><strong>Add to Pipeline</strong> — queues it as a lead. <strong>No outreach is ever sent automatically.</strong></li>'
           '<li><strong>AI Intro</strong> — draft a tailored email, text, or call script in one click.</li>'
           '<li><strong>Mark Contacted</strong> &amp; <strong>Notes</strong> — track your progress; notes auto-save.</li>'
@@ -394,7 +394,7 @@ HELP_HTML = f'''
         {sec("mymap","My Map &amp; door knocks",
           '<p>The <strong>My Map</strong> toggles in the deck control your own data:</p>'
           '<ul>'
-          '<li><strong>Customers &amp; Jobs</strong> — show/hide your existing customer pins.</li>'
+          '<li><strong>Customers</strong> — show/hide your existing customer pins.</li>'
           '<li><strong>Door Knocks</strong> — show/hide the doors you’ve logged.</li>'
           '</ul>'
           '<p>Tap <span class="hkey">+ Drop a pin</span> (top-right of the map), then tap anywhere on the map to log a '
@@ -411,7 +411,7 @@ HELP_HTML = f'''
           '</ul>')}
         {sec("routes","Routes &amp; pipeline",
           '<ul>'
-          '<li><strong>Route Builder</strong> (the route icon, top-right) — pick a day, an area, and how many customer '
+          '<li><strong>Route Builder</strong> — pick a day, an area, and how many customer '
           '+ prospect stops. Atlas builds an optimised loop and can open it straight in Google Maps.</li>'
           '<li><strong>Pipeline</strong> — the green pill appears once you add prospects. Open it to review everything '
           'you’ve queued and send it all to your QuoteIQ Pipelines in one go.</li>'
@@ -585,18 +585,26 @@ function handleCategoryChipClick(name, chipEl){
   }
 }
 
-// §3 Full City Sweep — all 11 categories in the CURRENT viewport at once, 400 IQC
+// §3 Full City Sweep — pull every category NOT yet owned, in the current scope, at once.
+// Price = 50 × (categories not yet owned), capped at 400. Owned categories are never re-charged.
+function atlasLockedCategories(){ return Object.keys(CATEGORIES).filter(function(n){ return !unlockedCategories.has(n); }); }
+function atlasSweepPrice(){ return Math.min(400, PULL_PRICE * atlasLockedCategories().length); }
 function fullCitySweep(){
-  if (atlasCredits < SWEEP_PRICE){ creditFail(); return; }
-  atlasCredits -= SWEEP_PRICE; updateCreditsChip();
+  var locked = atlasLockedCategories();
+  if (locked.length === 0){ showToast('All categories already pulled'); return; }
+  var price = Math.min(400, PULL_PRICE * locked.length);
+  if (atlasCredits < price){ creditFail(); return; }          // §5 not-enough-credits, checked first
+  atlasCredits -= price; updateCreditsChip();
   var total = 0;
-  Object.keys(CATEGORIES).forEach(function(name){
+  locked.forEach(function(name){
     var batch = pickPullBatch(name);
     batch.forEach(function(i){ PROSPECTS[i]._loaded = true; });
-    if (batch.length){ unlockedCategories.add(name); activeFilters.add(name); total += batch.length; }
+    unlockedCategories.add(name); activeFilters.add(name);    // own it for good, even if 0 were in scope
+    total += batch.length;
   });
+  window.__staggerCat = null;
   renderChips(); renderList();
-  showToast('Full City Sweep — ' + total + ' prospects across ' + Object.keys(CATEGORIES).length + ' categories · ' + SWEEP_PRICE + ' IQC');
+  showToast('Full City Sweep — ' + total + ' prospects across ' + locked.length + ' categories · ' + price + ' IQC');
 }
 
 function addSweepButton(wrap){
@@ -849,8 +857,10 @@ renderChips=function(){
  myMap.querySelector('#tgCustomers').addEventListener('change',e=>{ showCustomers=e.target.checked; const t=document.getElementById('showCustomersToggle'); if(t)t.checked=showCustomers; renderMarkers(); });
  myMap.querySelector('#tgJobs').addEventListener('change',e=>{ window.showJobs=e.target.checked; renderJobs(); });
  myMap.querySelector('#tgKnocks').addEventListener('change',e=>{ showDoorKnocks=e.target.checked; renderDoorKnocks(); });
+ if(window.renderAreasSection) window.renderAreasSection(wrap);
  wrap.appendChild(Object.assign(document.createElement('div'),{className:'chip-divider'}));
  const lbl=document.createElement('span'); lbl.className='group-label'; lbl.textContent='Prospects'; wrap.appendChild(lbl);
+ if(window.renderPullingChip) window.renderPullingChip(wrap);
  const row=document.createElement('span'); row.className='saved-row';
  const owned=Object.keys(CATEGORIES).filter(n=>unlockedCategories.has(n));
  if(!owned.length){ const e=document.createElement('span'); e.className='addbiz-empty'; e.textContent='No businesses pulled yet.'; row.appendChild(e); }
@@ -873,10 +883,11 @@ function buildAddBizPop(){
   const owned=unlockedCategories.has(name);
   h+='<button class="addbiz-cat" data-owned="'+(owned?1:0)+'" data-cat="'+name+'"><span class="ac-dot" style="background:'+cfg.color+'"></span><span class="ac-name">'+name+'</span><span class="ac-price">'+(owned?'Saved':'50 IQC')+'</span></button>';
  });
- h+='</div><button class="btn btn-primary addbiz-sweep" id="addbizSweep">⚡ Full City Sweep <span style="opacity:.85;font-family:var(--mono);font-size:11px;margin-left:6px;">400 IQC</span></button>';
+ const sp=atlasSweepPrice(); const allOwned=sp===0;
+ h+='</div><button class="btn btn-primary addbiz-sweep" id="addbizSweep"'+(allOwned?' disabled':'')+'>'+(allOwned?'All categories pulled':('⚡ Full City Sweep <span style="opacity:.85;font-family:var(--mono);font-size:11px;margin-left:6px;">'+sp+' IQC</span>'))+'</button>';
  pop.innerHTML=h;
  pop.querySelectorAll('.addbiz-cat').forEach(b=>{ b.onclick=()=>{ const nm=b.getAttribute('data-cat'); closeAddBiz(); if(!unlockedCategories.has(nm)) handleCategoryChipClick(nm,null); }; });
- pop.querySelector('#addbizSweep').onclick=()=>{ closeAddBiz(); fullCitySweep(); };
+ const sw=pop.querySelector('#addbizSweep'); if(sw && !allOwned) sw.onclick=()=>{ closeAddBiz(); fullCitySweep(); };
  return pop;
 }
 function positionAddBiz(p,btn){
@@ -915,7 +926,7 @@ window.openLeadCard=function(ctx){
  const opts=KNOCK_STATUSES.map(s=>'<option value="'+escapeHtml(s.key)+'" '+(s.key===k.status?'selected':'')+'>'+escapeHtml(s.key)+'</option>').join('');
  const nav='https://www.google.com/maps/dir/?api=1&destination='+k.lat+','+k.lng;
  document.getElementById('leadCardInner').innerHTML=
-  '<div class="lead-head"><div class="lh-body"><div class="lh-title">'+escapeHtml(k.name)+'</div><div class="lh-sub">Door-knock lead · My Map</div></div>'+
+  '<div class="lead-head"><div class="lh-body"><div class="lh-title">'+escapeHtml(k.name)+'</div><div class="lh-sub">Knock · My Map</div></div>'+
   '<button class="lh-close" onclick="closeOverlay(\'leadCardModal\')">'+ICO.x+'</button></div>'+
   '<div class="lead-body"><label class="lead-label">Change status</label>'+
   '<select class="lead-status-sel" onchange="cardSetKnockStatus('+ctx.i+', this.value)">'+opts+'</select>'+
@@ -927,12 +938,12 @@ window.openLeadCard=function(ctx){
    '<button class="lead-act deal" onclick="openCreateDeal()"><span class="la-ico">'+ICO.deal+'</span>Create Deal</button>'+
    '<button class="lead-act rem" onclick="openReminder()"><span class="la-ico">'+ICO.bell+'</span>Reminder</button>'+
   '</div>'+
-  '<div class="lead-note">Manual pins create a lightweight contact record in QuoteIQ — not an orphan map object.</div>'+
-  '<button class="lead-delete" onclick="deleteKnock('+ctx.i+')">'+ICO.trash+' Delete pin</button></div>';
+  '<div class="lead-note">Manual Knocks create a lightweight contact record in QuoteIQ — not an orphan map object.</div>'+
+  '<button class="lead-delete" onclick="deleteKnock('+ctx.i+')">'+ICO.trash+' Delete Knock</button></div>';
  openOverlay('leadCardModal');
 };
 window.cardSetKnockStatus=function(i,val){ DOOR_KNOCKS[i].status=val; renderDoorKnocks(); };
-window.deleteKnock=function(i){ DOOR_KNOCKS.splice(i,1); renderDoorKnocks(); closeOverlay('leadCardModal'); showToast('Pin deleted'); };
+window.deleteKnock=function(i){ DOOR_KNOCKS.splice(i,1); renderDoorKnocks(); if(window.refreshAreas) window.refreshAreas(); closeOverlay('leadCardModal'); showToast('Knock deleted'); };
 
 // door-knock pins now open the card (no popup); dropped pins too
 renderDoorKnocks=function(){
@@ -940,7 +951,7 @@ renderDoorKnocks=function(){
  if(!showDoorKnocks||!map) return;
  DOOR_KNOCKS.forEach((k,i)=>{
   const isDNK=k.status==='Do Not Knock';
-  const html='<div class="pin-knock" data-knock="'+i+'" style="--kc:'+knockColor(k.status)+'">'+(isDNK?'<span class="knock-x">✕</span>':'')+'</div>';
+  const html='<div class="knock-wrap" data-knock="'+i+'"><div class="pin-knock" style="--kc:'+knockColor(k.status)+'">'+(isDNK?'<span class="knock-x">✕</span>':'')+'</div><span class="knock-tag">'+escapeHtml(k.name)+' · '+escapeHtml(k.status)+'</span></div>';
   const icon=L.divIcon({html,className:'',iconSize:[20,20],iconAnchor:[10,10]});
   const marker=L.marker([k.lat,k.lng],{icon,zIndexOffset:200});
   marker.on('click',()=>openLeadCard({i:i}));
@@ -950,10 +961,10 @@ renderDoorKnocks=function(){
 handleDropPinClick=function(e){
  if(!dropPinMode) return;
  const lat=e.latlng.lat, lng=e.latlng.lng;
- DOOR_KNOCKS.push({ name:'Dropped pin · '+lat.toFixed(4)+', '+lng.toFixed(4), status:'Knocked — No Answer', lat:lat, lng:lng, manual:true });
+ DOOR_KNOCKS.push({ name:'Dropped Knock · '+lat.toFixed(4)+', '+lng.toFixed(4), status:'Knocked — No Answer', lat:lat, lng:lng, manual:true });
  toggleDropPinMode(false);
  if(!showDoorKnocks){ showDoorKnocks=true; const cb=document.getElementById('tgKnocks'); if(cb) cb.checked=true; }
- renderDoorKnocks(); showToast('Pin dropped — contact record created');
+ renderDoorKnocks(); if(window.refreshAreas) window.refreshAreas(); showToast('Knock dropped — contact record created');
  openLeadCard({i:DOOR_KNOCKS.length-1});
 };
 
@@ -981,6 +992,7 @@ selectProspect=function(idx,flyTo){
 // ---------- Section 5: Create Deal ----------
 const PIPELINES={'Sales Pipeline':['New Lead','Contacted','Quoted','Won','Lost'],'Service Pipeline':['Request','Scheduled','In Progress','Complete']};
 const EMPLOYEES=['emma1obiechina@gmail.com','mike@allamericanclean.com','crew@allamericanclean.com'];
+window.__ATLAS_EMPLOYEES=EMPLOYEES;
 const ESTIMATES=['EST #2664 · $537.00','EST #2662 · $500.00','EST #2652 · $410.00'];
 function stageOpts(pipe){ return (PIPELINES[pipe]||[]).map(s=>'<option>'+s+'</option>').join(''); }
 window.onDealPipelineChange=function(){ document.getElementById('dealStage').innerHTML=stageOpts(document.getElementById('dealPipeline').value); };
@@ -1061,6 +1073,449 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ ['leadCardModal',
 </script>
 '''
 sub("\n</body>", REDESIGN + "\n</body>", 1, "redesign-block")
+
+# ===========================================================================
+# FEATURE + FIX PASS (Sections A / B / C)
+# ===========================================================================
+
+# --- A1: replace "What's near me?" with a round Locate control (bottom-right) ---
+sub('    <button class="near-me-btn" onclick="goToMyLocation()">\n'
+    '      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M1 12h2M21 12h2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>\n'
+    '      What\'s near me?\n'
+    '    </button>',
+    '    <button class="locate-btn" id="locateBtn" onclick="atlasLocate()" title="Center on my location" aria-label="Locate me">\n'
+    '      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="3.4"/><path d="M12 2v3.2M12 18.8V22M2 12h3.2M18.8 12H22"/><circle cx="12" cy="12" r="8.4"/></svg>\n'
+    '    </button>',
+    1, "locate-btn")
+
+# --- A2: remove the city selector (Savannah dropdown + other cities + CSV import entry) ---
+sub('  <div class="city-selector-wrap">\n'
+    '    <button class="city-selector" id="citySelectorBtn" onclick="toggleCityMenu()">\n'
+    '      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 7-8 13-8 13s-8-6-8-13a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></svg>\n'
+    '      <span id="currentCityLabel">Savannah, GA</span>\n'
+    '      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>\n'
+    '    </button>\n'
+    '    <div class="city-menu" id="cityMenu">\n'
+    '      <div class="city-menu-item current" onclick="closeCityMenu()">Savannah, GA <span style="color:#10b981;font-size:14px;">✓</span></div>\n'
+    '      <div class="city-menu-item" onclick="loadOtherCity(\'Inland Empire, CA\')">Inland Empire, CA</div>\n'
+    '      <div class="city-menu-item" onclick="loadOtherCity(\'Atlanta, GA\')">Atlanta, GA <span class="soon">Soon</span></div>\n'
+    '      <div class="city-menu-item" onclick="loadOtherCity(\'Charleston, SC\')">Charleston, SC <span class="soon">Soon</span></div>\n'
+    '      <div class="city-menu-item" onclick="loadOtherCity(\'Tampa, FL\')">Tampa, FL <span class="soon">Soon</span></div>\n'
+    '      <div style="border-top:1px solid #f0f1f3;margin:6px -6px 0;padding:8px 12px 4px;font-size:11px;color:#9ca3af;font-weight:700;text-transform:uppercase;letter-spacing:.05em;">Add your area</div>\n'
+    '      <div class="city-menu-item" onclick="closeCityMenu(); openModal(\'csvImportModal\')" style="color:#0c1014;">Import my customers (CSV) →</div>\n'
+    '    </div>\n'
+    '  </div>\n',
+    '', 1, "remove-city-selector")
+
+# --- A2: remove the CSV import modal ---
+sub('<div class="modal-overlay" id="csvImportModal" onclick="if(event.target===this)closeModal(\'csvImportModal\')">\n'
+    '  <div class="modal">\n'
+    '    <div class="modal-header">\n'
+    '      <h3>Import your customers</h3>\n'
+    '      <p>Paste your customer list as CSV. We\'ll score prospects against your actual routes.</p>\n'
+    '    </div>\n'
+    '    <div class="modal-body">\n'
+    '      <div class="modal-info-box">\n'
+    '        <strong>Expected format:</strong> Name, Latitude, Longitude<br>\n'
+    '        <span style="font-family:monospace;font-size:11.5px;">Forsyth Park Plaza, 32.0723, -81.0921<br>Bay Street Tower, 32.0810, -81.0900</span>\n'
+    '      </div>\n'
+    '      <label>Paste CSV</label>\n'
+    '      <textarea id="csvImportText" placeholder="Name, Lat, Lng\n'
+    'Acme Plaza, 32.07, -81.10\n'
+    'Bay Office Tower, 32.08, -81.09"></textarea>\n'
+    '      <div id="csvPreview" style="margin-top:10px;"></div>\n'
+    '    </div>\n'
+    '    <div class="modal-footer">\n'
+    '      <button class="btn btn-secondary" onclick="closeModal(\'csvImportModal\')">Cancel</button>\n'
+    '      <button class="btn btn-primary" onclick="processCSVImport()">Import &amp; Re-score</button>\n'
+    '    </div>\n'
+    '  </div>\n'
+    '</div>\n\n',
+    '', 1, "remove-csv-modal")
+
+# --- A2: neutralize city-menu JS (markup gone → guard null; drop the every-click close handler) ---
+sub("function toggleCityMenu() {\n"
+    "  document.getElementById('cityMenu').classList.toggle('show');\n"
+    "}\n"
+    "function closeCityMenu() {\n"
+    "  document.getElementById('cityMenu').classList.remove('show');\n"
+    "}",
+    "function toggleCityMenu() {\n"
+    "  var m = document.getElementById('cityMenu'); if (m) m.classList.toggle('show');\n"
+    "}\n"
+    "function closeCityMenu() {\n"
+    "  var m = document.getElementById('cityMenu'); if (m) m.classList.remove('show');\n"
+    "}",
+    1, "guard-city-js")
+sub("document.addEventListener('click', (e) => {\n"
+    "  if (!e.target.closest('.city-selector-wrap')) closeCityMenu();\n"
+    "});\n",
+    "", 1, "remove-city-click-handler")
+
+# --- A3: remove the Route Builder topbar button (modal stays dormant) ---
+sub('    <button class="icon-btn" onclick="openModal(\'routeBuilderModal\')" title="Build a route">\n'
+    '      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="19" r="3"/><path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"/><circle cx="18" cy="5" r="3"/></svg>\n'
+    '    </button>\n',
+    '', 1, "remove-routebuilder-btn")
+
+# --- B2: bookmark badge on saved-to-contacts prospect pins ---
+sub('        <span class="opp-dot ${ct}"></span>\n'
+    '      </div>`;',
+    '        <span class="opp-dot ${ct}"></span>\n'
+    '        ${isSavedContact ? \'<span class="saved-badge"><svg viewBox="0 0 24 24" fill="#fff"><path d="M6 3h12a1 1 0 0 1 1 1v18l-7-4-7 4V4a1 1 0 0 1 1-1z"/></svg></span>\' : \'\'}\n'
+    '      </div>`;',
+    1, "saved-badge-markup")
+
+# --- C1: add a "Draw area" button next to "+ Drop a pin" ---
+sub('      <button class="map-search-toggle" id="dropPinBtn" onclick="toggleDropPinMode()">+ Drop a pin</button>',
+    '      <button class="map-search-toggle" id="dropPinBtn" onclick="toggleDropPinMode()">+ Drop a pin</button>\n'
+    '      <button class="map-search-toggle" id="drawAreaBtn" onclick="atlasStartDraw()">◇ Draw area</button>',
+    1, "draw-area-btn")
+
+# --- C5: Areas scope which prospects render (markers) and list/count ---
+sub("  PROSPECTS.forEach((p, idx) => {\n"
+    "    const isSavedContact = savedContacts.has(idx); // ATLAS: saved prospects are the contractor's data — stay visible regardless of filters",
+    "  PROSPECTS.forEach((p, idx) => {\n"
+    "    if (window.__areaActive && !window.__areaContains(p.lat, p.lng)) return; // ATLAS: active-area boundary hides out-of-polygon prospects\n"
+    "    const isSavedContact = savedContacts.has(idx); // ATLAS: saved prospects are the contractor's data — stay visible regardless of filters",
+    1, "area-hide-markers")
+sub("  let filtered = PROSPECTS\n"
+    "    .map((p, idx) => ({ p, idx }))\n"
+    "    .filter(({ p }) => activeFilters.has(p.category) && p._loaded)",
+    "  let filtered = PROSPECTS\n"
+    "    .map((p, idx) => ({ p, idx }))\n"
+    "    .filter(({ p }) => !window.__areaActive || window.__areaContains(p.lat, p.lng))\n"
+    "    .filter(({ p }) => activeFilters.has(p.category) && p._loaded)",
+    1, "area-filter-list")
+
+# --- C2: persist Areas inside the existing localStorage state ---
+sub("      notes: Object.fromEntries(prospectNotes),\n"
+    "    }));",
+    "      notes: Object.fromEntries(prospectNotes),\n"
+    "      areas: (window.__atlasAreas || []),\n"
+    "    }));",
+    1, "persist-areas")
+
+# --- SECTION C: Areas module (draw / save / render / activate / coverage) + Locate ---
+AREAS = r'''
+<script id="atlas-areas">
+(function(){
+  if (typeof map === 'undefined' || !map) return;
+
+  var START_VIEW = { c: map.getCenter(), z: map.getZoom() };
+
+  var AICO = {
+    edit:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>',
+    zoom:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3M11 8v6M8 11h6"/></svg>',
+    trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>'
+  };
+
+  // ---------- state + persistence ----------
+  var atlasAreas = [];
+  window.__atlasAreas = atlasAreas;
+  var _seq = 1;
+  try {
+    var _raw = localStorage.getItem(STORAGE_KEY);
+    var _st = _raw ? JSON.parse(_raw) : {};
+    (_st.areas || []).forEach(function(a){ atlasAreas.push(a); if ((a.id||0) >= _seq) _seq = a.id + 1; });
+  } catch(e){}
+  function persist(){ window.__atlasAreas = atlasAreas; if (typeof saveState === 'function') saveState(); }
+
+  // ---------- geometry ----------
+  function pointInPolygon(lat, lng, verts){
+    var inside = false;
+    for (var i = 0, j = verts.length - 1; i < verts.length; j = i++){
+      var yi = verts[i][0], xi = verts[i][1], yj = verts[j][0], xj = verts[j][1];
+      var hit = ((yi > lat) !== (yj > lat)) && (lng < (xj - xi) * (lat - yi) / (yj - yi) + xi);
+      if (hit) inside = !inside;
+    }
+    return inside;
+  }
+
+  // ---------- active-area bridges (read by renderMarkers / renderList / pickPullBatch) ----------
+  var activeAreaId = null;
+  function activeArea(){ for (var i=0;i<atlasAreas.length;i++){ if (atlasAreas[i].id===activeAreaId) return atlasAreas[i]; } return null; }
+  window.__areaActive = false;
+  window.__areaContains = function(lat, lng){ var a = activeArea(); return a ? pointInPolygon(lat, lng, a.vertices) : true; };
+
+  // ---------- map polygons ----------
+  var areaLayerGroup = L.layerGroup().addTo(map);
+  function renderAreaPolys(){
+    areaLayerGroup.clearLayers();
+    atlasAreas.forEach(function(a){
+      var active = a.id === activeAreaId;
+      L.polygon(a.vertices, { color:'#7c5cf0', weight:2, dashArray:'6 5',
+        fill:true, fillColor:'#7c5cf0', fillOpacity: active ? 0.14 : 0.08, interactive:false }).addTo(areaLayerGroup);
+    });
+  }
+
+  // ---------- coverage ----------
+  function areaStats(a){
+    var p = 0, k = 0, worked = 0;
+    PROSPECTS.forEach(function(pr, idx){
+      if (pr._loaded && pointInPolygon(pr.lat, pr.lng, a.vertices)){
+        p++;
+        if (savedContacts.has(idx) || contactedSet.has(idx) || addedSet.has(idx)) worked++;
+      }
+    });
+    DOOR_KNOCKS.forEach(function(kk){ if (pointInPolygon(kk.lat, kk.lng, a.vertices)){ k++; worked++; } });
+    var total = p + k;
+    return { p:p, k:k, total:total, cov: total ? Math.round(worked / total * 100) : 0 };
+  }
+
+  // ---------- activate / deactivate ----------
+  function reflow(){ if (typeof renderChips==='function') renderChips(); if (typeof renderMarkers==='function') renderMarkers(); if (typeof renderList==='function') renderList(); }
+  function activateArea(id){
+    activeAreaId = id; window.__areaActive = true;
+    var a = activeArea();
+    renderAreaPolys();
+    if (a){ try { map.fitBounds(L.polygon(a.vertices).getBounds(), { padding:[40,40], maxZoom:16 }); } catch(e){} }
+    reflow();
+  }
+  function deactivateArea(){ activeAreaId = null; window.__areaActive = false; renderAreaPolys(); reflow(); }
+  window.atlasDeactivateArea = deactivateArea;
+  window.refreshAreas = function(){ renderAreaPolys(); if (typeof renderChips === 'function') renderChips(); };
+
+  // ---------- pickPullBatch scopes to the active polygon ----------
+  if (typeof pickPullBatch === 'function'){
+    var _pickBase = pickPullBatch;
+    pickPullBatch = function(cat){
+      var a = activeArea();
+      if (a){
+        return PROSPECTS.map(function(p, idx){ return { p:p, idx:idx }; })
+          .filter(function(x){ return x.p.category === cat && !x.p._loaded && pointInPolygon(x.p.lat, x.p.lng, a.vertices); })
+          .sort(function(u, v){ return v.p.opportunity_score - u.p.opportunity_score; })
+          .map(function(x){ return x.idx; });
+      }
+      return _pickBase(cat);
+    };
+  }
+
+  // ---------- panel: AREAS section + pulling-within chip ----------
+  function initials(email){
+    if (!email) return '—';
+    var base = email.split('@')[0].replace(/[._-]+/g,' ').trim();
+    var parts = base.split(' ').filter(Boolean);
+    var s = (parts[0]||'')[0] || '', t = (parts[1]||'')[0] || '';
+    return ((s + t).toUpperCase()) || (email[0]||'—').toUpperCase();
+  }
+  window.renderAreasSection = function(wrap){
+    wrap.appendChild(Object.assign(document.createElement('div'), { className:'chip-divider' }));
+    var g = document.createElement('div'); g.className = 'area-group';
+    var head = document.createElement('div'); head.className = 'area-head';
+    head.innerHTML = '<span class="group-label">Areas</span>' +
+      '<button class="area-draw-btn" onclick="atlasStartDraw()" title="Draw a new area">◇ Draw area</button>';
+    g.appendChild(head);
+    if (!atlasAreas.length){
+      var e = document.createElement('div'); e.className = 'area-empty';
+      e.textContent = 'Draw an area to organize your map →';
+      g.appendChild(e);
+    } else {
+      atlasAreas.forEach(function(a){
+        var st = areaStats(a);
+        var row = document.createElement('div');
+        row.className = 'area-row' + (a.id === activeAreaId ? ' active' : '');
+        row.innerHTML =
+          '<span class="area-swatch"></span>' +
+          '<div class="area-main">' +
+            '<div class="area-row-top"><span class="area-name">' + escapeHtml(a.name) + '</span>' +
+              '<span class="area-init" title="' + escapeHtml(a.assignee || 'Unassigned') + '">' + (a.assignee ? initials(a.assignee) : '—') + '</span></div>' +
+            '<div class="area-bar"><span style="width:' + st.cov + '%"></span></div>' +
+            '<div class="area-meta">' + st.cov + '% · ' + st.p + ' prospects · ' + st.k + ' knocks</div>' +
+          '</div>' +
+          '<div class="area-actions">' +
+            '<button title="Edit" onclick="event.stopPropagation();atlasEditArea(' + a.id + ')">' + AICO.edit + '</button>' +
+            '<button title="Zoom to" onclick="event.stopPropagation();atlasZoomArea(' + a.id + ')">' + AICO.zoom + '</button>' +
+            '<button title="Delete" onclick="event.stopPropagation();atlasDeleteArea(' + a.id + ')">' + AICO.trash + '</button>' +
+          '</div>';
+        row.onclick = function(){ if (a.id === activeAreaId) deactivateArea(); else activateArea(a.id); };
+        g.appendChild(row);
+      });
+    }
+    wrap.appendChild(g);
+  };
+  window.renderPullingChip = function(wrap){
+    var a = activeArea(); if (!a) return;
+    var chip = document.createElement('div'); chip.className = 'pulling-chip';
+    chip.innerHTML = '<span>Pulling within: <b>' + escapeHtml(a.name) + '</b></span>' +
+      '<button title="Stop pulling within this area" onclick="atlasDeactivateArea()">✕</button>';
+    wrap.appendChild(chip);
+  };
+
+  // ---------- row actions ----------
+  window.atlasZoomArea = function(id){
+    for (var i=0;i<atlasAreas.length;i++){ if (atlasAreas[i].id===id){ try{ map.fitBounds(L.polygon(atlasAreas[i].vertices).getBounds(), { padding:[40,40], maxZoom:16 }); }catch(e){} return; } }
+  };
+  window.atlasDeleteArea = function(id){
+    var a=null; for (var i=0;i<atlasAreas.length;i++){ if (atlasAreas[i].id===id){ a=atlasAreas[i]; break; } }
+    if (!a) return;
+    if (!confirm('Delete ' + a.name + '? Pins inside are not deleted.')) return;
+    atlasAreas = atlasAreas.filter(function(x){ return x.id !== id; });
+    window.__atlasAreas = atlasAreas;
+    if (activeAreaId === id){ activeAreaId = null; window.__areaActive = false; }
+    persist(); renderAreaPolys(); reflow();
+    showToast('Area deleted');
+  };
+  window.atlasEditArea = function(id){
+    for (var i=0;i<atlasAreas.length;i++){ if (atlasAreas[i].id===id){ editingId=id; pendingVerts=null; openSaveModal(atlasAreas[i].name, atlasAreas[i].assignee); return; } }
+  };
+
+  // ---------- save-area modal ----------
+  var editingId = null, pendingVerts = null;
+  var modal = document.createElement('div');
+  modal.className = 'modal-overlay'; modal.id = 'saveAreaModal';
+  modal.setAttribute('onclick', "if(event.target===this)atlasCancelSave()");
+  modal.innerHTML = '<div class="modal" id="saveAreaInner"></div>';
+  document.body.appendChild(modal);
+  function employeeOptions(sel){
+    var opts = '<option value="">Unassigned</option>';
+    (window.__ATLAS_EMPLOYEES || []).forEach(function(e){ opts += '<option value="' + escapeHtml(e) + '"' + (e === sel ? ' selected' : '') + '>' + escapeHtml(e) + '</option>'; });
+    return opts;
+  }
+  function openSaveModal(name, assignee){
+    document.getElementById('saveAreaInner').innerHTML =
+      '<div class="modal-header"><h3>' + (editingId ? 'Edit area' : 'Save area') + '</h3><p>Name this area' + (editingId ? '' : ' and optionally assign it') + '.</p></div>' +
+      '<div class="modal-body">' +
+        '<div class="form-group req"><label>Name</label><input type="text" id="areaName" placeholder="e.g. Southside" value="' + escapeHtml(name || '') + '"/></div>' +
+        '<div class="form-group"><label>Assign to</label><select id="areaAssign">' + employeeOptions(assignee) + '</select></div>' +
+      '</div>' +
+      '<div class="modal-footer"><button class="btn btn-secondary" onclick="atlasCancelSave()">Cancel</button><button class="btn btn-primary" onclick="atlasSaveArea()">Save Area</button></div>';
+    openOverlay('saveAreaModal');
+    setTimeout(function(){ var el = document.getElementById('areaName'); if (el){ el.focus(); el.select(); } }, 30);
+  }
+  window.atlasSaveArea = function(){
+    var nameEl = document.getElementById('areaName');
+    var name = (nameEl ? nameEl.value : '').trim();
+    if (!name){ showToast('Name is required'); if (nameEl) nameEl.focus(); return; }
+    var assignee = document.getElementById('areaAssign').value || '';
+    if (editingId){
+      for (var i=0;i<atlasAreas.length;i++){ if (atlasAreas[i].id===editingId){ atlasAreas[i].name=name; atlasAreas[i].assignee=assignee; break; } }
+      editingId = null;
+    } else {
+      atlasAreas.push({ id:_seq++, name:name, assignee:assignee, vertices:pendingVerts.slice(), createdAt:Date.now() });
+      pendingVerts = null;
+    }
+    window.__atlasAreas = atlasAreas; persist();
+    closeOverlay('saveAreaModal');
+    clearDraw(); exitDrawMode();
+    renderAreaPolys(); reflow();
+    showToast('Area saved');
+  };
+  window.atlasCancelSave = function(){
+    closeOverlay('saveAreaModal');
+    if (!editingId){ clearDraw(); exitDrawMode(); pendingVerts = null; }
+    editingId = null;
+  };
+
+  // ---------- draw mode ----------
+  var drawing = false, drawVerts = [], drawPreview = null, drawVertMarkers = [], rubber = null, hintEl = null;
+  window.__drawing = false;
+  window.atlasStartDraw = function(){
+    if (drawing) return;
+    if (window.dropPinMode && typeof toggleDropPinMode === 'function') toggleDropPinMode(false);
+    drawing = true; window.__drawing = true; drawVerts = [];
+    map.getContainer().classList.add('drawing');
+    if (map.doubleClickZoom) map.doubleClickZoom.disable();
+    showHint();
+    var b = document.getElementById('drawAreaBtn'); if (b) b.classList.add('active');
+  };
+  function showHint(){
+    if (hintEl) return;
+    hintEl = document.createElement('div'); hintEl.className = 'draw-hint';
+    hintEl.innerHTML = '<span>Click to add points. Click your first point to close. <em>Tip: keep areas small — a few blocks works best.</em></span>' +
+      '<button onclick="atlasCancelDraw()" title="Cancel">✕</button>';
+    (document.querySelector('.map-wrap') || document.body).appendChild(hintEl);
+  }
+  function hideHint(){ if (hintEl){ hintEl.remove(); hintEl = null; } }
+  function updatePreview(){
+    if (drawPreview){ map.removeLayer(drawPreview); drawPreview = null; }
+    drawVertMarkers.forEach(function(m){ map.removeLayer(m); }); drawVertMarkers = [];
+    if (drawVerts.length){
+      drawPreview = L.polyline(drawVerts, { color:'#7c5cf0', weight:2, dashArray:'5 5' }).addTo(map);
+      drawVerts.forEach(function(v, i){
+        drawVertMarkers.push(L.circleMarker(v, { radius:i===0?6:4, color:'#7c5cf0', weight:2, fillColor:'#fff', fillOpacity:1 }).addTo(map));
+      });
+    }
+  }
+  function onDrawClick(e){
+    if (!drawing) return;
+    var pt = map.latLngToContainerPoint(e.latlng);
+    if (drawVerts.length >= 3){
+      var first = map.latLngToContainerPoint(L.latLng(drawVerts[0][0], drawVerts[0][1]));
+      if (pt.distanceTo(first) <= 12){ closeShape(); return; }
+    }
+    drawVerts.push([e.latlng.lat, e.latlng.lng]);
+    updatePreview();
+  }
+  function onDrawMouseMove(e){
+    if (!drawing || !drawVerts.length) return;
+    if (rubber){ map.removeLayer(rubber); rubber = null; }
+    rubber = L.polyline([drawVerts[drawVerts.length - 1], [e.latlng.lat, e.latlng.lng]], { color:'#7c5cf0', weight:1.5, dashArray:'3 5', opacity:.55 }).addTo(map);
+  }
+  function closeShape(){
+    if (drawVerts.length < 3){ showToast('An area needs at least 3 points'); return; }
+    pendingVerts = drawVerts.slice(); editingId = null;
+    drawing = false;
+    if (rubber){ map.removeLayer(rubber); rubber = null; }
+    hideHint();
+    openSaveModal('', '');
+  }
+  function clearDraw(){
+    if (drawPreview){ map.removeLayer(drawPreview); drawPreview = null; }
+    if (rubber){ map.removeLayer(rubber); rubber = null; }
+    drawVertMarkers.forEach(function(m){ map.removeLayer(m); }); drawVertMarkers = [];
+    drawVerts = [];
+  }
+  function exitDrawMode(){
+    drawing = false; window.__drawing = false;
+    map.getContainer().classList.remove('drawing');
+    if (map.doubleClickZoom) setTimeout(function(){ map.doubleClickZoom.enable(); }, 0);
+    hideHint();
+    var b = document.getElementById('drawAreaBtn'); if (b) b.classList.remove('active');
+  }
+  window.atlasCancelDraw = function(){ clearDraw(); exitDrawMode(); pendingVerts = null; };
+
+  // ---------- Locate (A1) ----------
+  window.atlasLocate = function(){
+    var fallback = function(){ showToast('Location unavailable'); map.setView(START_VIEW.c, START_VIEW.z); };
+    if (!navigator.geolocation){ fallback(); return; }
+    navigator.geolocation.getCurrentPosition(function(pos){
+      var lat = pos.coords.latitude, lng = pos.coords.longitude;
+      if (myLocationMarker) map.removeLayer(myLocationMarker);
+      var icon = L.divIcon({ html:'<div class="my-location-pin"></div>', className:'', iconSize:[18,18], iconAnchor:[9,9] });
+      myLocationMarker = L.marker([lat, lng], { icon:icon, zIndexOffset:1000 }).addTo(map);
+      map.flyTo([lat, lng], 14, { duration:0.8 });
+      showToast("You're here");
+    }, function(){ fallback(); }, { enableHighAccuracy:true, timeout:8000 });
+  };
+
+  // ---------- live coverage on status changes ----------
+  ['saveToContacts','addToPipeline','toggleContacted'].forEach(function(fn){
+    if (typeof window[fn] === 'function'){
+      var base = window[fn];
+      window[fn] = function(){ var r = base.apply(this, arguments); if (window.refreshAreas) window.refreshAreas(); return r; };
+    }
+  });
+
+  // ---------- wiring ----------
+  map.off('click');
+  map.on('click', function(e){ if (drawing){ onDrawClick(e); return; } if (typeof handleDropPinClick === 'function') handleDropPinClick(e); });
+  map.on('mousemove', onDrawMouseMove);
+  map.on('dblclick', function(e){ if (drawing){ L.DomEvent.stop(e); closeShape(); } });
+  document.addEventListener('keydown', function(e){
+    var sm = document.getElementById('saveAreaModal');
+    if (e.key === 'Escape' && sm && sm.classList.contains('show')){ e.preventDefault(); atlasCancelSave(); return; }
+    if (!drawing) return;
+    if (e.key === 'Enter'){ e.preventDefault(); closeShape(); }
+    else if (e.key === 'Escape'){ e.preventDefault(); atlasCancelDraw(); }
+  });
+
+  renderAreaPolys();
+  if (typeof renderChips === 'function') renderChips();
+})();
+</script>
+'''
+sub("\n</body>", AREAS + "\n</body>", 1, "areas-block")
 
 OUT.write_text(html)
 print(f"built -> {OUT}  ({len(html)} bytes)")

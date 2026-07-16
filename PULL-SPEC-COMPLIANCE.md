@@ -16,7 +16,7 @@ reveal/save; nothing expires. No JS errors.
 |---|---|---|
 | **§1** One pull | A pull loads **every** category prospect **inside the current map viewport** (100% of what's listed there — no cap), costs **50 IQC once**, and the category is then **owned for the whole session** — its chip is a free show/hide toggle (marked "Saved") that is never charged or re-pulled. | `atlasPull` cloud fn; Places API (New) Text Search; **server-side key only**. |
 | **§2** Locations only | Pulled prospects expose **location only**; phone/website are withheld until Reveal/Save (Call-Now no longer appears until then). | Places field mask `place_id,displayName,formattedAddress,location,primaryType,types`. |
-| **§3** "All" vs Full City Sweep | Re-showing a pulled category is a **free view toggle** (no fetch). **Full City Sweep** button pulls **all 11 categories in view** for **400 IQC**. | — |
+| **§3** "All" vs Full City Sweep | Re-showing a pulled category is a **free view toggle** (no fetch). **Full City Sweep** pulls **every not-yet-owned category** at once; its price is **dynamic — 50 IQC × categories still locked, capped at 400** (so it drops as you own more, and the button disables to "All categories pulled" once you own all 11). Already-owned categories are never re-charged. | — |
 | **§4** Load more | **Removed** — a pull already loads 100% of the category in-area, so there is nothing left to load (no "+25 IQC" / "next batch"). | — |
 | **§5** Metering order | Balance is checked **before** the pull; credits deduct **before** the "fetch"; **never a partial unlock**; insufficient funds → shake + top-up path. | Refund on total failure; per-pull **audit ledger**; **≤30 pulls/workspace/hour** abuse brake. |
 | **§6** Reveal contact | `10 IQC` reveal, **free on Save**; keeps the existing "no phone/website" info state. | Single Place Details call for one place. |
@@ -26,6 +26,11 @@ reveal/save; nothing expires. No JS errors.
 | **§10** Category → Places type | Mapping embedded as a reference `PLACES_TYPE_MAP` const (all 11). | Lives in server config; new categories = config-only. |
 | **Build-time checks** | — | Verify live Places (New) SKU/field prices and the current 30-day ToS clause before locking economics. |
 
-**Credit prices** (`PULL_PRICE` 50 / `LOADMORE_PRICE` 25 / `SWEEP_PRICE` 400 / reveal 10) are
-grouped as named constants in the pull-spec script for the demo. Per §5 they ship behind
-remote config in production — do not hardcode there.
+**Credit prices** (`PULL_PRICE` 50 / reveal 10) are named constants in the pull-spec script;
+**Full City Sweep** is computed dynamically as `min(400, 50 × locked-category count)`. Per §5
+they ship behind remote config in production — do not hardcode there.
+
+**Areas** (drawn pull boundaries): an Area scopes `pickPullBatch` by point-in-polygon instead of
+the viewport, so pulling a locked category loads 100% of it *inside the shape* for the usual 50 IQC.
+Category ownership is global (own-once), so no per-area re-charging exists — that stays a backend
+metering concern. Areas persist in the same `localStorage` state as the rest of the demo.

@@ -522,8 +522,13 @@ a{ color:inherit; }
 .pin-prospect.computed-high{ z-index:50; }
 .pin-prospect.contacted{ opacity:.5; filter:grayscale(.5); }
 .pin-prospect.contacted .opp-dot{ display:none; }
-.pin-prospect.saved-contact{ box-shadow:0 0 0 2.5px var(--green), 0 2px 8px rgba(17,22,34,.22); }
-.pin-prospect.saved-contact.selected{ box-shadow:0 0 0 2.5px var(--green), 0 4px 14px rgba(17,22,34,.3); }
+.pin-prospect.saved-contact{ box-shadow:0 0 0 2.5px #0c1014, 0 2px 8px rgba(17,22,34,.22); }
+.pin-prospect.saved-contact.selected{ box-shadow:0 0 0 2.5px #0c1014, 0 4px 14px rgba(17,22,34,.3); }
+.pin-prospect.saved-contact .opp-dot{ display:none; }
+.pin-prospect .saved-badge{ position:absolute; top:-6px; right:-6px; width:16px; height:16px; border-radius:50%;
+  background:#0c1014; border:2px solid #fff; display:flex; align-items:center; justify-content:center; z-index:2; box-shadow:0 1px 3px rgba(17,22,34,.4); }
+.pin-prospect .saved-badge svg{ width:8px; height:8px; }
+.leaflet-container.zoom-low .pin-prospect .saved-badge{ display:none !important; }
 
 .pin-customer{
   display:flex; align-items:center; justify-content:center; width:42px; height:42px; border-radius:50%;
@@ -1063,3 +1068,74 @@ a{ color:inherit; }
 .job-complete{ flex:1; background:#1e2a4a; color:#fff; border:none; border-radius:var(--r-md); padding:14px; font-weight:800; font-size:14px; cursor:pointer; font-family:inherit; display:inline-flex; align-items:center; justify-content:center; gap:8px; }
 .job-complete:hover{ background:#28365c; }
 .job-complete svg{ width:17px; height:17px; }
+
+/* ===== Feature + fix pass (A / B / C) ===== */
+
+/* A1 — Locate control (round, bottom-right; replaces "What's near me?") */
+.locate-btn{ position:absolute; bottom:28px; right:18px; z-index:500; width:44px; height:44px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center; padding:0;
+  background:var(--glass-strong); -webkit-backdrop-filter:var(--blur); backdrop-filter:var(--blur);
+  border:1px solid var(--line); color:var(--ink); box-shadow:var(--sh-2); cursor:pointer; transition:.15s; }
+.locate-btn:hover{ transform:translateY(-2px); border-color:rgba(59,130,246,.5); color:#2563eb; box-shadow:var(--sh-3); }
+.locate-btn svg{ width:20px; height:20px; }
+
+/* C1 — Draw-area toolbar button active state */
+#drawAreaBtn.active{ background:#7c5cf0 !important; color:#fff !important; border-color:#7c5cf0 !important; box-shadow:0 6px 18px rgba(124,92,240,.4) !important; }
+.leaflet-container.drawing{ cursor:crosshair !important; }
+
+/* C1 — Draw hint banner */
+.draw-hint{ position:absolute; top:16px; left:50%; transform:translateX(-50%); z-index:660; max-width:min(560px,86%);
+  display:flex; align-items:center; gap:12px; padding:10px 12px 10px 15px; border-radius:var(--r-pill);
+  background:rgba(20,26,44,.92); -webkit-backdrop-filter:var(--blur); backdrop-filter:var(--blur);
+  color:#fff; font-size:12.5px; font-weight:600; box-shadow:var(--sh-3); }
+.draw-hint em{ color:#c7bcff; font-style:normal; font-weight:500; }
+.draw-hint button{ flex:none; width:22px; height:22px; border-radius:50%; border:none; cursor:pointer;
+  background:rgba(255,255,255,.16); color:#fff; font-size:12px; line-height:1; }
+.draw-hint button:hover{ background:rgba(255,255,255,.28); }
+
+/* B3 — knock hover name+status tag (mirrors the customer/job tag) */
+.knock-wrap{ position:relative; width:20px; height:20px; overflow:visible; }
+.knock-tag{ position:absolute; left:50%; bottom:calc(100% + 9px); transform:translateX(-50%) translateY(4px);
+  background:var(--ink); color:#fff; font-size:11.5px; font-weight:700; padding:5px 9px; border-radius:8px; white-space:nowrap;
+  opacity:0; pointer-events:none; transition:.14s; box-shadow:var(--sh-2); z-index:1200; letter-spacing:-.01em; }
+.knock-tag::after{ content:''; position:absolute; top:100%; left:50%; transform:translateX(-50%); border:5px solid transparent; border-top-color:var(--ink); }
+.knock-wrap:hover .knock-tag{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+/* C4 — Areas panel section */
+.area-group{ display:flex; flex-direction:column; gap:7px; width:100%; }
+.area-head{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.area-draw-btn{ display:inline-flex; align-items:center; gap:5px; padding:5px 10px; border-radius:var(--r-pill); cursor:pointer;
+  font-size:11.5px; font-weight:700; font-family:inherit; color:#6a4fd0; background:rgba(124,92,240,.09); border:1px dashed rgba(124,92,240,.5); transition:.15s; }
+.area-draw-btn:hover{ background:rgba(124,92,240,.16); border-color:#7c5cf0; }
+.area-empty{ font-size:12px; color:var(--ink-3); padding:2px 2px 4px; }
+.area-row{ display:flex; align-items:center; gap:10px; padding:8px 9px; border-radius:var(--r-md); cursor:pointer;
+  background:var(--surface-1); border:1px solid var(--line); transition:.13s; position:relative; }
+.area-row:hover{ border-color:var(--line-2); background:#fff; box-shadow:var(--sh-1); }
+.area-row.active{ border-color:#7c5cf0; background:rgba(124,92,240,.06); }
+.area-swatch{ flex:none; width:14px; height:14px; border-radius:4px; background:rgba(124,92,240,.14); border:2px dashed #7c5cf0; }
+.area-main{ flex:1; min-width:0; display:flex; flex-direction:column; gap:4px; }
+.area-row-top{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.area-name{ font-size:13px; font-weight:700; color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.area-init{ flex:none; min-width:22px; height:20px; padding:0 6px; border-radius:999px; background:var(--surface-3); color:var(--ink-2);
+  font-size:10px; font-weight:800; display:inline-flex; align-items:center; justify-content:center; letter-spacing:.02em; }
+.area-bar{ height:4px; border-radius:999px; background:var(--surface-3); overflow:hidden; }
+.area-bar>span{ display:block; height:100%; border-radius:999px; background:linear-gradient(90deg,#7c5cf0,#9b82ff); transition:width .3s ease; }
+.area-meta{ font-size:10.5px; color:var(--ink-3); font-weight:600; }
+.area-actions{ position:absolute; top:6px; right:8px; display:none; gap:3px; }
+.area-row:hover .area-actions{ display:flex; }
+.area-actions button{ width:24px; height:24px; border-radius:6px; border:1px solid var(--line); background:var(--glass-strong);
+  color:var(--ink-2); cursor:pointer; display:flex; align-items:center; justify-content:center; }
+.area-actions button:hover{ color:var(--ink); border-color:var(--line-2); background:#fff; }
+.area-actions svg{ width:13px; height:13px; }
+
+/* C5 — "Pulling within" chip at the top of Prospects */
+.pulling-chip{ display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%; margin:2px 0 2px;
+  padding:7px 8px 7px 12px; border-radius:var(--r-pill); background:rgba(124,92,240,.1); border:1px solid rgba(124,92,240,.4);
+  font-size:12px; font-weight:600; color:#5a3fc0; }
+.pulling-chip b{ font-weight:800; }
+.pulling-chip button{ flex:none; width:20px; height:20px; border-radius:50%; border:none; cursor:pointer;
+  background:rgba(124,92,240,.18); color:#5a3fc0; font-size:11px; line-height:1; }
+.pulling-chip button:hover{ background:rgba(124,92,240,.32); }
+
+/* C2 — Save-area modal keeps the standard modal frame, just tighter */
+#saveAreaModal .modal{ max-width:420px; }
