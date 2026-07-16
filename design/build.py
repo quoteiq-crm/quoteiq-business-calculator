@@ -745,6 +745,7 @@ REDESIGN = r'''
 <div class="modal-overlay" id="createDealModal" onclick="if(event.target===this)closeOverlay('createDealModal')"><div class="modal" id="createDealInner"></div></div>
 <div class="modal-overlay" id="createTaskModal" onclick="if(event.target===this)closeOverlay('createTaskModal')"><div class="modal" id="createTaskInner"></div></div>
 <div class="modal-overlay" id="reminderModal2" onclick="if(event.target===this)closeOverlay('reminderModal2')"><div class="modal" id="reminderInner"></div></div>
+<div class="modal-overlay job-card" id="jobCardModal" onclick="if(event.target===this)closeOverlay('jobCardModal')"><div class="modal" id="jobCardInner"></div></div>
 
 <script id="atlas-redesign">
 (function(){
@@ -760,25 +761,67 @@ const ICO={
 
 // ---------- Active Jobs (green) ----------
 const JOBS=[
- {name:'Bay Street Office Tower — pressure wash', lat:32.0668, lng:-81.0907, when:'Today · 2:00 PM'},
- {name:'Forsyth Park Plaza — monthly', lat:32.0762, lng:-81.0889, when:'Tomorrow · 9:00 AM'},
- {name:'Oglethorpe Mall — lot striping', lat:32.0246, lng:-81.1122, when:'Wed · 7:30 AM'},
- {name:'River Street Group — exterior', lat:32.0811, lng:-81.0902, when:'Thu · 11:00 AM'},
- {name:'Historic Inn at Telfair', lat:32.0803, lng:-81.0925, when:'Fri · 1:00 PM'},
- {name:'Abercorn Commerce Center', lat:32.0146, lng:-81.1098, when:'Mon · 8:00 AM'},
+ {customer:'Bay Street Office Tower', service:'Pressure Wash — exterior', desc:'Low-pressure wash of building exterior, walkways and entryways.', price:425, status:'Scheduled', date:'Today · Thu Jul 16', time:'2:00 PM – 4:00 PM', address:'2 E Bay St, Savannah, GA 31401', email:'facilities@baystreettower.com', lat:32.0668, lng:-81.0907, when:'Today · 2:00 PM'},
+ {customer:'Forsyth Park Plaza', service:'House Wash', desc:'Low-pressure soft wash to remove mold, mildew and surface pollutants.', price:225, status:'Paid', date:'Fri · Jul 17', time:'9:00 AM – 11:00 AM', address:'700 Drayton St, Savannah, GA 31401', email:'ops@forsythplaza.com', lat:32.0762, lng:-81.0889, when:'Tomorrow · 9:00 AM'},
+ {customer:'Oglethorpe Mall Management', service:'Parking Lot Striping', desc:'Re-stripe main lot lanes and repaint ADA stalls.', price:1200, status:'Scheduled', date:'Wed · Jul 22', time:'7:30 AM – 12:00 PM', address:'7804 Abercorn St, Savannah, GA 31406', email:'pm@oglethorpemall.com', lat:32.0246, lng:-81.1122, when:'Wed · 7:30 AM'},
+ {customer:'River Street Hospitality Group', service:'Exterior Cleaning', desc:'Storefront and sidewalk pressure cleaning along the row.', price:650, status:'In Progress', date:'Thu · Jul 16', time:'11:00 AM – 1:00 PM', address:'404 E River St, Savannah, GA 31401', email:'gm@riverstreetgroup.com', lat:32.0811, lng:-81.0902, when:'Thu · 11:00 AM'},
+ {customer:'Historic Inn at Telfair', service:'House Wash', desc:'Soft wash of the inn facade, trim and columns.', price:380, status:'Scheduled', date:'Fri · Jul 18', time:'1:00 PM – 3:00 PM', address:'2 W Oglethorpe Ave, Savannah, GA 31401', email:'stay@innattelfair.com', lat:32.0803, lng:-81.0925, when:'Fri · 1:00 PM'},
+ {customer:'Abercorn Commerce Center', service:'Pressure Wash — lot', desc:'Degrease and wash the loading dock and parking lot.', price:540, status:'Scheduled', date:'Mon · Jul 20', time:'8:00 AM – 10:30 AM', address:'6605 Abercorn St, Savannah, GA 31405', email:'facilities@abercorncc.com', lat:32.0146, lng:-81.1098, when:'Mon · 8:00 AM'},
 ];
 window.showJobs=true; let jobMarkers=[];
 function renderJobs(){
  jobMarkers.forEach(m=>map.removeLayer(m)); jobMarkers=[];
  if(!window.showJobs||!map) return;
- JOBS.forEach((j)=>{
-  const html='<div class="pin-job">'+ICO.brief+'<span class="pin-name-tag">'+escapeHtml(j.name)+' · '+escapeHtml(j.when)+'</span></div>';
+ JOBS.forEach((j,idx)=>{
+  const html='<div class="pin-job">'+ICO.brief+'<span class="pin-name-tag">'+escapeHtml(j.customer)+' · '+escapeHtml(j.when)+'</span></div>';
   const icon=L.divIcon({html,className:'',iconSize:[40,40],iconAnchor:[20,20]});
   const marker=L.marker([j.lat,j.lng],{icon,zIndexOffset:150});
-  marker.on('click',()=>showToast('Active job — '+j.name+' · '+j.when));
+  marker.on('click',()=>openJobCard(idx));
   marker.addTo(map); jobMarkers.push(marker);
  });
 }
+// ---- Active-Job detail card (mirrors the calendar job card) ----
+window.jobTab=function(el,name){
+ el.parentElement.querySelectorAll('a').forEach(a=>a.classList.remove('active')); el.classList.add('active');
+ const box=document.getElementById('jobTabContent'); const j=JOBS[window.__jobIdx];
+ if(name==='Details'){ box.innerHTML='<div class="job-services"><div class="js-head"><span>Services</span><span>1 · $'+j.price+'.00</span></div><div class="js-item"><div class="js-top"><span>'+escapeHtml(j.service)+'</span><span>$'+j.price+'.00</span></div><p>'+escapeHtml(j.desc)+'</p></div></div>'; }
+ else { box.innerHTML='<div class="job-empty">No '+name.toLowerCase()+' yet for this job.</div>'; }
+};
+window.openJobCard=function(i){
+ const j=JOBS[i]; if(!j) return; window.__jobIdx=i;
+ const nav='https://www.google.com/maps/dir/?api=1&destination='+j.lat+','+j.lng;
+ const st=j.status||'Scheduled'; const sc=st==='Paid'?'paid':(st==='In Progress'?'prog':'sched');
+ const flag='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>';
+ const pin='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 7-8 13-8 13s-8-6-8-13a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></svg>';
+ const navi='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>';
+ const cal='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>';
+ const clock='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>';
+ const mail='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 6-10 7L2 6"/></svg>';
+ const truck='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="6" width="14" height="11" rx="1"/><path d="M15 9h4l3 3v5h-7z"/><circle cx="6" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg>';
+ const cam='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>';
+ const send='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>';
+ const check='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg>';
+ const clk2='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><polyline points="12 8 12 12 15 13"/></svg>';
+ document.getElementById('jobCardInner').innerHTML=
+  '<div class="job-head"><div class="job-head-top">'+
+   '<button class="job-ib" onclick="closeOverlay(\'jobCardModal\')">'+ICO.x+'</button>'+
+   '<span class="job-status '+sc+'">'+flag+' '+escapeHtml(st)+'</span>'+
+   '<a class="job-nav" href="'+nav+'" target="_blank" rel="noopener">'+navi+' Navigate</a>'+
+   '<button class="job-ib" onclick="showToast(\'Demo — more job actions\')">⋮</button></div>'+
+   '<div class="job-addr">'+pin+' '+escapeHtml(j.address)+'</div></div>'+
+  '<div class="job-body">'+
+   '<div class="job-cust-row"><div class="job-cust">'+escapeHtml(j.customer)+'</div><div class="job-price">$'+j.price+'.00</div></div>'+
+   '<div class="job-meta"><span>'+cal+' '+escapeHtml(j.date)+'</span><span>'+clock+' '+escapeHtml(j.time)+'</span></div>'+
+   '<div class="job-two"><button onclick="showToast(\'Demo — marked On way\')">'+truck+' On way</button><button onclick="showToast(\'Demo — job photos\')">'+cam+' Photos</button></div>'+
+   '<div class="job-inforow"><span class="ji-k">'+mail+' Email</span><a href="mailto:'+escapeHtml(j.email)+'">'+escapeHtml(j.email)+'</a></div>'+
+   '<div class="job-inforow"><span class="ji-k">'+pin+' Address</span><a href="'+nav+'" target="_blank" rel="noopener">'+escapeHtml(j.address)+'</a></div>'+
+   '<button class="job-confirm" onclick="showToast(\'Demo — appointment confirmation sent\')">'+send+' Send Appointment Confirmation</button>'+
+   '<div class="job-tabs"><a class="active" onclick="jobTab(this,\'Details\')">Details</a><a onclick="jobTab(this,\'Report\')">Report</a><a onclick="jobTab(this,\'Notes\')">Notes</a><a onclick="jobTab(this,\'Photos\')">Photos</a></div>'+
+   '<div class="job-tab-content" id="jobTabContent"><div class="job-services"><div class="js-head"><span>Services</span><span>1 · $'+j.price+'.00</span></div><div class="js-item"><div class="js-top"><span>'+escapeHtml(j.service)+'</span><span>$'+j.price+'.00</span></div><p>'+escapeHtml(j.desc)+'</p></div></div></div>'+
+  '</div>'+
+  '<div class="job-foot"><button class="job-timer" onclick="showToast(\'Demo — timer started\')">'+clk2+'</button><button class="job-complete" onclick="closeOverlay(\'jobCardModal\'); showToast(\'Job marked complete\')">'+check+' Complete Job</button><button class="job-ib" style="background:var(--surface-3);color:var(--ink-2);" onclick="showToast(\'Demo — more\')">⋮</button></div>';
+ openOverlay('jobCardModal');
+};
 const _origRenderMarkers=renderMarkers;
 renderMarkers=function(){ _origRenderMarkers(); renderJobs(); };
 
@@ -817,7 +860,7 @@ renderChips=function(){
  });
  const awrap=document.createElement('span'); awrap.className='addbiz-wrap';
  const btn=document.createElement('button'); btn.className='addbiz-btn'; btn.innerHTML=ICONS.plus+' Add businesses';
- btn.onclick=(ev)=>{ ev.stopPropagation(); const p=awrap.querySelector('.addbiz-pop'); closeAddBiz(); if(p) p.classList.add('show'); };
+ btn.onclick=(ev)=>{ ev.stopPropagation(); const p=awrap.querySelector('.addbiz-pop'); closeAddBiz(); if(p){ positionAddBiz(p,btn); p.classList.add('show'); } };
  awrap.appendChild(btn); awrap.appendChild(buildAddBizPop()); row.appendChild(awrap);
  wrap.appendChild(row);
 };
@@ -834,8 +877,15 @@ function buildAddBizPop(){
  pop.querySelector('#addbizSweep').onclick=()=>{ closeAddBiz(); fullCitySweep(); };
  return pop;
 }
+function positionAddBiz(p,btn){
+ const r=btn.getBoundingClientRect(); const w=330;
+ let left=r.left; if(left+w>window.innerWidth-8) left=window.innerWidth-8-w; if(left<8) left=8;
+ p.style.left=left+'px'; p.style.top=(r.bottom+6)+'px';
+ p.style.maxHeight=Math.max(200,(window.innerHeight-r.bottom-16))+'px'; p.style.overflowY='auto';
+}
 window.closeAddBiz=function(){ document.querySelectorAll('.addbiz-pop.show').forEach(p=>p.classList.remove('show')); };
 document.addEventListener('click',e=>{ if(!e.target.closest('.addbiz-wrap')) closeAddBiz(); });
+(function(){ const lp=document.getElementById('leftPanel'); if(lp) lp.addEventListener('scroll',closeAddBiz,{passive:true}); window.addEventListener('resize',closeAddBiz); })();
 
 // ---------- Section 3: collapsible panel ----------
 window.togglePanelCollapse=function(){
@@ -1004,7 +1054,7 @@ window.submitReminder=function(){ closeOverlay('reminderModal2'); showToast('Rem
 // ---------- boot: rebind + re-render with new logic ----------
 if(map){ map.off('click'); map.on('click', handleDropPinClick); }
 renderChips(); renderMarkers();
-document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ ['leadCardModal','createDealModal','createTaskModal','reminderModal2'].forEach(closeOverlay); } });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ ['leadCardModal','createDealModal','createTaskModal','reminderModal2','jobCardModal'].forEach(closeOverlay); } });
 })();
 </script>
 '''

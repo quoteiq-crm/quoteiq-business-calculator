@@ -1603,7 +1603,8 @@ a{ color:inherit; }
 .addbiz-btn svg{ width:14px; height:14px; }
 .addbiz-empty{ font-size:12px; color:var(--ink-3); }
 .addbiz-wrap{ position:relative; display:inline-block; }
-.addbiz-pop{ position:absolute; top:calc(100% + 8px); left:0; z-index:1500; width:330px; max-width:82vw; padding:12px;
+/* fixed-positioned (JS sets left/top from the button) so the left panel's overflow never clips it */
+.addbiz-pop{ position:fixed; z-index:1600; width:330px; max-width:92vw; padding:12px;
   background:var(--surface-1); border:1px solid var(--line-2); border-radius:var(--r-lg); box-shadow:var(--sh-3);
   display:none; }
 .addbiz-pop.show{ display:block; animation:menuPop .16s cubic-bezier(.34,1.4,.64,1) both; }
@@ -1625,7 +1626,7 @@ a{ color:inherit; }
 .deck-title .live{ cursor:pointer; user-select:none; }
 .deck-title .live:hover{ color:var(--green); }
 .deck-title .live .live-chev{ width:12px; height:12px; transition:transform .18s; }
-.live-pill{ position:absolute; top:16px; left:16px; z-index:650; display:none; align-items:center; gap:8px; padding:9px 14px;
+.live-pill{ position:absolute; top:14px; left:58px; z-index:650; display:none; align-items:center; gap:8px; padding:9px 14px;
   background:var(--glass-strong); -webkit-backdrop-filter:var(--blur); backdrop-filter:var(--blur); border:1px solid var(--line-2);
   border-radius:var(--r-pill); box-shadow:var(--sh-2); font-size:12.5px; font-weight:700; color:var(--ink); cursor:pointer; font-family:inherit; }
 .live-pill.show{ display:inline-flex; animation:menuPop .18s cubic-bezier(.34,1.4,.64,1) both; }
@@ -1678,6 +1679,57 @@ a{ color:inherit; }
 .pri-btn.active{ background:var(--ink); color:#fff; border-color:var(--ink); }
 .mini-link{ display:inline-flex; align-items:center; gap:5px; margin-top:8px; font-size:12px; font-weight:700; color:var(--gold-lo); background:none; border:none; cursor:pointer; font-family:inherit; }
 .mini-link svg{ width:13px; height:13px; }
+
+/* ===== Active-Job detail card (mirrors the calendar job card) ===== */
+.job-card .modal{ max-width:460px; padding:0; overflow:hidden; }
+.job-head{ background:linear-gradient(180deg,#151d2e,#0d1220); color:#fff; padding:14px 15px 13px; }
+.job-head-top{ display:flex; align-items:center; gap:8px; }
+.job-ib{ width:32px; height:32px; border-radius:9px; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,.14); color:#fff; }
+.job-ib:hover{ background:rgba(255,255,255,.24); }
+.job-ib svg{ width:16px; height:16px; }
+.job-status{ font-size:11px; font-weight:800; padding:6px 11px; border-radius:8px; display:inline-flex; align-items:center; gap:5px; }
+.job-status.paid{ background:rgba(52,226,155,.20); color:#5cffb8; }
+.job-status.sched{ background:rgba(77,155,255,.22); color:#8fbcff; }
+.job-status.prog{ background:rgba(246,167,35,.22); color:#ffce7a; }
+.job-nav{ margin-left:auto; background:var(--cust); color:#fff; border:none; border-radius:9px; padding:8px 14px; font-size:12.5px; font-weight:700; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; gap:6px; }
+.job-nav:hover{ background:var(--cust-hi); }
+.job-nav svg{ width:14px; height:14px; }
+.job-addr{ display:inline-flex; align-items:center; gap:7px; margin-top:12px; background:rgba(0,0,0,.32); padding:7px 12px; border-radius:8px; font-size:12px; font-weight:600; }
+.job-addr svg{ width:13px; height:13px; }
+.job-body{ padding:16px; max-height:56vh; overflow-y:auto; }
+.job-cust-row{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+.job-cust{ font-size:19px; font-weight:800; letter-spacing:-.02em; color:var(--ink); display:inline-flex; align-items:center; gap:6px; }
+.job-cust svg{ width:15px; height:15px; color:var(--ink-3); }
+.job-price{ font-size:19px; font-weight:800; color:var(--ink); white-space:nowrap; }
+.job-meta{ display:flex; gap:16px; font-size:12.5px; color:var(--ink-3); margin-top:7px; font-weight:600; }
+.job-meta span{ display:inline-flex; align-items:center; gap:5px; } .job-meta svg{ width:13px; height:13px; }
+.job-two{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:15px 0; }
+.job-two button{ padding:12px; border-radius:var(--r-md); border:1px solid var(--line); background:var(--surface-2); color:var(--ink); font-weight:700; font-size:12.5px; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:6px; font-family:inherit; }
+.job-two button:hover{ background:#fff; border-color:var(--line-2); }
+.job-two button svg{ width:18px; height:18px; color:var(--ink-2); }
+.job-inforow{ display:flex; align-items:center; gap:12px; font-size:13px; padding:10px 0; border-top:1px solid var(--line); color:var(--ink); }
+.job-inforow .ji-k{ color:var(--ink-3); font-weight:700; width:62px; flex:none; display:inline-flex; align-items:center; gap:6px; }
+.job-inforow .ji-k svg{ width:14px; height:14px; }
+.job-inforow a{ color:var(--cust-hi); text-decoration:none; font-weight:600; }
+.job-confirm{ width:100%; margin:13px 0 4px; padding:12px; border-radius:var(--r-md); border:1px solid var(--line-2); background:var(--surface-2); color:var(--ink); font-weight:700; font-size:13px; cursor:pointer; font-family:inherit; display:flex; align-items:center; justify-content:center; gap:8px; }
+.job-confirm:hover{ background:#fff; }
+.job-confirm svg{ width:15px; height:15px; }
+.job-tabs{ display:flex; gap:2px; border-bottom:1px solid var(--line); margin-top:8px; }
+.job-tabs a{ padding:11px 13px; font-size:13px; font-weight:700; color:var(--ink-3); cursor:pointer; border-bottom:2px solid transparent; }
+.job-tabs a.active{ color:var(--ink); border-bottom-color:var(--ink); }
+.job-tab-content{ padding-top:14px; }
+.job-services{ background:var(--surface-2); border:1px solid var(--line); border-radius:var(--r-md); overflow:hidden; }
+.job-services .js-head{ display:flex; justify-content:space-between; padding:11px 13px; font-size:12.5px; font-weight:800; color:var(--ink); border-bottom:1px solid var(--line); }
+.job-services .js-item{ padding:12px 13px; }
+.job-services .js-top{ display:flex; justify-content:space-between; font-weight:700; color:var(--ink); font-size:14px; }
+.job-services .js-item p{ margin:6px 0 0; font-size:12px; color:var(--ink-3); line-height:1.5; }
+.job-empty{ padding:26px; text-align:center; color:var(--ink-3); font-size:13px; }
+.job-foot{ display:flex; align-items:center; gap:10px; padding:14px 16px; border-top:1px solid var(--line); }
+.job-timer{ width:46px; height:46px; border-radius:var(--r-md); border:none; background:#cdec98; color:#37731a; cursor:pointer; display:flex; align-items:center; justify-content:center; flex:none; }
+.job-timer svg{ width:20px; height:20px; }
+.job-complete{ flex:1; background:var(--ink); color:#fff; border:none; border-radius:var(--r-md); padding:14px; font-weight:800; font-size:14px; cursor:pointer; font-family:inherit; display:inline-flex; align-items:center; justify-content:center; gap:8px; }
+.job-complete:hover{ background:#1a2030; }
+.job-complete svg{ width:17px; height:17px; }
 </style>
 <script>/* @preserve
  * Leaflet 1.9.4, a JS library for interactive maps. https://leafletjs.com
@@ -3601,6 +3653,7 @@ window.addEventListener('resize', function(){ if (typeof map !== 'undefined' && 
 <div class="modal-overlay" id="createDealModal" onclick="if(event.target===this)closeOverlay('createDealModal')"><div class="modal" id="createDealInner"></div></div>
 <div class="modal-overlay" id="createTaskModal" onclick="if(event.target===this)closeOverlay('createTaskModal')"><div class="modal" id="createTaskInner"></div></div>
 <div class="modal-overlay" id="reminderModal2" onclick="if(event.target===this)closeOverlay('reminderModal2')"><div class="modal" id="reminderInner"></div></div>
+<div class="modal-overlay job-card" id="jobCardModal" onclick="if(event.target===this)closeOverlay('jobCardModal')"><div class="modal" id="jobCardInner"></div></div>
 
 <script id="atlas-redesign">
 (function(){
@@ -3616,25 +3669,67 @@ const ICO={
 
 // ---------- Active Jobs (green) ----------
 const JOBS=[
- {name:'Bay Street Office Tower — pressure wash', lat:32.0668, lng:-81.0907, when:'Today · 2:00 PM'},
- {name:'Forsyth Park Plaza — monthly', lat:32.0762, lng:-81.0889, when:'Tomorrow · 9:00 AM'},
- {name:'Oglethorpe Mall — lot striping', lat:32.0246, lng:-81.1122, when:'Wed · 7:30 AM'},
- {name:'River Street Group — exterior', lat:32.0811, lng:-81.0902, when:'Thu · 11:00 AM'},
- {name:'Historic Inn at Telfair', lat:32.0803, lng:-81.0925, when:'Fri · 1:00 PM'},
- {name:'Abercorn Commerce Center', lat:32.0146, lng:-81.1098, when:'Mon · 8:00 AM'},
+ {customer:'Bay Street Office Tower', service:'Pressure Wash — exterior', desc:'Low-pressure wash of building exterior, walkways and entryways.', price:425, status:'Scheduled', date:'Today · Thu Jul 16', time:'2:00 PM – 4:00 PM', address:'2 E Bay St, Savannah, GA 31401', email:'facilities@baystreettower.com', lat:32.0668, lng:-81.0907, when:'Today · 2:00 PM'},
+ {customer:'Forsyth Park Plaza', service:'House Wash', desc:'Low-pressure soft wash to remove mold, mildew and surface pollutants.', price:225, status:'Paid', date:'Fri · Jul 17', time:'9:00 AM – 11:00 AM', address:'700 Drayton St, Savannah, GA 31401', email:'ops@forsythplaza.com', lat:32.0762, lng:-81.0889, when:'Tomorrow · 9:00 AM'},
+ {customer:'Oglethorpe Mall Management', service:'Parking Lot Striping', desc:'Re-stripe main lot lanes and repaint ADA stalls.', price:1200, status:'Scheduled', date:'Wed · Jul 22', time:'7:30 AM – 12:00 PM', address:'7804 Abercorn St, Savannah, GA 31406', email:'pm@oglethorpemall.com', lat:32.0246, lng:-81.1122, when:'Wed · 7:30 AM'},
+ {customer:'River Street Hospitality Group', service:'Exterior Cleaning', desc:'Storefront and sidewalk pressure cleaning along the row.', price:650, status:'In Progress', date:'Thu · Jul 16', time:'11:00 AM – 1:00 PM', address:'404 E River St, Savannah, GA 31401', email:'gm@riverstreetgroup.com', lat:32.0811, lng:-81.0902, when:'Thu · 11:00 AM'},
+ {customer:'Historic Inn at Telfair', service:'House Wash', desc:'Soft wash of the inn facade, trim and columns.', price:380, status:'Scheduled', date:'Fri · Jul 18', time:'1:00 PM – 3:00 PM', address:'2 W Oglethorpe Ave, Savannah, GA 31401', email:'stay@innattelfair.com', lat:32.0803, lng:-81.0925, when:'Fri · 1:00 PM'},
+ {customer:'Abercorn Commerce Center', service:'Pressure Wash — lot', desc:'Degrease and wash the loading dock and parking lot.', price:540, status:'Scheduled', date:'Mon · Jul 20', time:'8:00 AM – 10:30 AM', address:'6605 Abercorn St, Savannah, GA 31405', email:'facilities@abercorncc.com', lat:32.0146, lng:-81.1098, when:'Mon · 8:00 AM'},
 ];
 window.showJobs=true; let jobMarkers=[];
 function renderJobs(){
  jobMarkers.forEach(m=>map.removeLayer(m)); jobMarkers=[];
  if(!window.showJobs||!map) return;
- JOBS.forEach((j)=>{
-  const html='<div class="pin-job">'+ICO.brief+'<span class="pin-name-tag">'+escapeHtml(j.name)+' · '+escapeHtml(j.when)+'</span></div>';
+ JOBS.forEach((j,idx)=>{
+  const html='<div class="pin-job">'+ICO.brief+'<span class="pin-name-tag">'+escapeHtml(j.customer)+' · '+escapeHtml(j.when)+'</span></div>';
   const icon=L.divIcon({html,className:'',iconSize:[40,40],iconAnchor:[20,20]});
   const marker=L.marker([j.lat,j.lng],{icon,zIndexOffset:150});
-  marker.on('click',()=>showToast('Active job — '+j.name+' · '+j.when));
+  marker.on('click',()=>openJobCard(idx));
   marker.addTo(map); jobMarkers.push(marker);
  });
 }
+// ---- Active-Job detail card (mirrors the calendar job card) ----
+window.jobTab=function(el,name){
+ el.parentElement.querySelectorAll('a').forEach(a=>a.classList.remove('active')); el.classList.add('active');
+ const box=document.getElementById('jobTabContent'); const j=JOBS[window.__jobIdx];
+ if(name==='Details'){ box.innerHTML='<div class="job-services"><div class="js-head"><span>Services</span><span>1 · $'+j.price+'.00</span></div><div class="js-item"><div class="js-top"><span>'+escapeHtml(j.service)+'</span><span>$'+j.price+'.00</span></div><p>'+escapeHtml(j.desc)+'</p></div></div>'; }
+ else { box.innerHTML='<div class="job-empty">No '+name.toLowerCase()+' yet for this job.</div>'; }
+};
+window.openJobCard=function(i){
+ const j=JOBS[i]; if(!j) return; window.__jobIdx=i;
+ const nav='https://www.google.com/maps/dir/?api=1&destination='+j.lat+','+j.lng;
+ const st=j.status||'Scheduled'; const sc=st==='Paid'?'paid':(st==='In Progress'?'prog':'sched');
+ const flag='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>';
+ const pin='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 7-8 13-8 13s-8-6-8-13a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></svg>';
+ const navi='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>';
+ const cal='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>';
+ const clock='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>';
+ const mail='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 6-10 7L2 6"/></svg>';
+ const truck='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="6" width="14" height="11" rx="1"/><path d="M15 9h4l3 3v5h-7z"/><circle cx="6" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg>';
+ const cam='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>';
+ const send='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>';
+ const check='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg>';
+ const clk2='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><polyline points="12 8 12 12 15 13"/></svg>';
+ document.getElementById('jobCardInner').innerHTML=
+  '<div class="job-head"><div class="job-head-top">'+
+   '<button class="job-ib" onclick="closeOverlay(\'jobCardModal\')">'+ICO.x+'</button>'+
+   '<span class="job-status '+sc+'">'+flag+' '+escapeHtml(st)+'</span>'+
+   '<a class="job-nav" href="'+nav+'" target="_blank" rel="noopener">'+navi+' Navigate</a>'+
+   '<button class="job-ib" onclick="showToast(\'Demo — more job actions\')">⋮</button></div>'+
+   '<div class="job-addr">'+pin+' '+escapeHtml(j.address)+'</div></div>'+
+  '<div class="job-body">'+
+   '<div class="job-cust-row"><div class="job-cust">'+escapeHtml(j.customer)+'</div><div class="job-price">$'+j.price+'.00</div></div>'+
+   '<div class="job-meta"><span>'+cal+' '+escapeHtml(j.date)+'</span><span>'+clock+' '+escapeHtml(j.time)+'</span></div>'+
+   '<div class="job-two"><button onclick="showToast(\'Demo — marked On way\')">'+truck+' On way</button><button onclick="showToast(\'Demo — job photos\')">'+cam+' Photos</button></div>'+
+   '<div class="job-inforow"><span class="ji-k">'+mail+' Email</span><a href="mailto:'+escapeHtml(j.email)+'">'+escapeHtml(j.email)+'</a></div>'+
+   '<div class="job-inforow"><span class="ji-k">'+pin+' Address</span><a href="'+nav+'" target="_blank" rel="noopener">'+escapeHtml(j.address)+'</a></div>'+
+   '<button class="job-confirm" onclick="showToast(\'Demo — appointment confirmation sent\')">'+send+' Send Appointment Confirmation</button>'+
+   '<div class="job-tabs"><a class="active" onclick="jobTab(this,\'Details\')">Details</a><a onclick="jobTab(this,\'Report\')">Report</a><a onclick="jobTab(this,\'Notes\')">Notes</a><a onclick="jobTab(this,\'Photos\')">Photos</a></div>'+
+   '<div class="job-tab-content" id="jobTabContent"><div class="job-services"><div class="js-head"><span>Services</span><span>1 · $'+j.price+'.00</span></div><div class="js-item"><div class="js-top"><span>'+escapeHtml(j.service)+'</span><span>$'+j.price+'.00</span></div><p>'+escapeHtml(j.desc)+'</p></div></div></div>'+
+  '</div>'+
+  '<div class="job-foot"><button class="job-timer" onclick="showToast(\'Demo — timer started\')">'+clk2+'</button><button class="job-complete" onclick="closeOverlay(\'jobCardModal\'); showToast(\'Job marked complete\')">'+check+' Complete Job</button><button class="job-ib" style="background:var(--surface-3);color:var(--ink-2);" onclick="showToast(\'Demo — more\')">⋮</button></div>';
+ openOverlay('jobCardModal');
+};
 const _origRenderMarkers=renderMarkers;
 renderMarkers=function(){ _origRenderMarkers(); renderJobs(); };
 
@@ -3673,7 +3768,7 @@ renderChips=function(){
  });
  const awrap=document.createElement('span'); awrap.className='addbiz-wrap';
  const btn=document.createElement('button'); btn.className='addbiz-btn'; btn.innerHTML=ICONS.plus+' Add businesses';
- btn.onclick=(ev)=>{ ev.stopPropagation(); const p=awrap.querySelector('.addbiz-pop'); closeAddBiz(); if(p) p.classList.add('show'); };
+ btn.onclick=(ev)=>{ ev.stopPropagation(); const p=awrap.querySelector('.addbiz-pop'); closeAddBiz(); if(p){ positionAddBiz(p,btn); p.classList.add('show'); } };
  awrap.appendChild(btn); awrap.appendChild(buildAddBizPop()); row.appendChild(awrap);
  wrap.appendChild(row);
 };
@@ -3690,8 +3785,15 @@ function buildAddBizPop(){
  pop.querySelector('#addbizSweep').onclick=()=>{ closeAddBiz(); fullCitySweep(); };
  return pop;
 }
+function positionAddBiz(p,btn){
+ const r=btn.getBoundingClientRect(); const w=330;
+ let left=r.left; if(left+w>window.innerWidth-8) left=window.innerWidth-8-w; if(left<8) left=8;
+ p.style.left=left+'px'; p.style.top=(r.bottom+6)+'px';
+ p.style.maxHeight=Math.max(200,(window.innerHeight-r.bottom-16))+'px'; p.style.overflowY='auto';
+}
 window.closeAddBiz=function(){ document.querySelectorAll('.addbiz-pop.show').forEach(p=>p.classList.remove('show')); };
 document.addEventListener('click',e=>{ if(!e.target.closest('.addbiz-wrap')) closeAddBiz(); });
+(function(){ const lp=document.getElementById('leftPanel'); if(lp) lp.addEventListener('scroll',closeAddBiz,{passive:true}); window.addEventListener('resize',closeAddBiz); })();
 
 // ---------- Section 3: collapsible panel ----------
 window.togglePanelCollapse=function(){
@@ -3860,7 +3962,7 @@ window.submitReminder=function(){ closeOverlay('reminderModal2'); showToast('Rem
 // ---------- boot: rebind + re-render with new logic ----------
 if(map){ map.off('click'); map.on('click', handleDropPinClick); }
 renderChips(); renderMarkers();
-document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ ['leadCardModal','createDealModal','createTaskModal','reminderModal2'].forEach(closeOverlay); } });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ ['leadCardModal','createDealModal','createTaskModal','reminderModal2','jobCardModal'].forEach(closeOverlay); } });
 })();
 </script>
 

@@ -933,7 +933,8 @@ a{ color:inherit; }
 .addbiz-btn svg{ width:14px; height:14px; }
 .addbiz-empty{ font-size:12px; color:var(--ink-3); }
 .addbiz-wrap{ position:relative; display:inline-block; }
-.addbiz-pop{ position:absolute; top:calc(100% + 8px); left:0; z-index:1500; width:330px; max-width:82vw; padding:12px;
+/* fixed-positioned (JS sets left/top from the button) so the left panel's overflow never clips it */
+.addbiz-pop{ position:fixed; z-index:1600; width:330px; max-width:92vw; padding:12px;
   background:var(--surface-1); border:1px solid var(--line-2); border-radius:var(--r-lg); box-shadow:var(--sh-3);
   display:none; }
 .addbiz-pop.show{ display:block; animation:menuPop .16s cubic-bezier(.34,1.4,.64,1) both; }
@@ -955,7 +956,7 @@ a{ color:inherit; }
 .deck-title .live{ cursor:pointer; user-select:none; }
 .deck-title .live:hover{ color:var(--green); }
 .deck-title .live .live-chev{ width:12px; height:12px; transition:transform .18s; }
-.live-pill{ position:absolute; top:16px; left:16px; z-index:650; display:none; align-items:center; gap:8px; padding:9px 14px;
+.live-pill{ position:absolute; top:14px; left:58px; z-index:650; display:none; align-items:center; gap:8px; padding:9px 14px;
   background:var(--glass-strong); -webkit-backdrop-filter:var(--blur); backdrop-filter:var(--blur); border:1px solid var(--line-2);
   border-radius:var(--r-pill); box-shadow:var(--sh-2); font-size:12.5px; font-weight:700; color:var(--ink); cursor:pointer; font-family:inherit; }
 .live-pill.show{ display:inline-flex; animation:menuPop .18s cubic-bezier(.34,1.4,.64,1) both; }
@@ -1008,3 +1009,54 @@ a{ color:inherit; }
 .pri-btn.active{ background:var(--ink); color:#fff; border-color:var(--ink); }
 .mini-link{ display:inline-flex; align-items:center; gap:5px; margin-top:8px; font-size:12px; font-weight:700; color:var(--gold-lo); background:none; border:none; cursor:pointer; font-family:inherit; }
 .mini-link svg{ width:13px; height:13px; }
+
+/* ===== Active-Job detail card (mirrors the calendar job card) ===== */
+.job-card .modal{ max-width:460px; padding:0; overflow:hidden; }
+.job-head{ background:linear-gradient(180deg,#151d2e,#0d1220); color:#fff; padding:14px 15px 13px; }
+.job-head-top{ display:flex; align-items:center; gap:8px; }
+.job-ib{ width:32px; height:32px; border-radius:9px; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,.14); color:#fff; }
+.job-ib:hover{ background:rgba(255,255,255,.24); }
+.job-ib svg{ width:16px; height:16px; }
+.job-status{ font-size:11px; font-weight:800; padding:6px 11px; border-radius:8px; display:inline-flex; align-items:center; gap:5px; }
+.job-status.paid{ background:rgba(52,226,155,.20); color:#5cffb8; }
+.job-status.sched{ background:rgba(77,155,255,.22); color:#8fbcff; }
+.job-status.prog{ background:rgba(246,167,35,.22); color:#ffce7a; }
+.job-nav{ margin-left:auto; background:var(--cust); color:#fff; border:none; border-radius:9px; padding:8px 14px; font-size:12.5px; font-weight:700; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; gap:6px; }
+.job-nav:hover{ background:var(--cust-hi); }
+.job-nav svg{ width:14px; height:14px; }
+.job-addr{ display:inline-flex; align-items:center; gap:7px; margin-top:12px; background:rgba(0,0,0,.32); padding:7px 12px; border-radius:8px; font-size:12px; font-weight:600; }
+.job-addr svg{ width:13px; height:13px; }
+.job-body{ padding:16px; max-height:56vh; overflow-y:auto; }
+.job-cust-row{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+.job-cust{ font-size:19px; font-weight:800; letter-spacing:-.02em; color:var(--ink); display:inline-flex; align-items:center; gap:6px; }
+.job-cust svg{ width:15px; height:15px; color:var(--ink-3); }
+.job-price{ font-size:19px; font-weight:800; color:var(--ink); white-space:nowrap; }
+.job-meta{ display:flex; gap:16px; font-size:12.5px; color:var(--ink-3); margin-top:7px; font-weight:600; }
+.job-meta span{ display:inline-flex; align-items:center; gap:5px; } .job-meta svg{ width:13px; height:13px; }
+.job-two{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:15px 0; }
+.job-two button{ padding:12px; border-radius:var(--r-md); border:1px solid var(--line); background:var(--surface-2); color:var(--ink); font-weight:700; font-size:12.5px; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:6px; font-family:inherit; }
+.job-two button:hover{ background:#fff; border-color:var(--line-2); }
+.job-two button svg{ width:18px; height:18px; color:var(--ink-2); }
+.job-inforow{ display:flex; align-items:center; gap:12px; font-size:13px; padding:10px 0; border-top:1px solid var(--line); color:var(--ink); }
+.job-inforow .ji-k{ color:var(--ink-3); font-weight:700; width:62px; flex:none; display:inline-flex; align-items:center; gap:6px; }
+.job-inforow .ji-k svg{ width:14px; height:14px; }
+.job-inforow a{ color:var(--cust-hi); text-decoration:none; font-weight:600; }
+.job-confirm{ width:100%; margin:13px 0 4px; padding:12px; border-radius:var(--r-md); border:1px solid var(--line-2); background:var(--surface-2); color:var(--ink); font-weight:700; font-size:13px; cursor:pointer; font-family:inherit; display:flex; align-items:center; justify-content:center; gap:8px; }
+.job-confirm:hover{ background:#fff; }
+.job-confirm svg{ width:15px; height:15px; }
+.job-tabs{ display:flex; gap:2px; border-bottom:1px solid var(--line); margin-top:8px; }
+.job-tabs a{ padding:11px 13px; font-size:13px; font-weight:700; color:var(--ink-3); cursor:pointer; border-bottom:2px solid transparent; }
+.job-tabs a.active{ color:var(--ink); border-bottom-color:var(--ink); }
+.job-tab-content{ padding-top:14px; }
+.job-services{ background:var(--surface-2); border:1px solid var(--line); border-radius:var(--r-md); overflow:hidden; }
+.job-services .js-head{ display:flex; justify-content:space-between; padding:11px 13px; font-size:12.5px; font-weight:800; color:var(--ink); border-bottom:1px solid var(--line); }
+.job-services .js-item{ padding:12px 13px; }
+.job-services .js-top{ display:flex; justify-content:space-between; font-weight:700; color:var(--ink); font-size:14px; }
+.job-services .js-item p{ margin:6px 0 0; font-size:12px; color:var(--ink-3); line-height:1.5; }
+.job-empty{ padding:26px; text-align:center; color:var(--ink-3); font-size:13px; }
+.job-foot{ display:flex; align-items:center; gap:10px; padding:14px 16px; border-top:1px solid var(--line); }
+.job-timer{ width:46px; height:46px; border-radius:var(--r-md); border:none; background:#cdec98; color:#37731a; cursor:pointer; display:flex; align-items:center; justify-content:center; flex:none; }
+.job-timer svg{ width:20px; height:20px; }
+.job-complete{ flex:1; background:var(--ink); color:#fff; border:none; border-radius:var(--r-md); padding:14px; font-weight:800; font-size:14px; cursor:pointer; font-family:inherit; display:inline-flex; align-items:center; justify-content:center; gap:8px; }
+.job-complete:hover{ background:#1a2030; }
+.job-complete svg{ width:17px; height:17px; }
