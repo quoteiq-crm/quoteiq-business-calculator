@@ -802,15 +802,17 @@ window.openJobCard=function(i){
  const send='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>';
  const check='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg>';
  const clk2='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><polyline points="12 8 12 12 15 13"/></svg>';
+ const locOff='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 21s-7-6-7-11a7 7 0 0 1 11.7-5.3"/><path d="M18.7 12.6A11 11 0 0 1 12 21"/><line x1="3" y1="3" x2="21" y2="21"/></svg>';
+ const ext='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>';
  document.getElementById('jobCardInner').innerHTML=
-  '<div class="job-head"><div class="job-head-top">'+
+  '<div class="job-head"><div class="job-head-media">'+locOff+'</div><div class="job-head-top">'+
    '<button class="job-ib" onclick="closeOverlay(\'jobCardModal\')">'+ICO.x+'</button>'+
    '<span class="job-status '+sc+'">'+flag+' '+escapeHtml(st)+'</span>'+
    '<a class="job-nav" href="'+nav+'" target="_blank" rel="noopener">'+navi+' Navigate</a>'+
    '<button class="job-ib" onclick="showToast(\'Demo — more job actions\')">⋮</button></div>'+
    '<div class="job-addr">'+pin+' '+escapeHtml(j.address)+'</div></div>'+
   '<div class="job-body">'+
-   '<div class="job-cust-row"><div class="job-cust">'+escapeHtml(j.customer)+'</div><div class="job-price">$'+j.price+'.00</div></div>'+
+   '<div class="job-cust-row"><div class="job-cust">'+escapeHtml(j.customer)+ext+'</div><div class="job-price">$'+j.price+'.00</div></div>'+
    '<div class="job-meta"><span>'+cal+' '+escapeHtml(j.date)+'</span><span>'+clock+' '+escapeHtml(j.time)+'</span></div>'+
    '<div class="job-two"><button onclick="showToast(\'Demo — marked On way\')">'+truck+' On way</button><button onclick="showToast(\'Demo — job photos\')">'+cam+' Photos</button></div>'+
    '<div class="job-inforow"><span class="ji-k">'+mail+' Email</span><a href="mailto:'+escapeHtml(j.email)+'">'+escapeHtml(j.email)+'</a></div>'+
@@ -860,8 +862,8 @@ renderChips=function(){
  });
  const awrap=document.createElement('span'); awrap.className='addbiz-wrap';
  const btn=document.createElement('button'); btn.className='addbiz-btn'; btn.innerHTML=ICONS.plus+' Add businesses';
- btn.onclick=(ev)=>{ ev.stopPropagation(); const p=awrap.querySelector('.addbiz-pop'); closeAddBiz(); if(p){ positionAddBiz(p,btn); p.classList.add('show'); } };
- awrap.appendChild(btn); awrap.appendChild(buildAddBizPop()); row.appendChild(awrap);
+ btn.onclick=(ev)=>{ ev.stopPropagation(); const wasOpen=document.getElementById('addbizPop'); closeAddBiz(); if(wasOpen) return; const p=buildAddBizPop(); p.id='addbizPop'; document.body.appendChild(p); positionAddBiz(p,btn); p.classList.add('show'); };
+ awrap.appendChild(btn); row.appendChild(awrap);
  wrap.appendChild(row);
 };
 function buildAddBizPop(){
@@ -883,8 +885,8 @@ function positionAddBiz(p,btn){
  p.style.left=left+'px'; p.style.top=(r.bottom+6)+'px';
  p.style.maxHeight=Math.max(200,(window.innerHeight-r.bottom-16))+'px'; p.style.overflowY='auto';
 }
-window.closeAddBiz=function(){ document.querySelectorAll('.addbiz-pop.show').forEach(p=>p.classList.remove('show')); };
-document.addEventListener('click',e=>{ if(!e.target.closest('.addbiz-wrap')) closeAddBiz(); });
+window.closeAddBiz=function(){ document.querySelectorAll('.addbiz-pop').forEach(p=>p.remove()); };
+document.addEventListener('click',e=>{ if(!e.target.closest('.addbiz-wrap') && !e.target.closest('.addbiz-pop')) closeAddBiz(); });
 (function(){ const lp=document.getElementById('leftPanel'); if(lp) lp.addEventListener('scroll',closeAddBiz,{passive:true}); window.addEventListener('resize',closeAddBiz); })();
 
 // ---------- Section 3: collapsible panel ----------

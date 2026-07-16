@@ -1012,24 +1012,27 @@ a{ color:inherit; }
 
 /* ===== Active-Job detail card (mirrors the calendar job card) ===== */
 .job-card .modal{ max-width:460px; padding:0; overflow:hidden; }
-.job-head{ background:linear-gradient(180deg,#151d2e,#0d1220); color:#fff; padding:14px 15px 13px; }
-.job-head-top{ display:flex; align-items:center; gap:8px; }
+.job-head{ background:linear-gradient(180deg,#1a2340,#0f1830); color:#fff; padding:14px 15px 13px; position:relative; min-height:150px; display:flex; flex-direction:column; overflow:hidden; }
+.job-head-media{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; opacity:.16; pointer-events:none; }
+.job-head-media svg{ width:46px; height:46px; }
+.job-head-top{ display:flex; align-items:center; gap:8px; position:relative; z-index:2; }
+.job-head .job-addr{ margin-top:auto; align-self:flex-start; position:relative; z-index:2; }
 .job-ib{ width:32px; height:32px; border-radius:9px; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,.14); color:#fff; }
 .job-ib:hover{ background:rgba(255,255,255,.24); }
 .job-ib svg{ width:16px; height:16px; }
 .job-status{ font-size:11px; font-weight:800; padding:6px 11px; border-radius:8px; display:inline-flex; align-items:center; gap:5px; }
-.job-status.paid{ background:rgba(52,226,155,.20); color:#5cffb8; }
-.job-status.sched{ background:rgba(77,155,255,.22); color:#8fbcff; }
-.job-status.prog{ background:rgba(246,167,35,.22); color:#ffce7a; }
-.job-nav{ margin-left:auto; background:var(--cust); color:#fff; border:none; border-radius:9px; padding:8px 14px; font-size:12.5px; font-weight:700; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; gap:6px; }
-.job-nav:hover{ background:var(--cust-hi); }
+.job-status.paid{ background:#c9f5d8; color:#0f7a37; }
+.job-status.sched{ background:#d7e6ff; color:#1e50c8; }
+.job-status.prog{ background:#ffe6b3; color:#986600; }
+.job-nav{ margin-left:auto; background:#2f6bff; color:#fff; border:none; border-radius:9px; padding:8px 14px; font-size:12.5px; font-weight:700; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; gap:6px; }
+.job-nav:hover{ background:#245fe0; }
 .job-nav svg{ width:14px; height:14px; }
 .job-addr{ display:inline-flex; align-items:center; gap:7px; margin-top:12px; background:rgba(0,0,0,.32); padding:7px 12px; border-radius:8px; font-size:12px; font-weight:600; }
 .job-addr svg{ width:13px; height:13px; }
 .job-body{ padding:16px; max-height:56vh; overflow-y:auto; }
 .job-cust-row{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
 .job-cust{ font-size:19px; font-weight:800; letter-spacing:-.02em; color:var(--ink); display:inline-flex; align-items:center; gap:6px; }
-.job-cust svg{ width:15px; height:15px; color:var(--ink-3); }
+.job-cust svg{ width:15px; height:15px; color:#2f6bff; }
 .job-price{ font-size:19px; font-weight:800; color:var(--ink); white-space:nowrap; }
 .job-meta{ display:flex; gap:16px; font-size:12.5px; color:var(--ink-3); margin-top:7px; font-weight:600; }
 .job-meta span{ display:inline-flex; align-items:center; gap:5px; } .job-meta svg{ width:13px; height:13px; }
@@ -1040,13 +1043,13 @@ a{ color:inherit; }
 .job-inforow{ display:flex; align-items:center; gap:12px; font-size:13px; padding:10px 0; border-top:1px solid var(--line); color:var(--ink); }
 .job-inforow .ji-k{ color:var(--ink-3); font-weight:700; width:62px; flex:none; display:inline-flex; align-items:center; gap:6px; }
 .job-inforow .ji-k svg{ width:14px; height:14px; }
-.job-inforow a{ color:var(--cust-hi); text-decoration:none; font-weight:600; }
+.job-inforow a{ color:#2f6bff; text-decoration:none; font-weight:600; }
 .job-confirm{ width:100%; margin:13px 0 4px; padding:12px; border-radius:var(--r-md); border:1px solid var(--line-2); background:var(--surface-2); color:var(--ink); font-weight:700; font-size:13px; cursor:pointer; font-family:inherit; display:flex; align-items:center; justify-content:center; gap:8px; }
 .job-confirm:hover{ background:#fff; }
 .job-confirm svg{ width:15px; height:15px; }
 .job-tabs{ display:flex; gap:2px; border-bottom:1px solid var(--line); margin-top:8px; }
 .job-tabs a{ padding:11px 13px; font-size:13px; font-weight:700; color:var(--ink-3); cursor:pointer; border-bottom:2px solid transparent; }
-.job-tabs a.active{ color:var(--ink); border-bottom-color:var(--ink); }
+.job-tabs a.active{ color:#1e2a4a; border-bottom-color:#1e2a4a; }
 .job-tab-content{ padding-top:14px; }
 .job-services{ background:var(--surface-2); border:1px solid var(--line); border-radius:var(--r-md); overflow:hidden; }
 .job-services .js-head{ display:flex; justify-content:space-between; padding:11px 13px; font-size:12.5px; font-weight:800; color:var(--ink); border-bottom:1px solid var(--line); }
@@ -1055,8 +1058,8 @@ a{ color:inherit; }
 .job-services .js-item p{ margin:6px 0 0; font-size:12px; color:var(--ink-3); line-height:1.5; }
 .job-empty{ padding:26px; text-align:center; color:var(--ink-3); font-size:13px; }
 .job-foot{ display:flex; align-items:center; gap:10px; padding:14px 16px; border-top:1px solid var(--line); }
-.job-timer{ width:46px; height:46px; border-radius:var(--r-md); border:none; background:#cdec98; color:#37731a; cursor:pointer; display:flex; align-items:center; justify-content:center; flex:none; }
+.job-timer{ width:46px; height:46px; border-radius:var(--r-md); border:none; background:#c9ec8f; color:#3f7016; cursor:pointer; display:flex; align-items:center; justify-content:center; flex:none; }
 .job-timer svg{ width:20px; height:20px; }
-.job-complete{ flex:1; background:var(--ink); color:#fff; border:none; border-radius:var(--r-md); padding:14px; font-weight:800; font-size:14px; cursor:pointer; font-family:inherit; display:inline-flex; align-items:center; justify-content:center; gap:8px; }
-.job-complete:hover{ background:#1a2030; }
+.job-complete{ flex:1; background:#1e2a4a; color:#fff; border:none; border-radius:var(--r-md); padding:14px; font-weight:800; font-size:14px; cursor:pointer; font-family:inherit; display:inline-flex; align-items:center; justify-content:center; gap:8px; }
+.job-complete:hover{ background:#28365c; }
 .job-complete svg{ width:17px; height:17px; }
