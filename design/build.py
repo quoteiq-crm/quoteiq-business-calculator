@@ -1196,6 +1196,39 @@ sub("      notes: Object.fromEntries(prospectNotes),\n"
     "    }));",
     1, "persist-areas")
 
+# --- Remove the green "service zone" rings (2-mile dashed circles around customers) ---
+sub("function drawServiceZones() {\n"
+    "  // Compute centroids per city cluster\n"
+    "  const byCity = {};\n"
+    "  CUSTOMERS.forEach(c => {\n"
+    "    if (!byCity[c.city]) byCity[c.city] = [];\n"
+    "    byCity[c.city].push(c);\n"
+    "  });\n"
+    "  Object.values(byCity).forEach(group => {\n"
+    "    const cLat = group.reduce((s,c)=>s+c.lat,0)/group.length;\n"
+    "    const cLng = group.reduce((s,c)=>s+c.lng,0)/group.length;\n"
+    "    const circle = L.circle([cLat, cLng], {\n"
+    "      radius: 3200, // ~2 miles in meters\n"
+    "      color: '#10b981',\n"
+    "      weight: 2,\n"
+    "      opacity: 0.55,\n"
+    "      fillColor: '#10b981',\n"
+    "      fillOpacity: 0.13,\n"
+    "      dashArray: '6, 6',\n"
+    "      interactive: false,\n"
+    "    }).addTo(map);\n"
+    "    serviceZones.push(circle);\n"
+    "  });\n"
+    "}",
+    "function drawServiceZones() { /* service-zone rings removed per design (were the green 2-mile circles) */ }",
+    1, "remove-service-zones")
+
+# drop the now-stale "Service zone" legend row from the help guide
+sub('<div class="hlegend-row"><span class="hswatch round" style="background:rgba(18,185,129,.12);border:2px dashed #12b981"></span><div><strong>Service zone</strong> — a dashed ~2-mile ring around each of your customer clusters.</div></div>',
+    "", 1, "remove-servicezone-legend")
+sub("  // Service zone circles (2-mile radius around each customer cluster centroid)\n  drawServiceZones();\n",
+    "  drawServiceZones();\n", 1, "remove-servicezone-comment")
+
 # --- SECTION C: Areas module (draw / save / render / activate / coverage) + Locate ---
 AREAS = r'''
 <script id="atlas-areas">
@@ -1209,6 +1242,17 @@ AREAS = r'''
     zoom:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3M11 8v6M8 11h6"/></svg>',
     trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>'
   };
+
+  // ---------- colors ----------
+  var AREA_COLORS = ['#7c5cf0','#2f6bff','#06b6d4','#f6a723','#ec4899','#ef5a13','#4f46e5','#64748b'];
+  var DEFAULT_AREA_COLOR = AREA_COLORS[0];
+  function areaColor(a){ return (a && a.color) || DEFAULT_AREA_COLOR; }
+  function hexToRgba(hex, a){
+    var h = String(hex || DEFAULT_AREA_COLOR).replace('#','');
+    if (h.length === 3) h = h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
+    var n = parseInt(h, 16);
+    return 'rgba(' + ((n>>16)&255) + ',' + ((n>>8)&255) + ',' + (n&255) + ',' + a + ')';
+  }
 
   // ---------- state + persistence ----------
   var atlasAreas = [];
@@ -1244,8 +1288,9 @@ AREAS = r'''
     areaLayerGroup.clearLayers();
     atlasAreas.forEach(function(a){
       var active = a.id === activeAreaId;
-      L.polygon(a.vertices, { color:'#7c5cf0', weight:2, dashArray:'6 5',
-        fill:true, fillColor:'#7c5cf0', fillOpacity: active ? 0.14 : 0.08, interactive:false }).addTo(areaLayerGroup);
+      var col = areaColor(a);
+      L.polygon(a.vertices, { color:col, weight:2, dashArray:'6 5',
+        fill:true, fillColor:col, fillOpacity: active ? 0.16 : 0.09, interactive:false }).addTo(areaLayerGroup);
     });
   }
 
@@ -1314,9 +1359,11 @@ AREAS = r'''
       atlasAreas.forEach(function(a){
         var st = areaStats(a);
         var row = document.createElement('div');
+        var col = areaColor(a);
         row.className = 'area-row' + (a.id === activeAreaId ? ' active' : '');
+        if (a.id === activeAreaId) row.style.borderColor = col;
         row.innerHTML =
-          '<span class="area-swatch"></span>' +
+          '<span class="area-swatch" style="border-color:' + col + ';background:' + hexToRgba(col, 0.16) + '"></span>' +
           '<div class="area-main">' +
             '<div class="area-row-top"><span class="area-name">' + escapeHtml(a.name) + '</span>' +
               '<span class="area-init" title="' + escapeHtml(a.assignee || 'Unassigned') + '">' + (a.assignee ? initials(a.assignee) : '—') + '</span></div>' +
@@ -1336,7 +1383,9 @@ AREAS = r'''
   };
   window.renderPullingChip = function(wrap){
     var a = activeArea(); if (!a) return;
+    var col = areaColor(a);
     var chip = document.createElement('div'); chip.className = 'pulling-chip';
+    chip.style.background = hexToRgba(col, 0.1); chip.style.borderColor = hexToRgba(col, 0.4); chip.style.color = col;
     chip.innerHTML = '<span>Pulling within: <b>' + escapeHtml(a.name) + '</b></span>' +
       '<button title="Stop pulling within this area" onclick="atlasDeactivateArea()">✕</button>';
     wrap.appendChild(chip);
@@ -1357,11 +1406,27 @@ AREAS = r'''
     showToast('Area deleted');
   };
   window.atlasEditArea = function(id){
-    for (var i=0;i<atlasAreas.length;i++){ if (atlasAreas[i].id===id){ editingId=id; pendingVerts=null; openSaveModal(atlasAreas[i].name, atlasAreas[i].assignee); return; } }
+    for (var i=0;i<atlasAreas.length;i++){ if (atlasAreas[i].id===id){ editingId=id; pendingVerts=null; openSaveModal(atlasAreas[i].name, atlasAreas[i].assignee, areaColor(atlasAreas[i])); return; } }
   };
 
   // ---------- save-area modal ----------
-  var editingId = null, pendingVerts = null;
+  var editingId = null, pendingVerts = null, pendingColor = DEFAULT_AREA_COLOR;
+  function colorSwatchRow(){
+    var h = '<div class="area-color-row" id="areaColorRow">';
+    AREA_COLORS.forEach(function(c){
+      h += '<button type="button" class="area-color-sw' + (c.toLowerCase() === pendingColor.toLowerCase() ? ' sel' : '') +
+        '" data-color="' + c + '" style="background:' + c + '" onclick="atlasPickAreaColor(\'' + c + '\')" title="' + c + '"></button>';
+    });
+    h += '<label class="area-color-custom" title="Custom color"><input type="color" id="areaColorInput" value="' + pendingColor + '" oninput="atlasPickAreaColor(this.value, true)"/></label>';
+    h += '</div>';
+    return h;
+  }
+  window.atlasPickAreaColor = function(c, fromInput){
+    pendingColor = c;
+    var row = document.getElementById('areaColorRow'); if (!row) return;
+    row.querySelectorAll('.area-color-sw').forEach(function(b){ b.classList.toggle('sel', (b.getAttribute('data-color')||'').toLowerCase() === c.toLowerCase()); });
+    if (!fromInput){ var inp = document.getElementById('areaColorInput'); if (inp) inp.value = c; }
+  };
   var modal = document.createElement('div');
   modal.className = 'modal-overlay'; modal.id = 'saveAreaModal';
   modal.setAttribute('onclick', "if(event.target===this)atlasCancelSave()");
@@ -1372,11 +1437,13 @@ AREAS = r'''
     (window.__ATLAS_EMPLOYEES || []).forEach(function(e){ opts += '<option value="' + escapeHtml(e) + '"' + (e === sel ? ' selected' : '') + '>' + escapeHtml(e) + '</option>'; });
     return opts;
   }
-  function openSaveModal(name, assignee){
+  function openSaveModal(name, assignee, color){
+    pendingColor = color || DEFAULT_AREA_COLOR;
     document.getElementById('saveAreaInner').innerHTML =
-      '<div class="modal-header"><h3>' + (editingId ? 'Edit area' : 'Save area') + '</h3><p>Name this area' + (editingId ? '' : ' and optionally assign it') + '.</p></div>' +
+      '<div class="modal-header"><h3>' + (editingId ? 'Edit area' : 'Save area') + '</h3><p>Name this area' + (editingId ? '' : ', pick a color') + ' and optionally assign it.</p></div>' +
       '<div class="modal-body">' +
         '<div class="form-group req"><label>Name</label><input type="text" id="areaName" placeholder="e.g. Southside" value="' + escapeHtml(name || '') + '"/></div>' +
+        '<div class="form-group"><label>Color</label>' + colorSwatchRow() + '</div>' +
         '<div class="form-group"><label>Assign to</label><select id="areaAssign">' + employeeOptions(assignee) + '</select></div>' +
       '</div>' +
       '<div class="modal-footer"><button class="btn btn-secondary" onclick="atlasCancelSave()">Cancel</button><button class="btn btn-primary" onclick="atlasSaveArea()">Save Area</button></div>';
@@ -1389,10 +1456,10 @@ AREAS = r'''
     if (!name){ showToast('Name is required'); if (nameEl) nameEl.focus(); return; }
     var assignee = document.getElementById('areaAssign').value || '';
     if (editingId){
-      for (var i=0;i<atlasAreas.length;i++){ if (atlasAreas[i].id===editingId){ atlasAreas[i].name=name; atlasAreas[i].assignee=assignee; break; } }
+      for (var i=0;i<atlasAreas.length;i++){ if (atlasAreas[i].id===editingId){ atlasAreas[i].name=name; atlasAreas[i].assignee=assignee; atlasAreas[i].color=pendingColor; break; } }
       editingId = null;
     } else {
-      atlasAreas.push({ id:_seq++, name:name, assignee:assignee, vertices:pendingVerts.slice(), createdAt:Date.now() });
+      atlasAreas.push({ id:_seq++, name:name, assignee:assignee, color:pendingColor, vertices:pendingVerts.slice(), createdAt:Date.now() });
       pendingVerts = null;
     }
     window.__atlasAreas = atlasAreas; persist();

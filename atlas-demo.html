@@ -1809,6 +1809,17 @@ a{ color:inherit; }
 
 /* C2 — Save-area modal keeps the standard modal frame, just tighter */
 #saveAreaModal .modal{ max-width:420px; }
+
+/* Area color picker */
+.area-color-row{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.area-color-sw{ width:26px; height:26px; border-radius:50%; border:2px solid #fff; cursor:pointer; padding:0;
+  box-shadow:0 0 0 1px var(--line-2); transition:transform .12s, box-shadow .12s; }
+.area-color-sw:hover{ transform:scale(1.1); }
+.area-color-sw.sel{ box-shadow:0 0 0 2px var(--ink); transform:scale(1.08); }
+.area-color-custom{ width:26px; height:26px; border-radius:50%; overflow:hidden; cursor:pointer; position:relative;
+  border:2px dashed var(--line-2); display:inline-flex; align-items:center; justify-content:center; background:
+  conic-gradient(from 0deg,#ef5a13,#f6a723,#12b981,#06b6d4,#2f6bff,#7c5cf0,#ec4899,#ef5a13); }
+.area-color-custom input[type="color"]{ opacity:0; width:200%; height:200%; border:none; padding:0; cursor:pointer; }
 </style>
 <script>/* @preserve
  * Leaflet 1.9.4, a JS library for interactive maps. https://leafletjs.com
@@ -2206,34 +2217,11 @@ function initMap() {
   map.on('zoomend', updateZoomClass);
   setTimeout(updateZoomClass, 100);
 
-  // Service zone circles (2-mile radius around each customer cluster centroid)
   drawServiceZones();
   renderMarkers();
 }
 
-function drawServiceZones() {
-  // Compute centroids per city cluster
-  const byCity = {};
-  CUSTOMERS.forEach(c => {
-    if (!byCity[c.city]) byCity[c.city] = [];
-    byCity[c.city].push(c);
-  });
-  Object.values(byCity).forEach(group => {
-    const cLat = group.reduce((s,c)=>s+c.lat,0)/group.length;
-    const cLng = group.reduce((s,c)=>s+c.lng,0)/group.length;
-    const circle = L.circle([cLat, cLng], {
-      radius: 3200, // ~2 miles in meters
-      color: '#10b981',
-      weight: 2,
-      opacity: 0.55,
-      fillColor: '#10b981',
-      fillOpacity: 0.13,
-      dashArray: '6, 6',
-      interactive: false,
-    }).addTo(map);
-    serviceZones.push(circle);
-  });
-}
+function drawServiceZones() { /* service-zone rings removed per design (were the green 2-mile circles) */ }
 
 // Relative-rank tier computation — tiers computed against currently-filtered set
 function computeTiers() {
@@ -3364,7 +3352,7 @@ window.renderList = function() {
         <section class="help-sec" id="help-credits"><h3><span class="hs-ico"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z"/></svg></span>IQ Credits — your prospecting fuel</h3><p>Pulling real business data costs <strong>IQ Credits (IQC)</strong> — your balance sits at the top-right <span class="hcost">⚡ IQC</span> chip. Everything you do with your <em>own</em> data (customers, notes, door knocks, pipeline) is always free.</p><ul><li><span class="hcost">50 IQC</span> &nbsp;<strong>Pull a category</strong> — a one-time charge that loads every business of that type in view and keeps the category yours all session.</li><li><span class="hcost">400 IQC</span> &nbsp;<strong>Full City Sweep</strong> — pull all 11 categories in the current view at once.</li><li><span class="hcost">10 IQC</span> &nbsp;<strong>Reveal contact info</strong> — a prospect’s phone &amp; website.</li><li><span class="hcost free">FREE</span> &nbsp;Contact info is <strong>included free</strong> when you Save a prospect to Contacts.</li><li><span class="hcost free">FREE</span> &nbsp;Re-showing categories you’ve <strong>already pulled</strong> — that’s just a view toggle, no fetch, no charge.</li></ul><p>If you don’t have enough, the credits chip gives a shake and nothing is charged — top up and try again.</p></section>
         <section class="help-sec" id="help-pull"><h3><span class="hs-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg></span>Pulling prospects onto the map</h3><p>Open the <strong>“Atlas · Prospects”</strong> deck at the top of the left panel. Each category chip (Restaurants, Hotels, Gas Stations, Banks, Schools, Shopping Centers, Apartments, Hospitals, Auto Dealerships, Self-Storage, Churches) starts <strong>locked</strong> with a <span class="hcost">50 IQC</span> price.</p><div class="help-card"><div class="hc-t">The golden rule</div>A pull is bounded to the <strong>map area you’re viewing</strong>, and it loads <strong>every business of that type in that area</strong> — 100% of what Google lists there, not a sample. Pan / zoom to the neighbourhood you want, then pull.</div><ul><li><strong>Tap a locked chip</strong> to pull it — every in-view business of that type drops as pins and the list fills with ranked results.</li><li>Pay <strong>once</strong> — after that the category is <strong>yours for the whole session</strong>. Its chip becomes a free show/hide toggle (marked <strong>Saved</strong>) and is never charged again.</li><li><strong>Full City Sweep</strong> <span class="hcost">400 IQC</span> pulls <strong>all 11 categories in the current view</strong> in one go.</li><li>Pull as many categories as you like — they stack on the same map, colour-coded.</li></ul></section>
         <section class="help-sec" id="help-score"><h3><span class="hs-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span>Route Match Score (0–100)</h3><p>Every prospect gets a <strong>Route Match Score</strong> — how well it fits <em>your</em> business, not generic popularity. It’s built from three real signals:</p><div class="hbars"><div class="hbar"><span class="hb-l">Proximity</span><div class="hb-track"><div class="hb-fill" style="width:100%;background:linear-gradient(90deg,#0ea371,#12b981)"></div></div><span class="hb-max">/ 60</span></div><div class="hbar"><span class="hb-l">Customer density</span><div class="hb-track"><div class="hb-fill" style="width:42%;background:linear-gradient(90deg,#2f6fd0,#3b82f6)"></div></div><span class="hb-max">/ 25</span></div><div class="hbar"><span class="hb-l">Category fit</span><div class="hb-track"><div class="hb-fill" style="width:25%;background:linear-gradient(90deg,#7c5cf0,#a78bff)"></div></div><span class="hb-max">/ 15</span></div></div><ul><li><strong>Proximity</strong> — how close it is to your nearest customer.</li><li><strong>Customer density</strong> — how many of your customers sit within 2 miles.</li><li><strong>Category fit</strong> — how well that category historically converts for your trade.</li></ul><p>Open any prospect to see its <strong>“How this score was calculated”</strong> breakdown. Star ratings and review counts are shown for context but do <strong>not</strong> affect the score.</p><p>Prospects are then tiered <em>relative to what’s on screen</em>:</p><div class="hlegend"><div class="hlegend-row"><span class="hswatch" style="background:var(--green-tint);color:var(--green-hi);font-weight:800">A</span><div><strong>Excellent fit</strong> — top ~20%. Chase these first.</div></div><div class="hlegend-row"><span class="hswatch" style="background:var(--gold-tint);color:var(--gold-lo);font-weight:800">B</span><div><strong>Strong fit</strong> — next ~30%. Worth a sales call.</div></div><div class="hlegend-row"><span class="hswatch" style="background:var(--surface-3);color:var(--ink-3);font-weight:800">C</span><div><strong>Skip for now</strong> — outside your routes.</div></div></div></section>
-        <section class="help-sec" id="help-mapkey"><h3><span class="hs-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 7-8 13-8 13s-8-6-8-13a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></svg></span>Reading the map</h3><div class="hlegend"><div class="hlegend-row"><span class="hswatch round" style="background:#fff;border:2px solid #12b981"><svg width="13" height="13" viewBox="0 0 24 24" fill="#12b981"><path d="M12 12a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9zm0 2.2c-3.9 0-7 2-7 4.5V21h14v-2.3c0-2.5-3.1-4.5-7-4.5z"/></svg></span><div><strong>Your customer</strong> — white circle with a green ring.</div></div><div class="hlegend-row"><span class="hswatch round" style="background:#fff;border:2px solid #ffa02e;position:relative"><span style="position:absolute;top:-3px;right:-3px;width:9px;height:9px;border-radius:50%;background:#12b981;border:2px solid #fff"></span></span><div><strong>Prospect pin</strong> — coloured by category. A <span style="color:#12b981;font-weight:700">green dot</span> = high opportunity (it gently pulses); a <span style="color:#d9861a;font-weight:700">gold dot</span> = medium.</div></div><div class="hlegend-row"><span class="hswatch diamond" style="background:#fff;border:3px solid #f2b148"></span><div><strong>Door knock</strong> — a diamond, coloured by its status.</div></div><div class="hlegend-row"><span class="hswatch round" style="background:#0d1220;color:#fff;font-weight:800;font-size:11px">12</span><div><strong>Cluster</strong> — many pins grouped together. Zoom in (or click) to split it.</div></div><div class="hlegend-row"><span class="hswatch round" style="background:rgba(18,185,129,.12);border:2px dashed #12b981"></span><div><strong>Service zone</strong> — a dashed ~2-mile ring around each of your customer clusters.</div></div></div><p>Tap a pin (or its card in the list) to open the full detail view. Use the <strong>Locate</strong> button (bottom-right) to center the map on your current location.</p></section>
+        <section class="help-sec" id="help-mapkey"><h3><span class="hs-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 7-8 13-8 13s-8-6-8-13a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></svg></span>Reading the map</h3><div class="hlegend"><div class="hlegend-row"><span class="hswatch round" style="background:#fff;border:2px solid #12b981"><svg width="13" height="13" viewBox="0 0 24 24" fill="#12b981"><path d="M12 12a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9zm0 2.2c-3.9 0-7 2-7 4.5V21h14v-2.3c0-2.5-3.1-4.5-7-4.5z"/></svg></span><div><strong>Your customer</strong> — white circle with a green ring.</div></div><div class="hlegend-row"><span class="hswatch round" style="background:#fff;border:2px solid #ffa02e;position:relative"><span style="position:absolute;top:-3px;right:-3px;width:9px;height:9px;border-radius:50%;background:#12b981;border:2px solid #fff"></span></span><div><strong>Prospect pin</strong> — coloured by category. A <span style="color:#12b981;font-weight:700">green dot</span> = high opportunity (it gently pulses); a <span style="color:#d9861a;font-weight:700">gold dot</span> = medium.</div></div><div class="hlegend-row"><span class="hswatch diamond" style="background:#fff;border:3px solid #f2b148"></span><div><strong>Door knock</strong> — a diamond, coloured by its status.</div></div><div class="hlegend-row"><span class="hswatch round" style="background:#0d1220;color:#fff;font-weight:800;font-size:11px">12</span><div><strong>Cluster</strong> — many pins grouped together. Zoom in (or click) to split it.</div></div></div><p>Tap a pin (or its card in the list) to open the full detail view. Use the <strong>Locate</strong> button (bottom-right) to center the map on your current location.</p></section>
         <section class="help-sec" id="help-work"><h3><span class="hs-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.1 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7 12.8 12.8 0 0 0 .7 2.8 2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4 12.8 12.8 0 0 0 2.8.7 2 2 0 0 1 1.7 2z"/></svg></span>Working a lead</h3><p>Tap any prospect to open its detail panel. From there you can:</p><ul><li><strong>Call Now</strong> — one tap to dial (once the phone is known).</li><li><strong>Save to Contacts</strong> — turns the prospect into <em>your</em> record. Its contact info comes free, the pin gets a navy ring with a bookmark badge, and it stays on the map regardless of filters.</li><li><strong>Add to Pipeline</strong> — queues it as a lead. <strong>No outreach is ever sent automatically.</strong></li><li><strong>AI Intro</strong> — draft a tailored email, text, or call script in one click.</li><li><strong>Mark Contacted</strong> &amp; <strong>Notes</strong> — track your progress; notes auto-save.</li></ul></section>
         <section class="help-sec" id="help-mymap"><h3><span class="hs-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9.5 12 3l9 6.5V21a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/></svg></span>My Map &amp; door knocks</h3><p>The <strong>My Map</strong> toggles in the deck control your own data:</p><ul><li><strong>Customers</strong> — show/hide your existing customer pins.</li><li><strong>Door Knocks</strong> — show/hide the doors you’ve logged.</li></ul><p>Tap <span class="hkey">+ Drop a pin</span> (top-right of the map), then tap anywhere on the map to log a door — it creates a lightweight contact record, not a stray map dot. Open any knock to set its status:</p><div class="hstatus-grid"><div class="hstatus"><span class="dot" style="background:#b7c2cc"></span>Not Home</div><div class="hstatus"><span class="dot" style="background:#e0b64f"></span>Knocked — No Answer</div><div class="hstatus"><span class="dot" style="background:#4cc3e0"></span>Contacted</div><div class="hstatus"><span class="dot" style="background:#a3e635"></span>Interested — Follow Up</div><div class="hstatus"><span class="dot" style="background:#5b6570"></span>Not Interested</div><div class="hstatus"><span class="dot" style="background:#ef5b6e"></span>Do Not Knock  (✕)</div><div class="hstatus"><span class="dot" style="background:#f2b148"></span>Appointment Set</div></div></section>
         <section class="help-sec" id="help-filter"><h3><span class="hs-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg></span>Filter, sort &amp; search</h3><ul><li><strong>Tier chips</strong> — <span class="hkey">All</span> <span class="hkey">Excellent</span> <span class="hkey">Strong</span> <span class="hkey">Skip</span> narrow the map and list to a fit level.</li><li><strong>Category chips</strong> — toggle each pulled category on or off.</li><li><strong>Sort</strong> — by Opportunity Score, distance to your nearest customer, or highest rated.</li><li><strong>Show my customers</strong> — overlay your customers alongside prospects.</li><li><strong>Search</strong> — the box up top filters by business name or city.</li></ul></section>
@@ -4029,6 +4017,17 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ ['leadCardModal',
     trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>'
   };
 
+  // ---------- colors ----------
+  var AREA_COLORS = ['#7c5cf0','#2f6bff','#06b6d4','#f6a723','#ec4899','#ef5a13','#4f46e5','#64748b'];
+  var DEFAULT_AREA_COLOR = AREA_COLORS[0];
+  function areaColor(a){ return (a && a.color) || DEFAULT_AREA_COLOR; }
+  function hexToRgba(hex, a){
+    var h = String(hex || DEFAULT_AREA_COLOR).replace('#','');
+    if (h.length === 3) h = h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
+    var n = parseInt(h, 16);
+    return 'rgba(' + ((n>>16)&255) + ',' + ((n>>8)&255) + ',' + (n&255) + ',' + a + ')';
+  }
+
   // ---------- state + persistence ----------
   var atlasAreas = [];
   window.__atlasAreas = atlasAreas;
@@ -4063,8 +4062,9 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ ['leadCardModal',
     areaLayerGroup.clearLayers();
     atlasAreas.forEach(function(a){
       var active = a.id === activeAreaId;
-      L.polygon(a.vertices, { color:'#7c5cf0', weight:2, dashArray:'6 5',
-        fill:true, fillColor:'#7c5cf0', fillOpacity: active ? 0.14 : 0.08, interactive:false }).addTo(areaLayerGroup);
+      var col = areaColor(a);
+      L.polygon(a.vertices, { color:col, weight:2, dashArray:'6 5',
+        fill:true, fillColor:col, fillOpacity: active ? 0.16 : 0.09, interactive:false }).addTo(areaLayerGroup);
     });
   }
 
@@ -4133,9 +4133,11 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ ['leadCardModal',
       atlasAreas.forEach(function(a){
         var st = areaStats(a);
         var row = document.createElement('div');
+        var col = areaColor(a);
         row.className = 'area-row' + (a.id === activeAreaId ? ' active' : '');
+        if (a.id === activeAreaId) row.style.borderColor = col;
         row.innerHTML =
-          '<span class="area-swatch"></span>' +
+          '<span class="area-swatch" style="border-color:' + col + ';background:' + hexToRgba(col, 0.16) + '"></span>' +
           '<div class="area-main">' +
             '<div class="area-row-top"><span class="area-name">' + escapeHtml(a.name) + '</span>' +
               '<span class="area-init" title="' + escapeHtml(a.assignee || 'Unassigned') + '">' + (a.assignee ? initials(a.assignee) : '—') + '</span></div>' +
@@ -4155,7 +4157,9 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ ['leadCardModal',
   };
   window.renderPullingChip = function(wrap){
     var a = activeArea(); if (!a) return;
+    var col = areaColor(a);
     var chip = document.createElement('div'); chip.className = 'pulling-chip';
+    chip.style.background = hexToRgba(col, 0.1); chip.style.borderColor = hexToRgba(col, 0.4); chip.style.color = col;
     chip.innerHTML = '<span>Pulling within: <b>' + escapeHtml(a.name) + '</b></span>' +
       '<button title="Stop pulling within this area" onclick="atlasDeactivateArea()">✕</button>';
     wrap.appendChild(chip);
@@ -4176,11 +4180,27 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ ['leadCardModal',
     showToast('Area deleted');
   };
   window.atlasEditArea = function(id){
-    for (var i=0;i<atlasAreas.length;i++){ if (atlasAreas[i].id===id){ editingId=id; pendingVerts=null; openSaveModal(atlasAreas[i].name, atlasAreas[i].assignee); return; } }
+    for (var i=0;i<atlasAreas.length;i++){ if (atlasAreas[i].id===id){ editingId=id; pendingVerts=null; openSaveModal(atlasAreas[i].name, atlasAreas[i].assignee, areaColor(atlasAreas[i])); return; } }
   };
 
   // ---------- save-area modal ----------
-  var editingId = null, pendingVerts = null;
+  var editingId = null, pendingVerts = null, pendingColor = DEFAULT_AREA_COLOR;
+  function colorSwatchRow(){
+    var h = '<div class="area-color-row" id="areaColorRow">';
+    AREA_COLORS.forEach(function(c){
+      h += '<button type="button" class="area-color-sw' + (c.toLowerCase() === pendingColor.toLowerCase() ? ' sel' : '') +
+        '" data-color="' + c + '" style="background:' + c + '" onclick="atlasPickAreaColor(\'' + c + '\')" title="' + c + '"></button>';
+    });
+    h += '<label class="area-color-custom" title="Custom color"><input type="color" id="areaColorInput" value="' + pendingColor + '" oninput="atlasPickAreaColor(this.value, true)"/></label>';
+    h += '</div>';
+    return h;
+  }
+  window.atlasPickAreaColor = function(c, fromInput){
+    pendingColor = c;
+    var row = document.getElementById('areaColorRow'); if (!row) return;
+    row.querySelectorAll('.area-color-sw').forEach(function(b){ b.classList.toggle('sel', (b.getAttribute('data-color')||'').toLowerCase() === c.toLowerCase()); });
+    if (!fromInput){ var inp = document.getElementById('areaColorInput'); if (inp) inp.value = c; }
+  };
   var modal = document.createElement('div');
   modal.className = 'modal-overlay'; modal.id = 'saveAreaModal';
   modal.setAttribute('onclick', "if(event.target===this)atlasCancelSave()");
@@ -4191,11 +4211,13 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ ['leadCardModal',
     (window.__ATLAS_EMPLOYEES || []).forEach(function(e){ opts += '<option value="' + escapeHtml(e) + '"' + (e === sel ? ' selected' : '') + '>' + escapeHtml(e) + '</option>'; });
     return opts;
   }
-  function openSaveModal(name, assignee){
+  function openSaveModal(name, assignee, color){
+    pendingColor = color || DEFAULT_AREA_COLOR;
     document.getElementById('saveAreaInner').innerHTML =
-      '<div class="modal-header"><h3>' + (editingId ? 'Edit area' : 'Save area') + '</h3><p>Name this area' + (editingId ? '' : ' and optionally assign it') + '.</p></div>' +
+      '<div class="modal-header"><h3>' + (editingId ? 'Edit area' : 'Save area') + '</h3><p>Name this area' + (editingId ? '' : ', pick a color') + ' and optionally assign it.</p></div>' +
       '<div class="modal-body">' +
         '<div class="form-group req"><label>Name</label><input type="text" id="areaName" placeholder="e.g. Southside" value="' + escapeHtml(name || '') + '"/></div>' +
+        '<div class="form-group"><label>Color</label>' + colorSwatchRow() + '</div>' +
         '<div class="form-group"><label>Assign to</label><select id="areaAssign">' + employeeOptions(assignee) + '</select></div>' +
       '</div>' +
       '<div class="modal-footer"><button class="btn btn-secondary" onclick="atlasCancelSave()">Cancel</button><button class="btn btn-primary" onclick="atlasSaveArea()">Save Area</button></div>';
@@ -4208,10 +4230,10 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ ['leadCardModal',
     if (!name){ showToast('Name is required'); if (nameEl) nameEl.focus(); return; }
     var assignee = document.getElementById('areaAssign').value || '';
     if (editingId){
-      for (var i=0;i<atlasAreas.length;i++){ if (atlasAreas[i].id===editingId){ atlasAreas[i].name=name; atlasAreas[i].assignee=assignee; break; } }
+      for (var i=0;i<atlasAreas.length;i++){ if (atlasAreas[i].id===editingId){ atlasAreas[i].name=name; atlasAreas[i].assignee=assignee; atlasAreas[i].color=pendingColor; break; } }
       editingId = null;
     } else {
-      atlasAreas.push({ id:_seq++, name:name, assignee:assignee, vertices:pendingVerts.slice(), createdAt:Date.now() });
+      atlasAreas.push({ id:_seq++, name:name, assignee:assignee, color:pendingColor, vertices:pendingVerts.slice(), createdAt:Date.now() });
       pendingVerts = null;
     }
     window.__atlasAreas = atlasAreas; persist();

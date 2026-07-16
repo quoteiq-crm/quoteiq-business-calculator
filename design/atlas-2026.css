@@ -1139,3 +1139,14 @@ a{ color:inherit; }
 
 /* C2 — Save-area modal keeps the standard modal frame, just tighter */
 #saveAreaModal .modal{ max-width:420px; }
+
+/* Area color picker */
+.area-color-row{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.area-color-sw{ width:26px; height:26px; border-radius:50%; border:2px solid #fff; cursor:pointer; padding:0;
+  box-shadow:0 0 0 1px var(--line-2); transition:transform .12s, box-shadow .12s; }
+.area-color-sw:hover{ transform:scale(1.1); }
+.area-color-sw.sel{ box-shadow:0 0 0 2px var(--ink); transform:scale(1.08); }
+.area-color-custom{ width:26px; height:26px; border-radius:50%; overflow:hidden; cursor:pointer; position:relative;
+  border:2px dashed var(--line-2); display:inline-flex; align-items:center; justify-content:center; background:
+  conic-gradient(from 0deg,#ef5a13,#f6a723,#12b981,#06b6d4,#2f6bff,#7c5cf0,#ec4899,#ef5a13); }
+.area-color-custom input[type="color"]{ opacity:0; width:200%; height:200%; border:none; padding:0; cursor:pointer; }
