@@ -60,20 +60,153 @@ def sub(old, new, count=1, label=""):
 # 1) remove the filter-chips from the topbar (relocated into the left panel)
 sub('  <div class="filter-chips" id="filterChips"></div>\n', '', 1, "topbar-chips-remove")
 
-# 2) insert the control deck (relocated filters) + id the legend, at top of left panel
-sub(
- '  <div class="left-panel" id="leftPanel">\n\n    <!-- INLINE LEGEND -->\n    <div class="inline-legend">',
- '  <div class="left-panel" id="leftPanel">\n\n'
- '    <!-- CONTROL DECK — filters relocated out of the cramped top bar -->\n'
- '    <div class="control-deck" id="controlDeck">\n'
- '      <div class="deck-title">\n'
- '        <h1><span class="deck-mark">◈</span> Atlas · Prospects</h1>\n'
- '        <span class="live">Live map</span>\n'
- '      </div>\n'
- '      <div class="filter-chips" id="filterChips"></div>\n'
- '    </div>\n\n'
- '    <!-- INLINE LEGEND -->\n    <div class="inline-legend" id="inlineLegend">',
- 1, "control-deck-insert")
+# 2) LEFT-PANEL REDESIGN: stats strip up top + three section cards (My Map / Areas /
+#    Prospects); the ranked list + its controls live inside the Prospects card; the
+#    standalone legend is gone (its content is inlined on toggles + a heat scale).
+_LAYERS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>'
+_HEX    = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 21 7 21 17 12 22 3 17 3 7"/></svg>'
+_RADAR  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/></svg>'
+_SCHEV  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="6 9 12 15 18 9"/></svg>'
+
+OLD_PANEL = '''  <div class="left-panel" id="leftPanel">
+
+    <!-- INLINE LEGEND -->
+    <div class="inline-legend">
+      <span class="ll-item"><span class="ll-dot ll-cust"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></span> Your customers</span>
+      <span class="ll-item"><span class="ll-dot ll-high"></span> High opp</span>
+      <span class="ll-item"><span class="ll-dot ll-med"></span> Medium</span>
+      <span class="ll-item"><span class="ll-dot ll-low"></span> Lower</span>
+    </div>
+    <!-- STATS BANNER -->
+    <div class="stats-banner" id="statsBanner">
+      <div class="stat">
+        <div class="stat-label">Your Customers</div>
+        <div class="stat-value" id="statCustomers">17</div>
+        <div class="stat-sub">Historic, Southside, Pooler, Wilmington</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">High-Match Nearby</div>
+        <div class="stat-value"><span class="accent" id="statHigh">50</span></div>
+        <div class="stat-sub">top 20% by route fit</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Est. Pipeline Value</div>
+        <div class="stat-value"><span class="accent-orange" id="statValue">$84K</span></div>
+        <div class="stat-sub">if 30% convert at $5.6K avg</div>
+      </div>
+    </div>
+
+    <!-- LIST HEADER -->
+    <div class="list-header" id="listHeader">
+      <h2 id="listTitle">Prospects on your routes</h2>
+      <p id="listSubtitle">Ranked by Route Match Score — proximity to your customers, density of your customers nearby, and category fit for your trade.</p>
+      <div class="sort-row">
+        <select class="sort-select" id="sortSelect">
+          <option value="opportunity">Sort: Opportunity Score</option>
+          <option value="distance">Distance to nearest customer</option>
+          <option value="rating">Highest rated</option>
+        </select>
+        <label class="show-customers-toggle">
+          <input type="checkbox" id="showCustomersToggle" checked />
+          Show my customers
+        </label>
+      </div>
+    </div>
+
+    <div class="results-list" id="resultsList"></div>'''
+
+NEW_PANEL = ('''  <div class="left-panel" id="leftPanel">
+
+    <!-- CONTROL DECK -->
+    <div class="control-deck" id="controlDeck">
+      <div class="deck-title">
+        <h1><span class="deck-mark">◈</span> Atlas · Prospects</h1>
+        <span class="live">Live map</span>
+      </div>
+
+      <!-- STATS STRIP — at-a-glance overview -->
+      <div class="stats-banner" id="statsBanner">
+        <div class="stat">
+          <div class="stat-label">Your Customers</div>
+          <div class="stat-value" id="statCustomers">17</div>
+          <div class="stat-sub">Historic, Southside, Pooler, Wilmington</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">High-Match Nearby</div>
+          <div class="stat-value"><span class="accent" id="statHigh">50</span></div>
+          <div class="stat-sub">top 20% by route fit</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Est. Pipeline Value</div>
+          <div class="stat-value"><span class="accent-orange" id="statValue">$84K</span></div>
+          <div class="stat-sub">if 30% convert at $5.6K avg</div>
+        </div>
+      </div>
+
+      <!-- THREE SECTION CARDS -->
+      <div class="sec-cards" id="secCards">
+        <section class="sec-card" data-sec="mymap">
+          <button class="sec-head" type="button" onclick="toggleSection('mymap')">
+            <span class="sec-ico">''' + _LAYERS + '''</span>
+            <span class="sec-htext"><span class="sec-title">My Map</span><span class="sec-help">Your customers, jobs &amp; door knocks.</span></span>
+            <span class="sec-chev">''' + _SCHEV + '''</span>
+          </button>
+          <div class="sec-body"><div id="secMymap"></div></div>
+        </section>
+        <section class="sec-card" data-sec="areas">
+          <button class="sec-head" type="button" onclick="toggleSection('areas')">
+            <span class="sec-ico">''' + _HEX + '''</span>
+            <span class="sec-htext"><span class="sec-title">Areas</span><span class="sec-help">Draw zones and track coverage.</span></span>
+            <span class="sec-chev">''' + _SCHEV + '''</span>
+          </button>
+          <div class="sec-body"><div id="secAreas"></div></div>
+        </section>
+        <section class="sec-card" data-sec="prospects">
+          <button class="sec-head" type="button" onclick="toggleSection('prospects')">
+            <span class="sec-ico">''' + _RADAR + '''</span>
+            <span class="sec-htext"><span class="sec-title">Prospects</span><span class="sec-help">Find and filter businesses to prospect.</span></span>
+            <span class="sec-chev">''' + _SCHEV + '''</span>
+          </button>
+          <div class="sec-body">
+            <div id="secProspectsChips"></div>
+            <div class="heat-scale" aria-label="Opportunity heat scale">
+              <span class="heat-item"><span class="heat-dot heat-high"></span>High opp</span>
+              <span class="heat-item"><span class="heat-dot heat-med"></span>Medium</span>
+              <span class="heat-item"><span class="heat-dot heat-low"></span>Lower</span>
+            </div>
+            <div class="list-header" id="listHeader">
+              <h2 id="listTitle">Prospects on your routes</h2>
+              <p id="listSubtitle">Ranked by Route Match Score — proximity, density of your customers nearby, and category fit.</p>
+              <div class="sort-row">
+                <div class="tier-chips" id="tierChips"></div>
+                <select class="sort-select" id="sortSelect">
+                  <option value="opportunity">Sort: Opportunity Score</option>
+                  <option value="distance">Distance to nearest customer</option>
+                  <option value="rating">Highest rated</option>
+                </select>
+                <label class="show-customers-toggle">
+                  <input type="checkbox" id="showCustomersToggle" checked />
+                  Show my customers
+                </label>
+              </div>
+            </div>
+            <div class="results-list" id="resultsList"></div>
+          </div>
+        </section>
+      </div>
+    </div>''')
+
+sub(OLD_PANEL, NEW_PANEL, 1, "panel-restructure")
+
+# the legacy renderChips (overridden later) must not throw / wipe the new card container
+sub("function renderChips() {\n"
+    "  const wrap = document.getElementById('filterChips');\n"
+    "  wrap.innerHTML = '';",
+    "function renderChips() {\n"
+    "  const wrap = document.getElementById('filterChips');\n"
+    "  if (!wrap) return;\n"
+    "  wrap.innerHTML = '';",
+    1, "legacy-renderchips-guard")
 
 # 3) radial score gauge replaces the flat score number
 sub(
@@ -160,7 +293,6 @@ sub(
  "  document.getElementById('listHeader').classList.add('hidden');\n"
  "  document.getElementById('resultsList').classList.add('hidden');\n"
  "  document.getElementById('controlDeck').classList.add('hidden');\n"
- "  document.getElementById('inlineLegend').classList.add('hidden');\n"
  "  document.getElementById('detailView').classList.add('active');",
  2, "detail-hide")
 
@@ -173,7 +305,6 @@ sub(
  "  document.getElementById('listHeader').classList.remove('hidden');\n"
  "  document.getElementById('resultsList').classList.remove('hidden');\n"
  "  document.getElementById('controlDeck').classList.remove('hidden');\n"
- "  document.getElementById('inlineLegend').classList.remove('hidden');\n"
  "  document.getElementById('detailView').classList.remove('active');",
  1, "detail-show")
 
@@ -234,17 +365,8 @@ sub('class="pin-customer" data-idx="${idx}" style="${isSelected ? \'transform:sc
     'class="pin-customer" data-idx="${idx}" style="${isSelected ? \'transform:scale(1.2);box-shadow:0 4px 16px rgba(16,185,129,.6);\' : \'\'}">${ICONS.person}<span class="pin-name-tag">${escapeHtml(c.name)}</span></div>',
     1, "customer-pin-person")
 
-# legend (Section 1): Customers (blue), Active Jobs (green), High opp (orange), Medium (amber), Lower (gray)
-sub('      <span class="ll-item"><span class="ll-dot ll-cust"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></span> Your customers</span>\n'
-    '      <span class="ll-item"><span class="ll-dot ll-high"></span> High opp</span>\n'
-    '      <span class="ll-item"><span class="ll-dot ll-med"></span> Medium</span>\n'
-    '      <span class="ll-item"><span class="ll-dot ll-low"></span> Lower</span>',
-    '      <span class="ll-item"><span class="ll-dot ll-custD"></span> Customers</span>\n'
-    '      <span class="ll-item"><span class="ll-dot ll-job"></span> Active Jobs</span>\n'
-    '      <span class="ll-item"><span class="ll-dot ll-high"></span> High opp</span>\n'
-    '      <span class="ll-item"><span class="ll-dot ll-med"></span> Medium</span>\n'
-    '      <span class="ll-item"><span class="ll-dot ll-low"></span> Lower</span>',
-    1, "legend-5")
+# (the standalone inline legend was removed in the panel restructure — its content now
+#  lives inline on the My Map toggles + the Prospects heat scale)
 
 # customer detail strip — person icon + blue disc
 sub('color:#fff;"><div style="width:20px;height:20px;">${ICONS.check}</div></div>',
@@ -839,62 +961,173 @@ renderMarkers=function(){ _origRenderMarkers(); renderJobs(); };
 window.openOverlay=function(id){ const el=document.getElementById(id); if(el) el.classList.add('show'); };
 window.closeOverlay=function(id){ const el=document.getElementById(id); if(el) el.classList.remove('show'); };
 
-// ---------- Section 2: compact Prospects panel ----------
-renderChips=function(){
- const wrap=document.getElementById('filterChips'); if(!wrap) return; wrap.innerHTML='';
- [{key:'all',label:'All',klass:''},{key:'high',label:'Excellent',klass:'tier-high'},{key:'medium',label:'Strong',klass:'tier-med'},{key:'low',label:'Skip',klass:'tier-low'}].forEach(t=>{
-  const chip=document.createElement('button'); chip.className='chip '+t.klass+' '+(activeTier===t.key?'active':'');
-  chip.textContent=t.label; chip.onclick=()=>{ activeTier=t.key; renderChips(); renderMarkers(); renderList(); };
-  wrap.appendChild(chip);
- });
- wrap.appendChild(Object.assign(document.createElement('div'),{className:'chip-divider'}));
- const myMap=document.createElement('span'); myMap.className='layer-group';
- myMap.innerHTML='<span class="group-label">My Map</span>'+
-  '<label class="layer-toggle"><input type="checkbox" id="tgCustomers" '+(showCustomers?'checked':'')+'/> Customers</label>'+
-  '<label class="layer-toggle"><input type="checkbox" id="tgJobs" '+(window.showJobs?'checked':'')+'/> Active Jobs</label>'+
-  '<label class="layer-toggle"><input type="checkbox" id="tgKnocks" '+(showDoorKnocks?'checked':'')+'/> Door Knocks</label>';
- wrap.appendChild(myMap);
- myMap.querySelector('#tgCustomers').addEventListener('change',e=>{ showCustomers=e.target.checked; const t=document.getElementById('showCustomersToggle'); if(t)t.checked=showCustomers; renderMarkers(); });
- myMap.querySelector('#tgJobs').addEventListener('change',e=>{ window.showJobs=e.target.checked; renderJobs(); });
- myMap.querySelector('#tgKnocks').addEventListener('change',e=>{ showDoorKnocks=e.target.checked; renderDoorKnocks(); });
- if(window.renderAreasSection) window.renderAreasSection(wrap);
- wrap.appendChild(Object.assign(document.createElement('div'),{className:'chip-divider'}));
- const lbl=document.createElement('span'); lbl.className='group-label'; lbl.textContent='Prospects'; wrap.appendChild(lbl);
- if(window.renderPullingChip) window.renderPullingChip(wrap);
- const row=document.createElement('span'); row.className='saved-row';
- const owned=Object.keys(CATEGORIES).filter(n=>unlockedCategories.has(n));
- if(!owned.length){ const e=document.createElement('span'); e.className='addbiz-empty'; e.textContent='No businesses pulled yet.'; row.appendChild(e); }
- owned.forEach(name=>{
-  const cfg=CATEGORIES[name]; const chip=document.createElement('button');
-  chip.className='chip'+(activeFilters.has(name)?' active':'');
-  chip.innerHTML='<span style="width:8px;height:8px;border-radius:50%;background:'+cfg.color+';display:inline-block;"></span>'+name+'<span class="chip-saved">'+ICONS.eye+' Saved</span>';
-  chip.onclick=()=>handleCategoryChipClick(name,chip); row.appendChild(chip);
- });
- const awrap=document.createElement('span'); awrap.className='addbiz-wrap';
- const btn=document.createElement('button'); btn.className='addbiz-btn'; btn.innerHTML=ICONS.plus+' Add businesses';
- btn.onclick=(ev)=>{ ev.stopPropagation(); const wasOpen=document.getElementById('addbizPop'); closeAddBiz(); if(wasOpen) return; const p=buildAddBizPop(); p.id='addbizPop'; document.body.appendChild(p); positionAddBiz(p,btn); p.classList.add('show'); };
- awrap.appendChild(btn); row.appendChild(awrap);
- wrap.appendChild(row);
+// ---------- Section 2: three section cards + grouped business picker ----------
+const SWATCH={ cust:'#2f74f0', job:'#12b981', knock:'#e0b64f' };
+window.atlasPicked = window.atlasPicked || [];   // [{name,cat|null}] applied selection (FREE per-area display)
+
+// collapsible section cards ------------------------------------------------
+window.__secCollapsed = window.__secCollapsed || {};
+window.toggleSection=function(key){
+ const card=document.querySelector('.sec-card[data-sec="'+key+'"]'); if(!card) return;
+ const collapsed=card.classList.toggle('collapsed');
+ window.__secCollapsed[key]=collapsed;
+ if(typeof saveState==='function') saveState();
 };
-function buildAddBizPop(){
- const pop=document.createElement('div'); pop.className='addbiz-pop';
- let h='<h4>Pull businesses — 50 IQC each</h4><div class="addbiz-grid">';
- Object.entries(CATEGORIES).forEach(([name,cfg])=>{
-  const owned=unlockedCategories.has(name);
-  h+='<button class="addbiz-cat" data-owned="'+(owned?1:0)+'" data-cat="'+name+'"><span class="ac-dot" style="background:'+cfg.color+'"></span><span class="ac-name">'+name+'</span><span class="ac-price">'+(owned?'Saved':'50 IQC')+'</span></button>';
+window.applySectionState=function(){
+ const st=window.__secCollapsed||{};
+ ['mymap','areas','prospects'].forEach(k=>{ const c=document.querySelector('.sec-card[data-sec="'+k+'"]'); if(c) c.classList.toggle('collapsed', !!st[k]); });
+};
+
+// tier filter — now inside the Prospects card control row -------------------
+window.renderTierChips=function(){
+ const box=document.getElementById('tierChips'); if(!box) return; box.innerHTML='';
+ [{key:'all',label:'All',klass:''},{key:'high',label:'Excellent',klass:'tier-high'},{key:'medium',label:'Strong',klass:'tier-med'},{key:'low',label:'Skip',klass:'tier-low'}].forEach(t=>{
+  const chip=document.createElement('button'); chip.type='button'; chip.className='chip '+t.klass+' '+(activeTier===t.key?'active':'');
+  chip.textContent=t.label; chip.onclick=()=>{ activeTier=t.key; renderTierChips(); renderMarkers(); renderList(); };
+  box.appendChild(chip);
  });
- const sp=atlasSweepPrice(); const allOwned=sp===0;
- h+='</div><button class="btn btn-primary addbiz-sweep" id="addbizSweep"'+(allOwned?' disabled':'')+'>'+(allOwned?'All categories pulled':('⚡ Full City Sweep <span style="opacity:.85;font-family:var(--mono);font-size:11px;margin-left:6px;">'+sp+' IQC</span>'))+'</button>';
+};
+
+renderChips=function(){
+ // MY MAP toggles (with inline map-colour swatches)
+ const mm=document.getElementById('secMymap');
+ if(mm){
+  mm.innerHTML=
+   '<label class="layer-toggle"><span class="tog-sw" style="background:'+SWATCH.cust+'"></span><span class="tog-label">Customers</span><input type="checkbox" id="tgCustomers" '+(showCustomers?'checked':'')+'/></label>'+
+   '<label class="layer-toggle"><span class="tog-sw" style="background:'+SWATCH.job+'"></span><span class="tog-label">Active Jobs</span><input type="checkbox" id="tgJobs" '+(window.showJobs?'checked':'')+'/></label>'+
+   '<label class="layer-toggle"><span class="tog-sw tog-diamond" style="background:'+SWATCH.knock+'"></span><span class="tog-label">Door Knocks</span><input type="checkbox" id="tgKnocks" '+(showDoorKnocks?'checked':'')+'/></label>';
+  mm.querySelector('#tgCustomers').addEventListener('change',e=>{ showCustomers=e.target.checked; const t=document.getElementById('showCustomersToggle'); if(t)t.checked=showCustomers; renderMarkers(); });
+  mm.querySelector('#tgJobs').addEventListener('change',e=>{ window.showJobs=e.target.checked; renderJobs(); });
+  mm.querySelector('#tgKnocks').addEventListener('change',e=>{ showDoorKnocks=e.target.checked; renderDoorKnocks(); });
+ }
+ // AREAS
+ const ab=document.getElementById('secAreas');
+ if(ab){ ab.innerHTML=''; if(window.renderAreasSection) window.renderAreasSection(ab); }
+ // PROSPECTS — saved chips (from picked types) + Add businesses picker
+ const pc=document.getElementById('secProspectsChips');
+ if(pc){
+  pc.innerHTML='';
+  if(window.renderPullingChip) window.renderPullingChip(pc);
+  const row=document.createElement('div'); row.className='saved-row';
+  if(!window.atlasPicked.length){ const e=document.createElement('span'); e.className='addbiz-empty'; e.textContent='No businesses picked yet.'; row.appendChild(e); }
+  window.atlasPicked.forEach(t=>{
+   const isCat=!!t.cat, shown=isCat && activeFilters.has(t.cat);
+   const chip=document.createElement('button'); chip.type='button';
+   chip.className='chip picked'+(isCat?(shown?' active':' dim'):' novis');
+   const col=isCat?CATEGORIES[t.cat].color:'#9aa2b2';
+   chip.innerHTML='<span style="width:8px;height:8px;border-radius:50%;background:'+col+';display:inline-block;"></span>'+escapeHtml(t.name)+(isCat?('<span class="chip-saved">'+ICONS.eye+' '+(shown?'Shown':'Hidden')+'</span>'):'<span class="chip-nodata">no demo data</span>');
+   if(isCat) chip.onclick=()=>{ if(activeFilters.has(t.cat)) activeFilters.delete(t.cat); else activeFilters.add(t.cat); renderMarkers(); renderList(); renderChips(); };
+   row.appendChild(chip);
+  });
+  const awrap=document.createElement('span'); awrap.className='addbiz-wrap';
+  const btn=document.createElement('button'); btn.type='button'; btn.className='addbiz-btn'; btn.innerHTML=ICONS.plus+' Add businesses';
+  btn.onclick=(ev)=>{ ev.stopPropagation(); const wasOpen=document.getElementById('addbizPop'); closeAddBiz(); if(wasOpen) return; openPicker(btn); };
+  awrap.appendChild(btn); row.appendChild(awrap);
+  pc.appendChild(row);
+ }
+ renderTierChips();
+};
+
+// ---------- grouped, searchable multi-select business picker ----------
+const SRCH_ICO='<svg viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>';
+const P_CHEV='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="9 6 15 12 9 18"/></svg>';
+const PICKER_GROUPS=[
+ {g:'Food & Drink', t:[{n:'Restaurants',c:'Restaurants'},{n:'Fast Food'},{n:'Cafes'},{n:'Bars'},{n:'Bakeries'}]},
+ {g:'Retail & Shopping', t:[{n:'Shopping Centers',c:'Shopping Centers'},{n:'Department Stores'},{n:'Clothing'},{n:'Electronics'},{n:'Furniture'}]},
+ {g:'Grocery & Convenience', t:[{n:'Gas Stations',c:'Gas Stations'},{n:'Grocery Stores'},{n:'Convenience Stores'},{n:'Liquor Stores'}]},
+ {g:'Automotive', t:[{n:'Auto Dealerships',c:'Auto Dealerships'},{n:'Auto Repair'},{n:'Car Wash'},{n:'Tire Shops'}]},
+ {g:'Lodging', t:[{n:'Hotels',c:'Hotels'},{n:'Motels'},{n:'Inns'},{n:'Vacation Rentals'}]},
+ {g:'Health & Medical', t:[{n:'Hospitals',c:'Hospitals'},{n:'Clinics'},{n:'Dentists'},{n:'Pharmacies'},{n:'Urgent Care'}]},
+ {g:'Personal Services', t:[{n:'Salons'},{n:'Barbers'},{n:'Dry Cleaners'},{n:'Spas'},{n:'Nail Salons'}]},
+ {g:'Fitness & Recreation', t:[{n:'Gyms'},{n:'Yoga Studios'},{n:'Rec Centers'},{n:'Golf Courses'}]},
+ {g:'Professional & Office', t:[{n:'Law Firms'},{n:'Accounting'},{n:'Real Estate'},{n:'Marketing Agencies'}]},
+ {g:'Education & Childcare', t:[{n:'Schools',c:'Schools'},{n:'Daycares'},{n:'Preschools'},{n:'Tutoring'}]},
+ {g:'Financial', t:[{n:'Banks',c:'Banks'},{n:'Credit Unions'},{n:'Insurance'},{n:'Tax Services'}]},
+ {g:'Worship', t:[{n:'Churches',c:'Churches'},{n:'Temples'},{n:'Mosques'},{n:'Synagogues'}]},
+ {g:'Multifamily & Property', t:[{n:'Apartments',c:'Apartments'},{n:'Condos'},{n:'HOAs'},{n:'Property Mgmt'}]},
+ {g:'Industrial & Storage', t:[{n:'Self-Storage',c:'Self-Storage'},{n:'Warehouses'},{n:'Manufacturing'},{n:'Distribution'}]},
+ {g:'Pet', t:[{n:'Vets'},{n:'Groomers'},{n:'Pet Stores'},{n:'Boarding'}]},
+ {g:'Everything else', t:[{n:'Government'},{n:'Nonprofits'},{n:'Event Venues'}]}
+];
+const ALL_TYPES=[]; PICKER_GROUPS.forEach(g=>g.t.forEach(x=>ALL_TYPES.push(x.n)));
+const TYPE_CAT={}; PICKER_GROUPS.forEach(g=>g.t.forEach(x=>{ if(x.c) TYPE_CAT[x.n]=x.c; }));
+function grpSlug(s){ return s.replace(/[^a-z0-9]+/gi,'-').toLowerCase(); }
+function grpOf(gid){ return PICKER_GROUPS.filter(g=>grpSlug(g.g)===gid)[0]; }
+let pickSel=new Set(), pickExpanded=new Set();
+
+window.openPicker=function(btn){
+ pickSel=new Set(window.atlasPicked.map(t=>t.name)); pickExpanded=new Set();
+ const pop=buildPickerPop(); pop.id='addbizPop'; document.body.appendChild(pop);
+ positionAddBiz(pop, btn); pop.classList.add('show');
+ setTimeout(()=>{ const s=pop.querySelector('.pk-search input'); if(s) s.focus(); },30);
+};
+function buildPickerPop(){
+ const pop=document.createElement('div'); pop.className='addbiz-pop pk-pop';
+ let h='<div class="pk-top">'
+   +'<div class="pk-search">'+SRCH_ICO+'<input type="text" placeholder="Search business types…"/></div>'
+   +'<label class="pk-all"><span class="pk-box pk-allbox"></span> Everything in this area</label>'
+   +'</div><div class="pk-body">';
+ PICKER_GROUPS.forEach(g=>{ const gid=grpSlug(g.g);
+  h+='<div class="pk-group" data-group="'+gid+'"><div class="pk-grow">'
+    +'<span class="pk-box pk-gbox"></span>'
+    +'<span class="pk-gname">'+escapeHtml(g.g)+'</span>'
+    +'<span class="pk-gcount"></span>'
+    +'<button type="button" class="pk-gchev">'+P_CHEV+'</button></div><div class="pk-types">';
+  g.t.forEach(x=>{ h+='<label class="pk-type'+(x.c?'':' pk-nodata')+'" data-type="'+escapeHtml(x.n)+'"><span class="pk-box pk-tbox"></span> '+escapeHtml(x.n)+(x.c?'':'<span class="pk-tag">demo set</span>')+'</label>'; });
+  h+='</div></div>';
+ });
+ h+='</div><div class="pk-foot"><span class="pk-count" id="pkCount">0 selected</span><button type="button" class="btn btn-primary pk-apply">Apply</button></div>';
  pop.innerHTML=h;
- pop.querySelectorAll('.addbiz-cat').forEach(b=>{ b.onclick=()=>{ const nm=b.getAttribute('data-cat'); closeAddBiz(); if(!unlockedCategories.has(nm)) handleCategoryChipClick(nm,null); }; });
- const sw=pop.querySelector('#addbizSweep'); if(sw && !allOwned) sw.onclick=()=>{ closeAddBiz(); fullCitySweep(); };
+ pop.querySelector('.pk-search input').addEventListener('input',e=>{ pop.__q=(e.target.value||'').trim().toLowerCase(); refreshPicker(pop); });
+ pop.querySelector('.pk-allbox').addEventListener('click',()=>{ const all=ALL_TYPES.every(n=>pickSel.has(n)); if(all) pickSel.clear(); else ALL_TYPES.forEach(n=>pickSel.add(n)); refreshPicker(pop); });
+ pop.querySelectorAll('.pk-group').forEach(gr=>{ const gid=gr.getAttribute('data-group');
+  gr.querySelector('.pk-gbox').addEventListener('click',()=>{ const g=grpOf(gid); const all=g.t.every(x=>pickSel.has(x.n)); g.t.forEach(x=>{ if(all) pickSel.delete(x.n); else pickSel.add(x.n); }); if(!all) pickExpanded.add(gid); refreshPicker(pop); });
+  gr.querySelector('.pk-gname').addEventListener('click',()=>{ pickExpanded.has(gid)?pickExpanded.delete(gid):pickExpanded.add(gid); refreshPicker(pop); });
+  gr.querySelector('.pk-gchev').addEventListener('click',()=>{ pickExpanded.has(gid)?pickExpanded.delete(gid):pickExpanded.add(gid); refreshPicker(pop); });
+  gr.querySelectorAll('.pk-type').forEach(lab=>{ const nm=lab.getAttribute('data-type');
+   lab.querySelector('.pk-tbox').addEventListener('click',ev=>{ ev.preventDefault(); pickSel.has(nm)?pickSel.delete(nm):pickSel.add(nm); refreshPicker(pop); }); });
+ });
+ pop.querySelector('.pk-apply').addEventListener('click',()=>pickApply());
+ refreshPicker(pop);
  return pop;
 }
+function setBox(el,state){ if(!el) return; el.classList.toggle('checked', state==='on'); el.classList.toggle('indet', state==='some'); }
+function refreshPicker(pop){
+ const q=pop.__q||'';
+ pop.querySelectorAll('.pk-group').forEach(gr=>{
+  const gid=gr.getAttribute('data-group'); const g=grpOf(gid);
+  let anyVisible=false, selCount=0;
+  gr.querySelectorAll('.pk-type').forEach(lab=>{
+   const nm=lab.getAttribute('data-type');
+   const match=!q || nm.toLowerCase().indexOf(q)>=0;
+   lab.style.display=match?'':'none'; if(match) anyVisible=true;
+   const on=pickSel.has(nm); if(on) selCount++;
+   setBox(lab.querySelector('.pk-tbox'), on?'on':'off');
+  });
+  setBox(gr.querySelector('.pk-gbox'), selCount===0?'off':(selCount===g.t.length?'on':'some'));
+  gr.querySelector('.pk-gcount').textContent = selCount? (selCount+'/'+g.t.length) : '';
+  gr.classList.toggle('open', !!((q && anyVisible) || pickExpanded.has(gid)));
+  gr.style.display = (q && !anyVisible) ? 'none' : '';
+ });
+ const allOn=ALL_TYPES.every(n=>pickSel.has(n)), someOn=ALL_TYPES.some(n=>pickSel.has(n));
+ setBox(pop.querySelector('.pk-allbox'), allOn?'on':(someOn?'some':'off'));
+ const cc=pop.querySelector('#pkCount'); if(cc) cc.textContent = pickSel.size+' selected';
+}
+window.pickApply=function(){
+ const names=ALL_TYPES.filter(n=>pickSel.has(n));
+ window.atlasPicked = names.map(n=>({name:n, cat:TYPE_CAT[n]||null}));
+ // FREE per-area display: reveal demo pins for cat-mapped types, no credit change
+ window.atlasPicked.forEach(t=>{ if(t.cat){ unlockedCategories.add(t.cat); activeFilters.add(t.cat);
+   PROSPECTS.forEach(p=>{ if(p.category===t.cat && (!window.__areaActive || window.__areaContains(p.lat,p.lng))) p._loaded=true; }); } });
+ closeAddBiz();
+ renderChips(); renderList(); renderMarkers();
+ const n=window.atlasPicked.length; showToast(n? ('Showing '+n+' business type'+(n>1?'s':'')+' in this area') : 'Cleared business types');
+};
 function positionAddBiz(p,btn){
- const r=btn.getBoundingClientRect(); const w=330;
+ const r=btn.getBoundingClientRect(); const w=344;
  let left=r.left; if(left+w>window.innerWidth-8) left=window.innerWidth-8-w; if(left<8) left=8;
  p.style.left=left+'px'; p.style.top=(r.bottom+6)+'px';
- p.style.maxHeight=Math.max(200,(window.innerHeight-r.bottom-16))+'px'; p.style.overflowY='auto';
+ p.style.maxHeight=Math.max(240,(window.innerHeight-r.bottom-16))+'px';
 }
 window.closeAddBiz=function(){ document.querySelectorAll('.addbiz-pop').forEach(p=>p.remove()); };
 document.addEventListener('click',e=>{ if(!e.target.closest('.addbiz-wrap') && !e.target.closest('.addbiz-pop')) closeAddBiz(); });
@@ -1067,6 +1300,8 @@ window.submitReminder=function(){ closeOverlay('reminderModal2'); showToast('Rem
 
 // ---------- boot: rebind + re-render with new logic ----------
 if(map){ map.off('click'); map.on('click', handleDropPinClick); }
+try{ var _st=JSON.parse(localStorage.getItem(STORAGE_KEY)||'{}'); if(_st && _st.sec) window.__secCollapsed=_st.sec; }catch(e){}
+if(window.applySectionState) window.applySectionState();
 renderChips(); renderMarkers();
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ ['leadCardModal','createDealModal','createTaskModal','reminderModal2','jobCardModal'].forEach(closeOverlay); } });
 })();
@@ -1193,6 +1428,7 @@ sub("      notes: Object.fromEntries(prospectNotes),\n"
     "    }));",
     "      notes: Object.fromEntries(prospectNotes),\n"
     "      areas: (window.__atlasAreas || []),\n"
+    "      sec: (window.__secCollapsed || {}),\n"
     "    }));",
     1, "persist-areas")
 
@@ -1345,11 +1581,9 @@ AREAS = r'''
     return ((s + t).toUpperCase()) || (email[0]||'—').toUpperCase();
   }
   window.renderAreasSection = function(wrap){
-    wrap.appendChild(Object.assign(document.createElement('div'), { className:'chip-divider' }));
     var g = document.createElement('div'); g.className = 'area-group';
     var head = document.createElement('div'); head.className = 'area-head';
-    head.innerHTML = '<span class="group-label">Areas</span>' +
-      '<button class="area-draw-btn" onclick="atlasStartDraw()" title="Draw a new area">◇ Draw area</button>';
+    head.innerHTML = '<button class="area-draw-btn" onclick="atlasStartDraw()" title="Draw a new area">◇ Draw area</button>';
     g.appendChild(head);
     if (!atlasAreas.length){
       var e = document.createElement('div'); e.className = 'area-empty';
