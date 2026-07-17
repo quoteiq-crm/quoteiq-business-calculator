@@ -1821,27 +1821,7 @@ a{ color:inherit; }
   conic-gradient(from 0deg,#ef5a13,#f6a723,#12b981,#06b6d4,#2f6bff,#7c5cf0,#ec4899,#ef5a13); }
 .area-color-custom input[type="color"]{ opacity:0; width:200%; height:200%; border:none; padding:0; cursor:pointer; }
 
-/* ===== Collapsible panel sections (My Map / Areas / Prospects) ===== */
-.tier-row{ display:flex; gap:6px; flex-wrap:wrap; margin-bottom:11px; }
-.psec{ border:1px solid var(--line); border-radius:var(--r-md); background:var(--surface-1); margin-bottom:8px; overflow:hidden; transition:border-color .15s, box-shadow .15s; }
-.psec.open{ border-color:var(--line-2); box-shadow:var(--sh-1); }
-.psec-head{ width:100%; display:flex; align-items:center; gap:10px; padding:11px 12px; background:none; border:none; cursor:pointer; font-family:inherit; text-align:left; }
-.psec-head:hover{ background:var(--surface-2); }
-.psec-ico{ width:20px; height:20px; color:var(--ink-3); flex:none; display:flex; align-items:center; justify-content:center; }
-.psec-ico svg{ width:18px; height:18px; }
-.psec.open .psec-ico{ color:var(--gold-lo); }
-.psec-title{ font-size:13px; font-weight:800; color:var(--ink); letter-spacing:-.01em; }
-.psec-sum{ margin-left:auto; font-size:11px; font-weight:600; color:var(--ink-3); font-family:var(--mono); }
-.psec-chev{ width:16px; height:16px; color:var(--ink-4); flex:none; display:flex; align-items:center; justify-content:center; transition:transform .18s; }
-.psec-chev svg{ width:15px; height:15px; }
-.psec.open .psec-chev{ transform:rotate(90deg); }
-.psec-body{ display:none; padding:4px 12px 13px; }
-.psec.open .psec-body{ display:block; animation:secOpen .18s ease both; }
-@keyframes secOpen{ from{ opacity:0; transform:translateY(-4px); } to{ opacity:1; transform:none; } }
-.layer-col{ display:flex; flex-direction:column; gap:9px; }
-.area-hint{ font-size:11px; font-weight:600; color:var(--ink-4); }
-
-/* ===== Customer detail — read-only QuoteIQ contact essentials ===== */
+/* ===== Customer detail — QuoteIQ contact essentials ===== */
 .cust-head{ display:flex; align-items:center; gap:13px; padding:16px 20px; background:linear-gradient(135deg,#0d1220,#1e2a4a); color:#fff; }
 .cust-ava{ width:44px; height:44px; border-radius:50%; background:#2f74f0; display:flex; align-items:center; justify-content:center; flex:none; box-shadow:0 3px 12px rgba(47,116,240,.4); }
 .cust-ava svg{ width:22px; height:22px; color:#fff; }
@@ -1863,9 +1843,15 @@ a{ color:inherit; }
 .cust-stat{ border:1px solid var(--line); border-radius:var(--r-sm); padding:10px 11px; background:var(--surface-2); }
 .cust-stat span{ display:block; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-4); }
 .cust-stat b{ display:block; margin-top:3px; font-size:16px; font-weight:800; color:var(--ink); letter-spacing:-.02em; }
-.cust-ro{ display:flex; align-items:center; gap:8px; font-size:11.5px; color:var(--ink-3); background:var(--surface-2); border:1px dashed var(--line-2); border-radius:var(--r-sm); padding:9px 11px; }
-.cust-ro svg{ width:14px; height:14px; flex:none; color:var(--ink-4); }
 .cust-nearby h4{ margin:2px 0 8px; font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-4); }
+.cust-do{ display:flex; flex-direction:column; gap:8px; margin-top:2px; }
+.cust-open{ width:100%; display:inline-flex; align-items:center; justify-content:center; gap:8px; }
+.cust-open svg{ width:16px; height:16px; }
+.cust-create{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+.cust-create button{ display:flex; flex-direction:column; align-items:center; gap:5px; padding:11px 6px; border-radius:var(--r-sm);
+  border:1px solid var(--line-2); background:var(--surface-1); color:var(--ink-2); font-size:11.5px; font-weight:700; font-family:inherit; cursor:pointer; transition:.14s; }
+.cust-create button:hover{ border-color:var(--gold); color:var(--gold-lo); background:var(--gold-tint); }
+.cust-create button svg{ width:17px; height:17px; }
 </style>
 <script>/* @preserve
  * Leaflet 1.9.4, a JS library for interactive maps. https://leafletjs.com
@@ -3650,7 +3636,6 @@ function pickPullBatch(cat){
 // §5 check balance first; never partially unlock; deduct then "fetch".
 function handleCategoryChipClick(name, chipEl){
   if (pullingCategories.has(name)) return;
-  window.__openSec = 'prospects';                                 // auto-open the Prospects section
   if (!unlockedCategories.has(name)){                              // not yet owned
     if (atlasCredits < PULL_PRICE){ creditFail(); return; }        // §5 not-enough-credits
     var batch = pickPullBatch(name);
@@ -3681,7 +3666,6 @@ function atlasSweepPrice(){ return Math.min(400, PULL_PRICE * atlasLockedCategor
 function fullCitySweep(){
   var locked = atlasLockedCategories();
   if (locked.length === 0){ showToast('All categories already pulled'); return; }
-  window.__openSec = 'prospects';
   var price = Math.min(400, PULL_PRICE * locked.length);
   if (atlasCredits < price){ creditFail(); return; }          // §5 not-enough-credits, checked first
   atlasCredits -= price; updateCreditsChip();
@@ -3778,7 +3762,6 @@ window.jobTab=function(el,name){
 };
 window.openJobCard=function(i){
  const j=JOBS[i]; if(!j) return; window.__jobIdx=i;
- if(typeof openPanelSection==='function') openPanelSection('mymap');
  const nav='https://www.google.com/maps/dir/?api=1&destination='+j.lat+','+j.lng;
  const st=j.status||'Scheduled'; const sc=st==='Paid'?'paid':(st==='In Progress'?'prog':'sched');
  const flag='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>';
@@ -3821,55 +3804,28 @@ renderMarkers=function(){ _origRenderMarkers(); renderJobs(); };
 window.openOverlay=function(id){ const el=document.getElementById(id); if(el) el.classList.add('show'); };
 window.closeOverlay=function(id){ const el=document.getElementById(id); if(el) el.classList.remove('show'); };
 
-// ---------- Section 2: collapsible My Map / Areas / Prospects sections ----------
-const SEC_CHEV='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="9 18 15 12 9 6"/></svg>';
-const SEC_ICO={
- mymap:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 7-8 13-8 13s-8-6-8-13a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></svg>',
- areas:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 3 21 8.5 21 15.5 12 21 3 15.5 3 8.5"/></svg>',
- prospects:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V8l7-5 7 5v13M9 21v-5h6v5"/></svg>'
-};
-if(typeof window.__openSec==='undefined') window.__openSec=null;  // all sections minimized on entry
-function panelSec(key,title,summary,bodyNode){
- const sec=document.createElement('div'); sec.className='psec'+(window.__openSec===key?' open':''); sec.setAttribute('data-sec',key);
- const head=document.createElement('button'); head.type='button'; head.className='psec-head';
- head.innerHTML='<span class="psec-ico">'+SEC_ICO[key]+'</span><span class="psec-title">'+title+'</span><span class="psec-sum">'+summary+'</span><span class="psec-chev">'+SEC_CHEV+'</span>';
- head.onclick=()=>togglePanelSection(key);
- const body=document.createElement('div'); body.className='psec-body';
- if(bodyNode) body.appendChild(bodyNode);
- sec.appendChild(head); sec.appendChild(body); return sec;
-}
-window.togglePanelSection=function(key){
- window.__openSec=(window.__openSec===key)?null:key;   // accordion: one open at a time
- document.querySelectorAll('#filterChips .psec').forEach(s=>s.classList.toggle('open', s.getAttribute('data-sec')===window.__openSec));
-};
-window.openPanelSection=function(key){ window.__openSec=key; if(typeof renderChips==='function') renderChips(); };
+// ---------- Section 2: compact Prospects panel ----------
 renderChips=function(){
  const wrap=document.getElementById('filterChips'); if(!wrap) return; wrap.innerHTML='';
- // tier filter row — always visible
- const tiers=document.createElement('div'); tiers.className='tier-row';
  [{key:'all',label:'All',klass:''},{key:'high',label:'Excellent',klass:'tier-high'},{key:'medium',label:'Strong',klass:'tier-med'},{key:'low',label:'Skip',klass:'tier-low'}].forEach(t=>{
   const chip=document.createElement('button'); chip.className='chip '+t.klass+' '+(activeTier===t.key?'active':'');
   chip.textContent=t.label; chip.onclick=()=>{ activeTier=t.key; renderChips(); renderMarkers(); renderList(); };
-  tiers.appendChild(chip);
+  wrap.appendChild(chip);
  });
- wrap.appendChild(tiers);
- // MY MAP section
- const mm=document.createElement('div'); mm.className='layer-col';
- mm.innerHTML='<label class="layer-toggle"><input type="checkbox" id="tgCustomers" '+(showCustomers?'checked':'')+'/> Customers</label>'+
+ wrap.appendChild(Object.assign(document.createElement('div'),{className:'chip-divider'}));
+ const myMap=document.createElement('span'); myMap.className='layer-group';
+ myMap.innerHTML='<span class="group-label">My Map</span>'+
+  '<label class="layer-toggle"><input type="checkbox" id="tgCustomers" '+(showCustomers?'checked':'')+'/> Customers</label>'+
   '<label class="layer-toggle"><input type="checkbox" id="tgJobs" '+(window.showJobs?'checked':'')+'/> Active Jobs</label>'+
   '<label class="layer-toggle"><input type="checkbox" id="tgKnocks" '+(showDoorKnocks?'checked':'')+'/> Door Knocks</label>';
- mm.querySelector('#tgCustomers').addEventListener('change',e=>{ showCustomers=e.target.checked; const t=document.getElementById('showCustomersToggle'); if(t)t.checked=showCustomers; renderMarkers(); renderChips(); });
- mm.querySelector('#tgJobs').addEventListener('change',e=>{ window.showJobs=e.target.checked; renderJobs(); renderChips(); });
- mm.querySelector('#tgKnocks').addEventListener('change',e=>{ showDoorKnocks=e.target.checked; renderDoorKnocks(); renderChips(); });
- const onC=[showCustomers,window.showJobs,showDoorKnocks].filter(Boolean).length;
- wrap.appendChild(panelSec('mymap','My Map', onC+' of 3 shown', mm));
- // AREAS section
- const ab=document.createElement('div'); if(window.renderAreasSection) window.renderAreasSection(ab);
- const nA=(window.__atlasAreas||[]).length;
- wrap.appendChild(panelSec('areas','Areas', nA? (nA+' area'+(nA>1?'s':'')) : 'None yet', ab));
- // PROSPECTS section
- const pb=document.createElement('div');
- if(window.renderPullingChip) window.renderPullingChip(pb);
+ wrap.appendChild(myMap);
+ myMap.querySelector('#tgCustomers').addEventListener('change',e=>{ showCustomers=e.target.checked; const t=document.getElementById('showCustomersToggle'); if(t)t.checked=showCustomers; renderMarkers(); });
+ myMap.querySelector('#tgJobs').addEventListener('change',e=>{ window.showJobs=e.target.checked; renderJobs(); });
+ myMap.querySelector('#tgKnocks').addEventListener('change',e=>{ showDoorKnocks=e.target.checked; renderDoorKnocks(); });
+ if(window.renderAreasSection) window.renderAreasSection(wrap);
+ wrap.appendChild(Object.assign(document.createElement('div'),{className:'chip-divider'}));
+ const lbl=document.createElement('span'); lbl.className='group-label'; lbl.textContent='Prospects'; wrap.appendChild(lbl);
+ if(window.renderPullingChip) window.renderPullingChip(wrap);
  const row=document.createElement('span'); row.className='saved-row';
  const owned=Object.keys(CATEGORIES).filter(n=>unlockedCategories.has(n));
  if(!owned.length){ const e=document.createElement('span'); e.className='addbiz-empty'; e.textContent='No businesses pulled yet.'; row.appendChild(e); }
@@ -3883,8 +3839,7 @@ renderChips=function(){
  const btn=document.createElement('button'); btn.className='addbiz-btn'; btn.innerHTML=ICONS.plus+' Add businesses';
  btn.onclick=(ev)=>{ ev.stopPropagation(); const wasOpen=document.getElementById('addbizPop'); closeAddBiz(); if(wasOpen) return; const p=buildAddBizPop(); p.id='addbizPop'; document.body.appendChild(p); positionAddBiz(p,btn); p.classList.add('show'); };
  awrap.appendChild(btn); row.appendChild(awrap);
- pb.appendChild(row);
- wrap.appendChild(panelSec('prospects','Prospects', owned.length? (owned.length+' saved') : 'None pulled', pb));
+ wrap.appendChild(row);
 };
 function buildAddBizPop(){
  const pop=document.createElement('div'); pop.className='addbiz-pop';
@@ -3931,7 +3886,6 @@ window.togglePanelCollapse=function(){
 function knockPhone(k){ if(!k.phone){ const s=Math.abs(String(k.name||'').split('').reduce((a,c)=>a+c.charCodeAt(0),0)); k.phone='(912) 555-0'+String(100+(s%900)).slice(-3); } return k.phone; }
 window.openLeadCard=function(ctx){
  const k=DOOR_KNOCKS[ctx.i]; if(!k) return;
- if(typeof openPanelSection==='function') openPanelSection('mymap');
  const phone=knockPhone(k); const digits=phone.replace(/\D/g,'');
  window.__leadCtx={name:k.name, phone, lat:k.lat, lng:k.lng};
  const opts=KNOCK_STATUSES.map(s=>'<option value="'+escapeHtml(s.key)+'" '+(s.key===k.status?'selected':'')+'>'+escapeHtml(s.key)+'</option>').join('');
@@ -4163,7 +4117,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ ['leadCardModal',
   // ---------- activate / deactivate ----------
   function reflow(){ if (typeof renderChips==='function') renderChips(); if (typeof renderMarkers==='function') renderMarkers(); if (typeof renderList==='function') renderList(); }
   function activateArea(id){
-    activeAreaId = id; window.__areaActive = true; window.__openSec = 'areas';
+    activeAreaId = id; window.__areaActive = true;
     var a = activeArea();
     renderAreaPolys();
     if (a){ try { map.fitBounds(L.polygon(a.vertices).getBounds(), { padding:[40,40], maxZoom:16 }); } catch(e){} }
@@ -4197,9 +4151,10 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ ['leadCardModal',
     return ((s + t).toUpperCase()) || (email[0]||'—').toUpperCase();
   }
   window.renderAreasSection = function(wrap){
+    wrap.appendChild(Object.assign(document.createElement('div'), { className:'chip-divider' }));
     var g = document.createElement('div'); g.className = 'area-group';
     var head = document.createElement('div'); head.className = 'area-head';
-    head.innerHTML = '<span class="area-hint">Scope pulls to a zone</span>' +
+    head.innerHTML = '<span class="group-label">Areas</span>' +
       '<button class="area-draw-btn" onclick="atlasStartDraw()" title="Draw a new area">◇ Draw area</button>';
     g.appendChild(head);
     if (!atlasAreas.length){
@@ -4331,7 +4286,6 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ ['leadCardModal',
   window.atlasStartDraw = function(){
     if (drawing) return;
     if (window.dropPinMode && typeof toggleDropPinMode === 'function') toggleDropPinMode(false);
-    if (typeof openPanelSection === 'function') openPanelSection('areas');
     drawing = true; window.__drawing = true; drawVerts = [];
     map.getContainer().classList.add('drawing');
     if (map.doubleClickZoom) map.doubleClickZoom.disable();
@@ -4445,8 +4399,16 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ ['leadCardModal',
     mail:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 6-10 7L2 6"/></svg>',
     pin:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 7-8 13-8 13s-8-6-8-13a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></svg>',
     src:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>',
-    lock:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>'
+    ext:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>',
+    doc:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>',
+    receipt:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 2v20l2.5-1.5L9 22l3-1.5L15 22l2.5-1.5L20 22V2l-2.5 1.5L15 2l-3 1.5L9 2 6.5 3.5z"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/></svg>',
+    cal:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>'
   };
+  function curName(){ return (window.__leadCtx||{}).name || 'this customer'; }
+  window.custOpen=function(){ showToast('Opening ' + curName() + ' in QuoteIQ Contacts →'); };
+  window.custEstimate=function(){ showToast('New estimate for ' + curName() + ' — opens QuoteIQ Estimates →'); };
+  window.custInvoice=function(){ showToast('New invoice for ' + curName() + ' — opens QuoteIQ Invoices →'); };
+  window.custSchedule=function(){ showToast('Schedule a visit for ' + curName() + ' — opens QuoteIQ Calendar →'); };
   function hashN(s){ return Math.abs(String(s).split('').reduce(function(a,c){ return a + c.charCodeAt(0)*31; }, 7)); }
   function slugCo(name){ return String(name).toLowerCase().replace(/&/g,'and').replace(/[^a-z0-9]+/g,'').slice(0,24) || 'customer'; }
   var STREETS=['E Bay St','Abercorn St','Bull St','Whitaker St','Drayton St','Habersham St','Victory Dr','Montgomery St','W Broughton St','Bay St'];
@@ -4504,7 +4466,6 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ ['leadCardModal',
           '<div class="cust-stat"><span>Visits / yr</span><b>' + (c.visits_per_year||'&mdash;') + '</b></div>' +
           '<div class="cust-stat"><span>Last visit</span><b>' + esc(c.last_service||'&mdash;') + '</b></div>' +
         '</div>' +
-        '<div class="cust-ro">' + IC.lock + ' Read-only &mdash; synced from this customer&#39;s QuoteIQ contact.</div>' +
         (nearby.length ?
           '<div class="cust-nearby"><h4>' + nearby.length + ' more stop' + (nearby.length>1?'s':'') + ' nearby</h4>' +
           nearby.map(function(o){ var cat=CATEGORIES[o.p.category];
@@ -4514,11 +4475,17 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ ['leadCardModal',
               '<div class="pcard-body" style="padding-right:50px;"><span class="pcard-cat" style="background:' + cat.color + '1a;color:' + cat.color + '">' + esc(o.p.category) + '</span>' +
               '<h4 class="pcard-name">' + esc(o.p.name) + '</h4><p class="pcard-addr"><strong>' + o.dist.toFixed(1) + ' mi</strong> · ' + esc(o.p.street||'') + '</p></div></div>';
           }).join('') + '</div>' : '') +
-        '<button class="btn btn-secondary" style="width:100%;margin-top:6px;" onclick="closeDetail()">&larr; Back to all prospects</button>' +
+        '<div class="cust-do">' +
+          '<button class="btn btn-primary cust-open" onclick="custOpen()">' + IC.ext + ' Open Contact</button>' +
+          '<div class="cust-create">' +
+            '<button onclick="custEstimate()">' + IC.doc + ' Estimate</button>' +
+            '<button onclick="custInvoice()">' + IC.receipt + ' Invoice</button>' +
+            '<button onclick="custSchedule()">' + IC.cal + ' Schedule</button>' +
+          '</div>' +
+        '</div>' +
       '</div>';
     document.getElementById('detailContent').innerHTML = html;
     var lp=document.getElementById('leftPanel'); if(lp) lp.scrollTop=0;
-    window.__openSec='mymap';
   };
 })();
 </script>
