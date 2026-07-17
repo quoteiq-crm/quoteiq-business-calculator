@@ -1,0 +1,140 @@
+# Atlas — 2026 UI Redesign ("Daylight Command", light/white theme)
+
+A full visual redesign of the **Atlas** prospecting map (`atlas-demo.html`). The old
+theme (1px-bordered cards, flat gray, and a cramped top bar whose filter chips wrapped
+into ~4 messy rows) was replaced with a bright, premium **light/white** interface, paired
+with a light CARTO Positron basemap so the map and chrome read as one clean surface.
+
+**Nothing about the product logic changed.** All behavior, data, scoring, IQ-Credits
+metering, door-knock statuses, route builder, AI intro, CSV import, and localStorage
+persistence are byte-for-byte the same. This was a chrome + CSS + marker-styling pass,
+not a rewrite.
+
+## What changed
+
+**Look & feel**
+- Bright white surfaces on a soft warm-white field (a faint gold/green ambient wash).
+- Depth from **soft layered shadows and generous whitespace**, not gray hairlines.
+- Frosted-white glass for floating map controls, popups, modals, toast, and the pipeline
+  panel.
+- Tight, tabular display typography; large expressive data numbers.
+- A clear color language: **gold = "act now"**, **green = "yours / secured"**, the 11
+  category hues carry identity on thumbs, chips, pins, and the score arc.
+- Light **CARTO Positron** basemap (was dark), so pins and chrome sit on a clean map.
+
+**Signature elements**
+- **Radial Route-Match score gauge** — a conic-gradient ring that animates 0→score on
+  open (via a registered `@property --val`), with a leading tick and a counting number.
+- **Score breakdown as an instrument readout** — the three weighted factors
+  (proximity / density / category fit) render as animated fill-bars.
+- **Map pins tuned for a light basemap** — white pills with a category-colored border and
+  icon; high-opportunity pins pulse; customers are white discs with a green ring; clusters
+  are dark ink discs that pop on the light map.
+- **Credits "reactor" chip** — pulses each time the balance changes (spend feedback).
+
+**QuoteIQ desktop shell**
+- Atlas is wrapped in the real QuoteIQ desktop chrome: a **consolidated icon rail**
+  (default collapsed; the hamburger expands it to the full labeled menu — ELITE, company,
+  Add Company, Create, AI AutoPilot, Dashboard, CRM + sub-items, Tools, Inbox, Phone,
+  Employees, Marketing, Academy, Log out, Contact Support) and the **universal header**
+  (Home · Calendar · Jobs · Estimates · Invoices · **Map** (active) · Cam, plus the live
+  IQ-credits pill, a 99+ notifications bell, and the account button). Atlas is the Map
+  section; the credits chip lives in the header and stays fully functional. Leaflet
+  re-sizes when the rail toggles.
+
+**Pull behaves per the operating spec**
+- The demo's Pull now honors the front-end-observable rules of `ATLASPULLSPEC`:
+  viewport-bounded + 60-cap pulls, a free "All" view of already-pulled categories, a
+  `+25 IQC` bounded load-more, a **Full City Sweep** (all 11 categories in view, 400 IQC),
+  balance-checked metering with no partial unlock, and "locations only" (phone/website
+  withheld until Reveal/Save). Backend-only pieces are documented in
+  [`PULL-SPEC-COMPLIANCE.md`](./PULL-SPEC-COMPLIANCE.md).
+
+**In-app guide**
+- A floating **"?"** button (bottom-left of the map) opens a **field-guide** modal — a
+  two-pane walkthrough (TOC + rich sections) covering what Atlas is, IQ Credits and their
+  costs, pulling prospects, the Route Match Score math, a full map key, working a lead,
+  door-knock statuses, filtering/sorting, and routes/pipeline. Closes on ✕, backdrop
+  click, or Esc; the nav highlights the section you're reading.
+
+**Customer marker**
+- "Your customers" now use a **person silhouette** (kept the green ring) instead of a
+  checkmark — on the map pin, the legend, and the customer detail header.
+
+**Layout fixes**
+- The filter chips that used to wrap into ~4 messy rows in the top bar were relocated
+  into a proper **"Atlas · Prospects" control deck** at the top of the left panel. The
+  top bar is now a single clean row.
+- The control deck + legend hide while a detail view is open for a focused reading view.
+
+**Small correctness fixes made along the way**
+- `Banks` used `icon:'building'`, which doesn't exist in the icon set (pins/thumbs
+  rendered empty). Corrected to `icon:'bank'`.
+- Retuned the category palette for the light basemap.
+- Removed a leftover light panel background inside the customer detail view.
+
+## How it's built
+
+The redesign is applied deterministically so the diff is reviewable and reproducible:
+
+```
+design/
+  atlas-demo.orig.html   # pristine reference demo (the "before")
+  atlas-2026.css         # the new design system (edit this to tweak the look)
+  build.py               # swaps the 3 legacy <style> blocks, structural edits, light basemap
+atlas-demo.html          # the shipped, self-contained result (the "after")
+```
+
+Rebuild after editing the CSS or the assembler:
+
+```bash
+python3 design/build.py        # regenerates ./atlas-demo.html
+```
+
+`atlas-demo.html` is fully self-contained (Leaflet + data are inlined) — just open it
+in a browser. It loads Inter and the CARTO light basemap over the network, exactly as
+the original did.
+
+## Redesign pass — entity model, compact panel, lead card, deal/task/reminder (Sections 1–7)
+
+- **Map color model:** customers = **blue** pins (person icon + hover name-tag), active jobs =
+  **green** briefcase pins (new demo layer + toggle), prospect heat = **orange / amber / gray**
+  (deep orange for high-opp so it stands out from the gold CTAs). Door-knock status colors
+  unchanged. `MY MAP` split into **Customers / Active Jobs / Door Knocks** toggles; legend now
+  Customers · Active Jobs · High opp · Medium · Lower.
+- **Compact Prospects panel:** the 11-category grid is gone — default shows only pulled
+  categories as **Saved** chips plus a **＋ Add businesses** button that opens a popover with the
+  full 11-category picker (50 IQC each) + **Full City Sweep (400 IQC)**. Pull-once / Saved /
+  never-expire behavior preserved.
+- **Collapsible panel:** the old "Live map" label is now the collapse toggle; collapsed hides the
+  panel and shows a floating **Live Map** pill at the top-left of the map (~180ms animation).
+- **Lead detail card** (replaces the radial) on door-knock click: Change Status, then Call · Text ·
+  Navigate · Create Task · Create Deal · Reminder, a note, and **Delete pin**. No Timer / Check-In /
+  separate View-Details. Saved-contact/prospect detail gets the same Text/Navigate/Task/Deal/Reminder
+  actions (non-destructive).
+- **Create Deal modal:** Pipeline dropdown + dependent Stage dropdown (Sales vs Service pipelines have
+  different stages), deal name/amount/start/priority/note, pre-filled Attach Customer, estimate + create-new,
+  employee. **Create Task / Reminder** modals match the provided references.
+- **Quick fixes:** removed the QuoteIQ wordmark + "New" badge; customer-pin hover name tags; dropped/manual
+  pins are deletable from the lead card.
+
+Verified in a local server (`python3 -m http.server`) headless — 23/23 checks pass, no console errors.
+
+## Feature + fix pass — Locate, dynamic sweep, saved-pin/knock polish, **Areas**
+
+- **Locate control** replaces "What's near me?" — a round crosshair button (bottom-right) that
+  recenters on GPS, or toasts "Location unavailable" and returns to the starting view on denial.
+- **Topbar trimmed:** the city selector (and its CSV-import entry + modal) and the Route Builder
+  entry point are gone (the Route Builder modal stays dormant in the file).
+- **Dynamic Full City Sweep price:** `min(400, 50 × still-locked categories)`, shown live on the
+  button; disables to "All categories pulled" once you own all 11. Owned categories never re-charge.
+- **Saved-to-Contacts pins** now get a **navy ring + bookmark badge** (green is reserved for Active
+  Jobs). **Door-knock pins** get a hover name+status tag matching the customer tag. Door-knock copy
+  says "Knock".
+- **Areas** — draw a named polygon (◇ Draw area) assigned to an employee. Saved Areas render as a
+  dashed violet shape, list in an **AREAS** panel row (assignee initials, coverage % bar, prospect/
+  knock counts, Edit/Zoom/Delete), and **activate** as a pull boundary ("Pulling within: {name} ✕"):
+  while active, `pickPullBatch` scopes by point-in-polygon and the list/count/pins show only what's
+  inside. Coverage = worked ÷ (in-polygon prospects + knocks). Areas persist across reload.
+
+Verified headless — 36/36 Section-A/B/C checks pass, no console errors.
