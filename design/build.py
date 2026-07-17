@@ -562,6 +562,7 @@ function pickPullBatch(cat){
 // §5 check balance first; never partially unlock; deduct then "fetch".
 function handleCategoryChipClick(name, chipEl){
   if (pullingCategories.has(name)) return;
+  window.__openSec = 'prospects';                                 // auto-open the Prospects section
   if (!unlockedCategories.has(name)){                              // not yet owned
     if (atlasCredits < PULL_PRICE){ creditFail(); return; }        // §5 not-enough-credits
     var batch = pickPullBatch(name);
@@ -592,6 +593,7 @@ function atlasSweepPrice(){ return Math.min(400, PULL_PRICE * atlasLockedCategor
 function fullCitySweep(){
   var locked = atlasLockedCategories();
   if (locked.length === 0){ showToast('All categories already pulled'); return; }
+  window.__openSec = 'prospects';
   var price = Math.min(400, PULL_PRICE * locked.length);
   if (atlasCredits < price){ creditFail(); return; }          // §5 not-enough-credits, checked first
   atlasCredits -= price; updateCreditsChip();
@@ -797,6 +799,7 @@ window.jobTab=function(el,name){
 };
 window.openJobCard=function(i){
  const j=JOBS[i]; if(!j) return; window.__jobIdx=i;
+ if(typeof openPanelSection==='function') openPanelSection('mymap');
  const nav='https://www.google.com/maps/dir/?api=1&destination='+j.lat+','+j.lng;
  const st=j.status||'Scheduled'; const sc=st==='Paid'?'paid':(st==='In Progress'?'prog':'sched');
  const flag='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>';
@@ -839,28 +842,55 @@ renderMarkers=function(){ _origRenderMarkers(); renderJobs(); };
 window.openOverlay=function(id){ const el=document.getElementById(id); if(el) el.classList.add('show'); };
 window.closeOverlay=function(id){ const el=document.getElementById(id); if(el) el.classList.remove('show'); };
 
-// ---------- Section 2: compact Prospects panel ----------
+// ---------- Section 2: collapsible My Map / Areas / Prospects sections ----------
+const SEC_CHEV='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="9 18 15 12 9 6"/></svg>';
+const SEC_ICO={
+ mymap:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 7-8 13-8 13s-8-6-8-13a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></svg>',
+ areas:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 3 21 8.5 21 15.5 12 21 3 15.5 3 8.5"/></svg>',
+ prospects:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V8l7-5 7 5v13M9 21v-5h6v5"/></svg>'
+};
+if(typeof window.__openSec==='undefined') window.__openSec=null;  // all sections minimized on entry
+function panelSec(key,title,summary,bodyNode){
+ const sec=document.createElement('div'); sec.className='psec'+(window.__openSec===key?' open':''); sec.setAttribute('data-sec',key);
+ const head=document.createElement('button'); head.type='button'; head.className='psec-head';
+ head.innerHTML='<span class="psec-ico">'+SEC_ICO[key]+'</span><span class="psec-title">'+title+'</span><span class="psec-sum">'+summary+'</span><span class="psec-chev">'+SEC_CHEV+'</span>';
+ head.onclick=()=>togglePanelSection(key);
+ const body=document.createElement('div'); body.className='psec-body';
+ if(bodyNode) body.appendChild(bodyNode);
+ sec.appendChild(head); sec.appendChild(body); return sec;
+}
+window.togglePanelSection=function(key){
+ window.__openSec=(window.__openSec===key)?null:key;   // accordion: one open at a time
+ document.querySelectorAll('#filterChips .psec').forEach(s=>s.classList.toggle('open', s.getAttribute('data-sec')===window.__openSec));
+};
+window.openPanelSection=function(key){ window.__openSec=key; if(typeof renderChips==='function') renderChips(); };
 renderChips=function(){
  const wrap=document.getElementById('filterChips'); if(!wrap) return; wrap.innerHTML='';
+ // tier filter row — always visible
+ const tiers=document.createElement('div'); tiers.className='tier-row';
  [{key:'all',label:'All',klass:''},{key:'high',label:'Excellent',klass:'tier-high'},{key:'medium',label:'Strong',klass:'tier-med'},{key:'low',label:'Skip',klass:'tier-low'}].forEach(t=>{
   const chip=document.createElement('button'); chip.className='chip '+t.klass+' '+(activeTier===t.key?'active':'');
   chip.textContent=t.label; chip.onclick=()=>{ activeTier=t.key; renderChips(); renderMarkers(); renderList(); };
-  wrap.appendChild(chip);
+  tiers.appendChild(chip);
  });
- wrap.appendChild(Object.assign(document.createElement('div'),{className:'chip-divider'}));
- const myMap=document.createElement('span'); myMap.className='layer-group';
- myMap.innerHTML='<span class="group-label">My Map</span>'+
-  '<label class="layer-toggle"><input type="checkbox" id="tgCustomers" '+(showCustomers?'checked':'')+'/> Customers</label>'+
+ wrap.appendChild(tiers);
+ // MY MAP section
+ const mm=document.createElement('div'); mm.className='layer-col';
+ mm.innerHTML='<label class="layer-toggle"><input type="checkbox" id="tgCustomers" '+(showCustomers?'checked':'')+'/> Customers</label>'+
   '<label class="layer-toggle"><input type="checkbox" id="tgJobs" '+(window.showJobs?'checked':'')+'/> Active Jobs</label>'+
   '<label class="layer-toggle"><input type="checkbox" id="tgKnocks" '+(showDoorKnocks?'checked':'')+'/> Door Knocks</label>';
- wrap.appendChild(myMap);
- myMap.querySelector('#tgCustomers').addEventListener('change',e=>{ showCustomers=e.target.checked; const t=document.getElementById('showCustomersToggle'); if(t)t.checked=showCustomers; renderMarkers(); });
- myMap.querySelector('#tgJobs').addEventListener('change',e=>{ window.showJobs=e.target.checked; renderJobs(); });
- myMap.querySelector('#tgKnocks').addEventListener('change',e=>{ showDoorKnocks=e.target.checked; renderDoorKnocks(); });
- if(window.renderAreasSection) window.renderAreasSection(wrap);
- wrap.appendChild(Object.assign(document.createElement('div'),{className:'chip-divider'}));
- const lbl=document.createElement('span'); lbl.className='group-label'; lbl.textContent='Prospects'; wrap.appendChild(lbl);
- if(window.renderPullingChip) window.renderPullingChip(wrap);
+ mm.querySelector('#tgCustomers').addEventListener('change',e=>{ showCustomers=e.target.checked; const t=document.getElementById('showCustomersToggle'); if(t)t.checked=showCustomers; renderMarkers(); renderChips(); });
+ mm.querySelector('#tgJobs').addEventListener('change',e=>{ window.showJobs=e.target.checked; renderJobs(); renderChips(); });
+ mm.querySelector('#tgKnocks').addEventListener('change',e=>{ showDoorKnocks=e.target.checked; renderDoorKnocks(); renderChips(); });
+ const onC=[showCustomers,window.showJobs,showDoorKnocks].filter(Boolean).length;
+ wrap.appendChild(panelSec('mymap','My Map', onC+' of 3 shown', mm));
+ // AREAS section
+ const ab=document.createElement('div'); if(window.renderAreasSection) window.renderAreasSection(ab);
+ const nA=(window.__atlasAreas||[]).length;
+ wrap.appendChild(panelSec('areas','Areas', nA? (nA+' area'+(nA>1?'s':'')) : 'None yet', ab));
+ // PROSPECTS section
+ const pb=document.createElement('div');
+ if(window.renderPullingChip) window.renderPullingChip(pb);
  const row=document.createElement('span'); row.className='saved-row';
  const owned=Object.keys(CATEGORIES).filter(n=>unlockedCategories.has(n));
  if(!owned.length){ const e=document.createElement('span'); e.className='addbiz-empty'; e.textContent='No businesses pulled yet.'; row.appendChild(e); }
@@ -874,7 +904,8 @@ renderChips=function(){
  const btn=document.createElement('button'); btn.className='addbiz-btn'; btn.innerHTML=ICONS.plus+' Add businesses';
  btn.onclick=(ev)=>{ ev.stopPropagation(); const wasOpen=document.getElementById('addbizPop'); closeAddBiz(); if(wasOpen) return; const p=buildAddBizPop(); p.id='addbizPop'; document.body.appendChild(p); positionAddBiz(p,btn); p.classList.add('show'); };
  awrap.appendChild(btn); row.appendChild(awrap);
- wrap.appendChild(row);
+ pb.appendChild(row);
+ wrap.appendChild(panelSec('prospects','Prospects', owned.length? (owned.length+' saved') : 'None pulled', pb));
 };
 function buildAddBizPop(){
  const pop=document.createElement('div'); pop.className='addbiz-pop';
@@ -921,6 +952,7 @@ window.togglePanelCollapse=function(){
 function knockPhone(k){ if(!k.phone){ const s=Math.abs(String(k.name||'').split('').reduce((a,c)=>a+c.charCodeAt(0),0)); k.phone='(912) 555-0'+String(100+(s%900)).slice(-3); } return k.phone; }
 window.openLeadCard=function(ctx){
  const k=DOOR_KNOCKS[ctx.i]; if(!k) return;
+ if(typeof openPanelSection==='function') openPanelSection('mymap');
  const phone=knockPhone(k); const digits=phone.replace(/\D/g,'');
  window.__leadCtx={name:k.name, phone, lat:k.lat, lng:k.lng};
  const opts=KNOCK_STATUSES.map(s=>'<option value="'+escapeHtml(s.key)+'" '+(s.key===k.status?'selected':'')+'>'+escapeHtml(s.key)+'</option>').join('');
@@ -1311,7 +1343,7 @@ AREAS = r'''
   // ---------- activate / deactivate ----------
   function reflow(){ if (typeof renderChips==='function') renderChips(); if (typeof renderMarkers==='function') renderMarkers(); if (typeof renderList==='function') renderList(); }
   function activateArea(id){
-    activeAreaId = id; window.__areaActive = true;
+    activeAreaId = id; window.__areaActive = true; window.__openSec = 'areas';
     var a = activeArea();
     renderAreaPolys();
     if (a){ try { map.fitBounds(L.polygon(a.vertices).getBounds(), { padding:[40,40], maxZoom:16 }); } catch(e){} }
@@ -1345,10 +1377,9 @@ AREAS = r'''
     return ((s + t).toUpperCase()) || (email[0]||'—').toUpperCase();
   }
   window.renderAreasSection = function(wrap){
-    wrap.appendChild(Object.assign(document.createElement('div'), { className:'chip-divider' }));
     var g = document.createElement('div'); g.className = 'area-group';
     var head = document.createElement('div'); head.className = 'area-head';
-    head.innerHTML = '<span class="group-label">Areas</span>' +
+    head.innerHTML = '<span class="area-hint">Scope pulls to a zone</span>' +
       '<button class="area-draw-btn" onclick="atlasStartDraw()" title="Draw a new area">◇ Draw area</button>';
     g.appendChild(head);
     if (!atlasAreas.length){
@@ -1480,6 +1511,7 @@ AREAS = r'''
   window.atlasStartDraw = function(){
     if (drawing) return;
     if (window.dropPinMode && typeof toggleDropPinMode === 'function') toggleDropPinMode(false);
+    if (typeof openPanelSection === 'function') openPanelSection('areas');
     drawing = true; window.__drawing = true; drawVerts = [];
     map.getContainer().classList.add('drawing');
     if (map.doubleClickZoom) map.doubleClickZoom.disable();
@@ -1583,6 +1615,99 @@ AREAS = r'''
 </script>
 '''
 sub("\n</body>", AREAS + "\n</body>", 1, "areas-block")
+
+# --- Customer detail: read-only essentials from the QuoteIQ contact (Justin's ask) ---
+CUSTCARD = r'''
+<script id="atlas-custcard">
+(function(){
+  if (typeof CUSTOMERS === 'undefined') return;
+  var IC = {
+    person:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9zm0 2.25c-3.87 0-7 2.02-7 4.5V21h14v-2.25c0-2.48-3.13-4.5-7-4.5z"/></svg>',
+    phone:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.1 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7 12.8 12.8 0 0 0 .7 2.8 2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4 12.8 12.8 0 0 0 2.8.7 2 2 0 0 1 1.7 2z"/></svg>',
+    msg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7A8.38 8.38 0 0 1 4 11.5 8.5 8.5 0 0 1 21 11.5z"/></svg>',
+    nav:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>',
+    mail:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 6-10 7L2 6"/></svg>',
+    pin:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 7-8 13-8 13s-8-6-8-13a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></svg>',
+    src:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>',
+    lock:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>'
+  };
+  function hashN(s){ return Math.abs(String(s).split('').reduce(function(a,c){ return a + c.charCodeAt(0)*31; }, 7)); }
+  function slugCo(name){ return String(name).toLowerCase().replace(/&/g,'and').replace(/[^a-z0-9]+/g,'').slice(0,24) || 'customer'; }
+  var STREETS=['E Bay St','Abercorn St','Bull St','Whitaker St','Drayton St','Habersham St','Victory Dr','Montgomery St','W Broughton St','Bay St'];
+  var SOURCES=['Google','Referral','Website','Repeat customer'];
+  function customerContact(c){
+    if (c.__contact) return c.__contact;
+    var h = hashN(c.name);
+    c.__contact = {
+      phone: '(912) ' + (200 + (h % 700)) + '-' + String(1000 + (h*7 % 9000)).slice(-4),
+      email: 'info@' + slugCo(c.name) + '.com',
+      addr: (100 + (h % 800)) + ' ' + STREETS[h % STREETS.length] + ', ' + (c.city || 'Savannah') + ', GA',
+      source: SOURCES[h % SOURCES.length]
+    };
+    return c.__contact;
+  }
+  function esc(s){ return (typeof escapeHtml==='function') ? escapeHtml(s) : String(s); }
+
+  window.selectCustomer = function(idx, flyTo){
+    var c = CUSTOMERS[idx]; if (!c) return;
+    selectedIdx = idx; selectedType = 'customer';
+    ['statsBanner','listHeader','resultsList','controlDeck','inlineLegend'].forEach(function(id){ var el=document.getElementById(id); if(el) el.classList.add('hidden'); });
+    var dv=document.getElementById('detailView'); if(dv) dv.classList.add('active');
+    if (flyTo && map) map.flyTo([c.lat, c.lng], Math.max(map.getZoom(), 14), { duration: 0.5 });
+    if (typeof renderMarkers === 'function') renderMarkers();
+    var ct = customerContact(c);
+    var digits = ct.phone.replace(/\D/g,'');
+    var nav = 'https://www.google.com/maps/dir/?api=1&destination=' + c.lat + ',' + c.lng;
+    window.__leadCtx = { name:c.name, phone:ct.phone, lat:c.lat, lng:c.lng };
+    var nearby = PROSPECTS.map(function(p,pIdx){ return { p:p, pIdx:pIdx, dist: haversineMiles(c.lat,c.lng,p.lat,p.lng) }; })
+      .filter(function(x){ return x.dist <= 2.0 && x.p._loaded; }).sort(function(a,b){ return a.dist-b.dist; }).slice(0,4);
+    var val = '$' + (c.annual_revenue/1000).toFixed(1) + 'K';
+    var html =
+      '<div class="cust-head">' +
+        '<div class="cust-ava">' + IC.person + '</div>' +
+        '<div class="cust-hbody">' +
+          '<div class="cust-tag">Your Customer · ' + esc(c.city||'') + '</div>' +
+          '<div class="cust-name">' + esc(c.name) + '</div>' +
+          '<div class="cust-sub">' + esc(c.service||'') + ' · ' + val + '/yr · Last visit ' + esc(c.last_service||'') + '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="cust-body">' +
+        '<div class="lead-actions cust-acts">' +
+          '<a class="lead-act call" href="tel:' + digits + '"><span class="la-ico">' + IC.phone + '</span>Call</a>' +
+          '<a class="lead-act text" href="sms:' + digits + '"><span class="la-ico">' + IC.msg + '</span>Text</a>' +
+          '<a class="lead-act nav" href="' + nav + '" target="_blank" rel="noopener"><span class="la-ico">' + IC.nav + '</span>Navigate</a>' +
+        '</div>' +
+        '<div class="cust-info">' +
+          '<div class="cust-row"><span class="cust-key">' + IC.phone + ' Phone</span><a href="tel:' + digits + '">' + esc(ct.phone) + '</a></div>' +
+          '<div class="cust-row"><span class="cust-key">' + IC.mail + ' Email</span><a href="mailto:' + esc(ct.email) + '">' + esc(ct.email) + '</a></div>' +
+          '<div class="cust-row"><span class="cust-key">' + IC.pin + ' Address</span><a href="' + nav + '" target="_blank" rel="noopener">' + esc(ct.addr) + '</a></div>' +
+          '<div class="cust-row"><span class="cust-key">' + IC.src + ' Lead source</span><span>' + esc(ct.source) + '</span></div>' +
+        '</div>' +
+        '<div class="cust-analytics">' +
+          '<div class="cust-stat"><span>Annual value</span><b>' + val + '</b></div>' +
+          '<div class="cust-stat"><span>Visits / yr</span><b>' + (c.visits_per_year||'&mdash;') + '</b></div>' +
+          '<div class="cust-stat"><span>Last visit</span><b>' + esc(c.last_service||'&mdash;') + '</b></div>' +
+        '</div>' +
+        '<div class="cust-ro">' + IC.lock + ' Read-only &mdash; synced from this customer&#39;s QuoteIQ contact.</div>' +
+        (nearby.length ?
+          '<div class="cust-nearby"><h4>' + nearby.length + ' more stop' + (nearby.length>1?'s':'') + ' nearby</h4>' +
+          nearby.map(function(o){ var cat=CATEGORIES[o.p.category];
+            return '<div class="prospect-card tier-' + (o.p.computed_tier||'low') + '" style="margin-bottom:8px;padding:12px;" onclick="selectProspect(' + o.pIdx + ', true)">' +
+              '<div class="opp-badge ' + (o.p.opp_tier) + '"><span class="score">' + o.p.opportunity_score + '</span></div>' +
+              '<div class="pcard-thumb" style="background:' + cat.color + ';width:44px;height:44px;flex:0 0 44px;">' + ICONS[cat.icon] + '</div>' +
+              '<div class="pcard-body" style="padding-right:50px;"><span class="pcard-cat" style="background:' + cat.color + '1a;color:' + cat.color + '">' + esc(o.p.category) + '</span>' +
+              '<h4 class="pcard-name">' + esc(o.p.name) + '</h4><p class="pcard-addr"><strong>' + o.dist.toFixed(1) + ' mi</strong> · ' + esc(o.p.street||'') + '</p></div></div>';
+          }).join('') + '</div>' : '') +
+        '<button class="btn btn-secondary" style="width:100%;margin-top:6px;" onclick="closeDetail()">&larr; Back to all prospects</button>' +
+      '</div>';
+    document.getElementById('detailContent').innerHTML = html;
+    var lp=document.getElementById('leftPanel'); if(lp) lp.scrollTop=0;
+    window.__openSec='mymap';
+  };
+})();
+</script>
+'''
+sub("\n</body>", CUSTCARD + "\n</body>", 1, "custcard-block")
 
 OUT.write_text(html)
 print(f"built -> {OUT}  ({len(html)} bytes)")

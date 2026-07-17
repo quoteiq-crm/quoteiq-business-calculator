@@ -1150,3 +1150,49 @@ a{ color:inherit; }
   border:2px dashed var(--line-2); display:inline-flex; align-items:center; justify-content:center; background:
   conic-gradient(from 0deg,#ef5a13,#f6a723,#12b981,#06b6d4,#2f6bff,#7c5cf0,#ec4899,#ef5a13); }
 .area-color-custom input[type="color"]{ opacity:0; width:200%; height:200%; border:none; padding:0; cursor:pointer; }
+
+/* ===== Collapsible panel sections (My Map / Areas / Prospects) ===== */
+.tier-row{ display:flex; gap:6px; flex-wrap:wrap; margin-bottom:11px; }
+.psec{ border:1px solid var(--line); border-radius:var(--r-md); background:var(--surface-1); margin-bottom:8px; overflow:hidden; transition:border-color .15s, box-shadow .15s; }
+.psec.open{ border-color:var(--line-2); box-shadow:var(--sh-1); }
+.psec-head{ width:100%; display:flex; align-items:center; gap:10px; padding:11px 12px; background:none; border:none; cursor:pointer; font-family:inherit; text-align:left; }
+.psec-head:hover{ background:var(--surface-2); }
+.psec-ico{ width:20px; height:20px; color:var(--ink-3); flex:none; display:flex; align-items:center; justify-content:center; }
+.psec-ico svg{ width:18px; height:18px; }
+.psec.open .psec-ico{ color:var(--gold-lo); }
+.psec-title{ font-size:13px; font-weight:800; color:var(--ink); letter-spacing:-.01em; }
+.psec-sum{ margin-left:auto; font-size:11px; font-weight:600; color:var(--ink-3); font-family:var(--mono); }
+.psec-chev{ width:16px; height:16px; color:var(--ink-4); flex:none; display:flex; align-items:center; justify-content:center; transition:transform .18s; }
+.psec-chev svg{ width:15px; height:15px; }
+.psec.open .psec-chev{ transform:rotate(90deg); }
+.psec-body{ display:none; padding:4px 12px 13px; }
+.psec.open .psec-body{ display:block; animation:secOpen .18s ease both; }
+@keyframes secOpen{ from{ opacity:0; transform:translateY(-4px); } to{ opacity:1; transform:none; } }
+.layer-col{ display:flex; flex-direction:column; gap:9px; }
+.area-hint{ font-size:11px; font-weight:600; color:var(--ink-4); }
+
+/* ===== Customer detail — read-only QuoteIQ contact essentials ===== */
+.cust-head{ display:flex; align-items:center; gap:13px; padding:16px 20px; background:linear-gradient(135deg,#0d1220,#1e2a4a); color:#fff; }
+.cust-ava{ width:44px; height:44px; border-radius:50%; background:#2f74f0; display:flex; align-items:center; justify-content:center; flex:none; box-shadow:0 3px 12px rgba(47,116,240,.4); }
+.cust-ava svg{ width:22px; height:22px; color:#fff; }
+.cust-hbody{ flex:1; min-width:0; }
+.cust-tag{ font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; opacity:.75; }
+.cust-name{ font-size:18px; font-weight:800; letter-spacing:-.02em; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.cust-sub{ font-size:12px; opacity:.85; margin-top:2px; }
+.cust-body{ padding:16px 18px 20px; display:flex; flex-direction:column; gap:14px; }
+.cust-acts{ margin:0 !important; }
+.cust-info{ border:1px solid var(--line); border-radius:var(--r-md); overflow:hidden; background:var(--surface-1); }
+.cust-row{ display:flex; align-items:center; gap:12px; padding:11px 13px; border-bottom:1px solid var(--line); font-size:13px; }
+.cust-row:last-child{ border-bottom:none; }
+.cust-key{ display:inline-flex; align-items:center; gap:7px; color:var(--ink-3); font-weight:600; font-size:11.5px; text-transform:uppercase; letter-spacing:.03em; min-width:112px; flex:none; }
+.cust-key svg{ width:14px; height:14px; }
+.cust-row a{ color:#2f6bff; font-weight:700; text-decoration:none; word-break:break-word; }
+.cust-row a:hover{ text-decoration:underline; }
+.cust-row>span:last-child{ color:var(--ink); font-weight:600; }
+.cust-analytics{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+.cust-stat{ border:1px solid var(--line); border-radius:var(--r-sm); padding:10px 11px; background:var(--surface-2); }
+.cust-stat span{ display:block; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-4); }
+.cust-stat b{ display:block; margin-top:3px; font-size:16px; font-weight:800; color:var(--ink); letter-spacing:-.02em; }
+.cust-ro{ display:flex; align-items:center; gap:8px; font-size:11.5px; color:var(--ink-3); background:var(--surface-2); border:1px dashed var(--line-2); border-radius:var(--r-sm); padding:9px 11px; }
+.cust-ro svg{ width:14px; height:14px; flex:none; color:var(--ink-4); }
+.cust-nearby h4{ margin:2px 0 8px; font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-4); }
