@@ -1,0 +1,14 @@
+{
+  "name": "quoteiq-image-generator",
+  "version": "1.0.0",
+  "description": "Single-file QuoteIQ marketing graphic generator — one OpenAI images.edit call.",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "generate": "node generate.js"
+  },
+  "engines": { "node": ">=18" },
+  "dependencies": {
+    "openai": "^4.104.0"
+  }
+}
