@@ -1,0 +1,7 @@
+node_modules/
+.env
+*.log
+variant_*.png
+reference.png
+logo.png
+photo.png

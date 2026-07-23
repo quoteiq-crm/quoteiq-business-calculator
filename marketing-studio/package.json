@@ -1,0 +1,18 @@
+{
+  "name": "quoteiq-ai-marketing-studio",
+  "version": "1.0.0",
+  "description": "QuoteIQ AI Marketing Studio (prototype) — generates a branded marketing graphic from brand info + one photo + one reference graphic via a single OpenAI image-edit call.",
+  "type": "commonjs",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "start:local": "node --env-file=.env server.js",
+    "precheck": "node precheck.js",
+    "precheck:local": "node --env-file=.env precheck.js"
+  },
+  "engines": { "node": ">=18" },
+  "dependencies": {
+    "express": "^4.19.2",
+    "openai": "^4.104.0"
+  }
+}
