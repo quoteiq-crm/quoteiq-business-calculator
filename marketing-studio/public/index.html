@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#0c1014" />
+<title>QuoteIQ AI Marketing Studio</title>
+<style>
+  :root {
+    --bg: #0c1014;
+    --card: #161b22;
+    --card-2: #1c232d;
+    --border: #2a323d;
+    --text: #e9eef4;
+    --muted: #9aa7b4;
+    --primary: #f2b148;
+    --primary-ink: #0c1014;
+    --danger: #ff6b6b;
+    --danger-bg: #2a1618;
+    --ok: #57d38c;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.45;
+    -webkit-text-size-adjust: 100%;
+    overflow-x: hidden;
+  }
+  .wrap { max-width: 560px; margin: 0 auto; padding: 16px 14px 64px; }
+  header h1 { font-size: 20px; margin: 6px 0 2px; }
+  header p.sub { color: var(--muted); margin: 0 0 12px; font-size: 13px; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px 14px;
+    margin: 12px 0;
+  }
+  .card h2 { font-size: 15px; margin: 0 0 4px; letter-spacing: .2px; }
+  .card .hint { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
+  label.field { display: block; margin: 10px 0; }
+  label.field > span { display: block; font-size: 13px; color: var(--muted); margin-bottom: 5px; }
+  input[type=text], input[type=tel], input[type=url] {
+    width: 100%; min-height: 44px; padding: 10px 12px;
+    background: var(--card-2); border: 1px solid var(--border); border-radius: 10px;
+    color: var(--text); font-size: 16px;
+  }
+  input:focus, button:focus, .filebtn:focus-within { outline: 2px solid var(--primary); outline-offset: 1px; }
+  .colorrow { display: flex; gap: 10px; align-items: center; }
+  input[type=color] {
+    -webkit-appearance: none; appearance: none;
+    width: 52px; height: 44px; padding: 0; border: 1px solid var(--border);
+    border-radius: 10px; background: none;
+  }
+  input[type=color]::-webkit-color-swatch-wrapper { padding: 4px; }
+  input[type=color]::-webkit-color-swatch { border: none; border-radius: 6px; }
+  .rowlist .row { display: flex; gap: 8px; margin-bottom: 8px; }
+  .rowlist .row input { flex: 1; }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    min-height: 44px; padding: 10px 16px; border-radius: 10px; border: 1px solid transparent;
+    font-size: 15px; font-weight: 600; cursor: pointer; text-decoration: none;
+  }
+  .btn.primary { background: var(--primary); color: var(--primary-ink); }
+  .btn.primary:disabled { opacity: .45; cursor: not-allowed; }
+  .btn.secondary { background: #fff; color: #111; }
+  .btn.ghost { background: transparent; color: var(--text); border-color: var(--border); }
+  .btn.small { min-height: 40px; padding: 8px 12px; font-size: 14px; }
+  .btn.iconremove { min-width: 44px; min-height: 44px; padding: 0; background: transparent; color: var(--danger); border-color: var(--border); font-size: 20px; }
+  .addbtn { margin-top: 2px; }
+  .filebtn {
+    display: block; border: 1px dashed var(--border); border-radius: 12px;
+    padding: 14px; text-align: center; color: var(--muted); cursor: pointer;
+    background: var(--card-2);
+  }
+  .filebtn strong { color: var(--text); }
+  .filebtn input[type=file] { display: none; }
+  .preview { margin-top: 10px; text-align: center; }
+  .preview img { max-width: 100%; max-height: 240px; border-radius: 10px; border: 1px solid var(--border); }
+  .preview .status { color: var(--primary); font-size: 13px; margin-top: 6px; }
+  fieldset { border: none; margin: 0; padding: 0; }
+  .radio, .qual {
+    display: flex; align-items: center; gap: 10px; min-height: 44px;
+    padding: 8px 10px; border: 1px solid var(--border); border-radius: 10px;
+    background: var(--card-2); margin-bottom: 8px; cursor: pointer;
+  }
+  .radio input, .qual input { width: 20px; height: 20px; accent-color: var(--primary); }
+  .radio .meta, .qual .meta { color: var(--muted); font-size: 13px; }
+  .costline { color: var(--muted); font-size: 13px; margin: 4px 0 10px; }
+  .genbtn { width: 100%; font-size: 17px; min-height: 52px; }
+  .missing { color: var(--danger); font-size: 13px; margin-top: 8px; min-height: 18px; }
+  .loading { text-align: center; padding: 14px; color: var(--muted); }
+  .spinner {
+    width: 26px; height: 26px; border: 3px solid var(--border); border-top-color: var(--primary);
+    border-radius: 50%; margin: 0 auto 8px; animation: spin 1s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .errbox {
+    background: var(--danger-bg); border: 1px solid var(--danger); color: #ffd7d7;
+    border-radius: 10px; padding: 12px; margin: 12px 0; font-size: 14px; white-space: pre-wrap; word-break: break-word;
+  }
+  .errbox b { color: #fff; }
+  .run { border-top: 1px solid var(--border); margin-top: 16px; padding-top: 14px; }
+  .run .runlabel { font-size: 12px; color: var(--muted); margin-bottom: 10px; }
+  .variant { margin-bottom: 18px; }
+  .variant img { width: 100%; border-radius: 12px; border: 1px solid var(--border); display: block; cursor: zoom-in; background: #000; }
+  .variant .ctrls { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+  .variant .tweakrow { display: flex; gap: 8px; margin-top: 8px; }
+  .variant .tweakrow input { flex: 1; }
+  .overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,.94); z-index: 50;
+    display: none; align-items: center; justify-content: center; padding: 10px; cursor: zoom-out;
+  }
+  .overlay.open { display: flex; }
+  .overlay img { max-width: 100%; max-height: 100%; border-radius: 8px; }
+  .footnote { color: var(--muted); font-size: 12px; text-align: center; margin-top: 24px; }
+  .badge { display:inline-block; font-size: 11px; padding: 2px 7px; border-radius: 20px; background: var(--card-2); border:1px solid var(--border); color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>QuoteIQ AI Marketing Studio <span class="badge">prototype</span></h1>
+    <p class="sub">Brand info + one photo + one reference graphic → one branded marketing graphic.</p>
+  </header>
+
+  <!-- SECTION 1: BRAND -->
+  <section class="card">
+    <h2>1 · Brand</h2>
+    <p class="hint">Confirm or edit your brand details. Everything here is prefilled with demo values.</p>
+
+    <label class="field"><span>Business name</span>
+      <input type="text" id="name" value="Summit Pro Painting" />
+    </label>
+
+    <label class="field"><span>Brand color</span>
+      <div class="colorrow">
+        <input type="color" id="colorPicker" value="#1f6feb" />
+        <input type="text" id="colorHex" value="#1f6feb" inputmode="text" />
+      </div>
+    </label>
+
+    <label class="field"><span>Tagline</span>
+      <input type="text" id="tagline" value="Licensed. Insured. On time." />
+    </label>
+
+    <label class="field"><span>Headline / offer</span>
+      <input type="text" id="headline" value="$300 Off a Full Exterior Repaint" />
+    </label>
+
+    <label class="field"><span>Phone</span>
+      <input type="tel" id="phone" value="(555) 018-2277" />
+    </label>
+
+    <label class="field"><span>Website</span>
+      <input type="text" id="website" value="summitpropainting.com" />
+    </label>
+
+    <div class="field"><span style="display:block;font-size:13px;color:var(--muted);margin-bottom:5px;">Cities / service areas</span>
+      <div class="rowlist" id="cities"></div>
+      <button class="btn ghost small addbtn" type="button" data-add="cities">+ Add city</button>
+    </div>
+
+    <div class="field"><span style="display:block;font-size:13px;color:var(--muted);margin-bottom:5px;">Services</span>
+      <div class="rowlist" id="services"></div>
+      <button class="btn ghost small addbtn" type="button" data-add="services">+ Add service</button>
+    </div>
+
+    <div class="field"><span style="display:block;font-size:13px;color:var(--muted);margin-bottom:5px;">Logo</span>
+      <label class="filebtn">
+        <strong>Tap to upload logo</strong><br />PNG or JPG
+        <input type="file" accept="image/*" id="logoInput" />
+      </label>
+      <div class="preview" id="logoPreview"></div>
+    </div>
+  </section>
+
+  <!-- SECTION 2: FEATURE PHOTO -->
+  <section class="card">
+    <h2>2 · Feature photo</h2>
+    <p class="hint">Before/after, your crew, equipment, or a finished job.</p>
+    <label class="filebtn">
+      <strong>Tap to upload photo</strong><br />From your camera roll
+      <input type="file" accept="image/*" id="photoInput" />
+    </label>
+    <div class="preview" id="photoPreview"></div>
+  </section>
+
+  <!-- SECTION 3: REFERENCE -->
+  <section class="card">
+    <h2>3 · Reference graphic</h2>
+    <p class="hint">The post whose <b>look</b> you want to copy.</p>
+    <p class="hint" style="color:var(--primary);">⚠ Crop out any app UI — username bars, like/comment icons, captions — or it may end up in your graphic.</p>
+    <label class="filebtn">
+      <strong>Tap to upload reference</strong><br />The style you want to match
+      <input type="file" accept="image/*" id="refInput" />
+    </label>
+    <div class="preview" id="refPreview"></div>
+  </section>
+
+  <!-- SECTION 4: FORMAT -->
+  <section class="card">
+    <h2>4 · Output format</h2>
+    <fieldset id="sizeSet">
+      <label class="radio"><input type="radio" name="size" value="1:1" /> <span>Square 1:1</span><span class="meta">1024×1024</span></label>
+      <label class="radio"><input type="radio" name="size" value="4:5" checked /> <span>Portrait 4:5</span><span class="meta">Feed · 1024×1280</span></label>
+      <label class="radio"><input type="radio" name="size" value="9:16" /> <span>Story 9:16</span><span class="meta">Stories/Reels · 1024×1792</span></label>
+      <label class="radio"><input type="radio" name="size" value="3:2" /> <span>Landscape 3:2</span><span class="meta">1536×1024</span></label>
+    </fieldset>
+  </section>
+
+  <!-- SECTION 5: QUALITY -->
+  <section class="card">
+    <h2>5 · Quality</h2>
+    <fieldset id="qualSet">
+      <label class="qual"><input type="radio" name="quality" value="medium" checked /> <span>Medium</span><span class="meta">faster, cheaper</span></label>
+      <label class="qual"><input type="radio" name="quality" value="high" /> <span>High</span><span class="meta">best</span></label>
+    </fieldset>
+  </section>
+
+  <!-- SECTION 6: GENERATE -->
+  <section class="card">
+    <h2>6 · Generate</h2>
+    <p class="costline" id="costLine"></p>
+    <button class="btn primary genbtn" id="genBtn" type="button" disabled>Generate</button>
+    <div class="missing" id="missing"></div>
+    <div id="errSlot"></div>
+    <div class="loading" id="loading" style="display:none;">
+      <div class="spinner"></div>
+      <div id="elapsed">Generating… 0s</div>
+      <div style="font-size:13px;margin-top:4px;">This can take up to 2 minutes. Don’t close the page.</div>
+    </div>
+  </section>
+
+  <!-- SECTION 7: RESULTS -->
+  <section class="card" id="resultsCard" style="display:none;">
+    <h2>7 · Results</h2>
+    <p class="hint">Newest run first. Tap any image to view it full-screen.</p>
+    <div id="results"></div>
+  </section>
+
+  <p class="footnote">Images are generated by one OpenAI image-edit call on the server. Your API key never leaves the server.</p>
+</div>
+
+<div class="overlay" id="overlay"><img id="overlayImg" alt="full view" /></div>
+
+<script>
+(function () {
+  "use strict";
+
+  var MAX_EDGE = 2048;
+  var JPEG_Q = 0.85;
+
+  // Processed image data URLs (JPEG) sent to the backend.
+  var images = { logo: null, photo: null, reference: null };
+  var lastPayloadBase = null; // brand fields + size + quality + images, for regen/tweak
+  var runCounter = 0;
+
+  function $(id) { return document.getElementById(id); }
+
+  // ---------- rows (cities / services) ----------
+  function addRow(listId, value) {
+    var list = $(listId);
+    var row = document.createElement('div');
+    row.className = 'row';
+    var input = document.createElement('input');
+    input.type = 'text';
+    input.value = value || '';
+    input.placeholder = listId === 'cities' ? 'City / area' : 'Service';
+    var rm = document.createElement('button');
+    rm.type = 'button';
+    rm.className = 'btn iconremove';
+    rm.setAttribute('aria-label', 'Remove');
+    rm.textContent = '×';
+    rm.addEventListener('click', function () { row.remove(); });
+    row.appendChild(input);
+    row.appendChild(rm);
+    list.appendChild(row);
+  }
+  ['Austin', 'Round Rock', 'Cedar Park'].forEach(function (c) { addRow('cities', c); });
+  ['Interior Painting', 'Exterior Painting', 'Cabinet Refinishing'].forEach(function (s) { addRow('services', s); });
+  Array.prototype.forEach.call(document.querySelectorAll('[data-add]'), function (btn) {
+    btn.addEventListener('click', function () { addRow(btn.getAttribute('data-add'), ''); });
+  });
+  function readRows(listId) {
+    return Array.prototype.map.call($(listId).querySelectorAll('input'), function (i) { return i.value.trim(); })
+      .filter(function (v) { return v.length; });
+  }
+
+  // ---------- color sync ----------
+  var picker = $('colorPicker'), hex = $('colorHex');
+  picker.addEventListener('input', function () { hex.value = picker.value; });
+  hex.addEventListener('input', function () {
+    var v = hex.value.trim();
+    if (/^#?[0-9a-fA-F]{6}$/.test(v)) { picker.value = v.charAt(0) === '#' ? v : '#' + v; }
+  });
+
+  // ---------- image decode + downscale + re-encode to JPEG ----------
+  // Decodes via <img> (modern mobile browsers auto-apply EXIF orientation and
+  // iOS Safari can decode HEIC), then draws to a canvas <= MAX_EDGE and encodes JPEG.
+  function decodeToImg(file) {
+    return new Promise(function (resolve, reject) {
+      var url = URL.createObjectURL(file);
+      var img = new Image();
+      img.onload = function () { URL.revokeObjectURL(url); resolve(img); };
+      img.onerror = function () {
+        URL.revokeObjectURL(url);
+        reject(new Error('Could not read this image on this device. On a computer, HEIC photos may not decode — try a JPG/PNG, or upload from your phone.'));
+      };
+      img.src = url;
+    });
+  }
+
+  function processImage(file) {
+    return decodeToImg(file).then(function (img) {
+      var w = img.naturalWidth || img.width;
+      var h = img.naturalHeight || img.height;
+      if (!w || !h) throw new Error('Image had no dimensions.');
+      var scale = Math.min(1, MAX_EDGE / Math.max(w, h));
+      var cw = Math.max(1, Math.round(w * scale));
+      var ch = Math.max(1, Math.round(h * scale));
+      var canvas = document.createElement('canvas');
+      canvas.width = cw; canvas.height = ch;
+      var ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, cw, ch);
+      return canvas.toDataURL('image/jpeg', JPEG_Q);
+    });
+  }
+
+  function wireUpload(inputId, previewId, key) {
+    var input = $(inputId), preview = $(previewId);
+    input.addEventListener('change', function () {
+      var file = input.files && input.files[0];
+      if (!file) return;
+      images[key] = null;
+      updateGate();
+      preview.innerHTML = '<div class="status">optimizing image…</div>';
+      processImage(file).then(function (dataUrl) {
+        images[key] = dataUrl;
+        preview.innerHTML = '';
+        var im = document.createElement('img');
+        im.src = dataUrl;
+        preview.appendChild(im);
+        updateGate();
+      }).catch(function (err) {
+        preview.innerHTML = '<div class="status" style="color:var(--danger)">' + escapeHtml(err.message) + '</div>';
+        images[key] = null;
+        updateGate();
+      });
+    });
+  }
+  wireUpload('logoInput', 'logoPreview', 'logo');
+  wireUpload('photoInput', 'photoPreview', 'photo');
+  wireUpload('refInput', 'refPreview', 'reference');
+
+  // ---------- gate: enable Generate only when all 3 images present ----------
+  function updateGate() {
+    var missing = [];
+    if (!images.logo) missing.push('logo');
+    if (!images.photo) missing.push('feature photo');
+    if (!images.reference) missing.push('reference graphic');
+    var btn = $('genBtn');
+    btn.disabled = missing.length > 0;
+    $('missing').textContent = missing.length ? ('Still needed: ' + missing.join(', ')) : '';
+  }
+  updateGate();
+
+  // ---------- cost estimate ----------
+  function updateCost() {
+    var q = document.querySelector('input[name=quality]:checked').value;
+    $('costLine').textContent = q === 'high'
+      ? 'Estimated ~$0.40–0.80 per press (high, 2 variants). Estimate only.'
+      : 'Estimated ~$0.10–0.20 per press (medium, 2 variants). Estimate only.';
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('input[name=quality]'), function (r) {
+    r.addEventListener('change', updateCost);
+  });
+  updateCost();
+
+  // ---------- collect payload ----------
+  function collectBase() {
+    return {
+      name: $('name').value.trim(),
+      color: hex.value.trim(),
+      tagline: $('tagline').value.trim(),
+      headline: $('headline').value.trim(),
+      phone: $('phone').value.trim(),
+      website: $('website').value.trim(),
+      city: readRows('cities').join(', '),
+      services: readRows('services'),
+      size: document.querySelector('input[name=size]:checked').value,
+      quality: document.querySelector('input[name=quality]:checked').value,
+      logo: images.logo,
+      photo: images.photo,
+      reference: images.reference
+    };
+  }
+
+  // ---------- error rendering ----------
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function showError(title, detail) {
+    $('errSlot').innerHTML = '<div class="errbox"><b>' + escapeHtml(title) + '</b>\n' + escapeHtml(detail || '') + '</div>';
+  }
+  function clearError() { $('errSlot').innerHTML = ''; }
+
+  // ---------- loading / elapsed ----------
+  var elapsedTimer = null;
+  function startLoading() {
+    clearError();
+    var t0 = Date.now();
+    $('loading').style.display = 'block';
+    $('elapsed').textContent = 'Generating… 0s';
+    elapsedTimer = setInterval(function () {
+      var s = Math.round((Date.now() - t0) / 1000);
+      $('elapsed').textContent = 'Generating… ' + s + 's';
+    }, 1000);
+  }
+  function stopLoading() {
+    if (elapsedTimer) clearInterval(elapsedTimer);
+    elapsedTimer = null;
+    $('loading').style.display = 'none';
+  }
+
+  // ---------- generate ----------
+  function generate(payload) {
+    $('genBtn').disabled = true;
+    startLoading();
+    fetch('/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    }).then(function (resp) {
+      return resp.json().then(function (data) { return { ok: resp.ok, status: resp.status, data: data }; });
+    }).then(function (res) {
+      stopLoading();
+      updateGate();
+      if (!res.ok || (res.data && res.data.error)) {
+        var e = (res.data && res.data.error) || {};
+        var title = 'Generation failed (' + (e.status || res.status) + (e.kind ? ' · ' + e.kind : '') + ')';
+        showError(title, e.message || 'Unknown error.');
+        return;
+      }
+      renderRun(payload, res.data);
+    }).catch(function (err) {
+      stopLoading();
+      updateGate();
+      showError('Network error', err && err.message ? err.message : String(err));
+    });
+  }
+
+  $('genBtn').addEventListener('click', function () {
+    var payload = collectBase();
+    lastPayloadBase = payload;
+    generate(payload);
+  });
+
+  // ---------- render results ----------
+  function renderRun(payload, data) {
+    runCounter += 1;
+    $('resultsCard').style.display = 'block';
+    var results = $('results');
+    var run = document.createElement('div');
+    run.className = 'run';
+    var secs = data.meta && data.meta.elapsedMs ? Math.round(data.meta.elapsedMs / 1000) + 's' : '';
+    var tweakNote = payload.tweak ? ' · tweak: “' + escapeHtml(payload.tweak) + '”' : '';
+    var label = document.createElement('div');
+    label.className = 'runlabel';
+    label.innerHTML = 'Run ' + runCounter + ' · ' + escapeHtml(payload.size) + ' · ' + escapeHtml(payload.quality) +
+      (secs ? ' · ' + secs : '') + tweakNote;
+    run.appendChild(label);
+
+    (data.images || []).forEach(function (src, i) {
+      run.appendChild(buildVariant(src, runCounter, i + 1, payload));
+    });
+
+    results.insertBefore(run, results.firstChild);
+    run.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function buildVariant(src, runN, variantN, payload) {
+    var wrap = document.createElement('div');
+    wrap.className = 'variant';
+
+    var img = document.createElement('img');
+    img.src = src;
+    img.alt = 'Variant ' + variantN;
+    img.addEventListener('click', function () { openOverlay(src); });
+    wrap.appendChild(img);
+
+    var ctrls = document.createElement('div');
+    ctrls.className = 'ctrls';
+
+    var dl = document.createElement('a');
+    dl.className = 'btn secondary small';
+    dl.textContent = 'Download';
+    dl.href = src;
+    dl.download = 'quoteiq-run' + runN + '-variant' + variantN + '.png';
+    ctrls.appendChild(dl);
+
+    var regen = document.createElement('button');
+    regen.type = 'button';
+    regen.className = 'btn ghost small';
+    regen.textContent = 'Regenerate';
+    regen.addEventListener('click', function () {
+      var p = cloneBase(payload); delete p.tweak;
+      generate(p);
+    });
+    ctrls.appendChild(regen);
+    wrap.appendChild(ctrls);
+
+    var tweakRow = document.createElement('div');
+    tweakRow.className = 'tweakrow';
+    var tin = document.createElement('input');
+    tin.type = 'text';
+    tin.placeholder = 'e.g. make the logo bigger';
+    var apply = document.createElement('button');
+    apply.type = 'button';
+    apply.className = 'btn primary small';
+    apply.textContent = 'Apply tweak';
+    apply.addEventListener('click', function () {
+      var v = tin.value.trim();
+      if (!v) { tin.focus(); return; }
+      var p = cloneBase(payload); p.tweak = v;
+      generate(p);
+    });
+    tweakRow.appendChild(tin);
+    tweakRow.appendChild(apply);
+    wrap.appendChild(tweakRow);
+
+    return wrap;
+  }
+
+  function cloneBase(p) {
+    // shallow clone is enough; image strings are shared intentionally.
+    var c = {};
+    for (var k in p) if (Object.prototype.hasOwnProperty.call(p, k)) c[k] = p[k];
+    return c;
+  }
+
+  // ---------- fullscreen overlay ----------
+  var overlay = $('overlay'), overlayImg = $('overlayImg');
+  function openOverlay(src) { overlayImg.src = src; overlay.classList.add('open'); }
+  overlay.addEventListener('click', function () { overlay.classList.remove('open'); overlayImg.src = ''; });
+})();
+</script>
+</body>
+</html>

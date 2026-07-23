@@ -1,0 +1,18 @@
+# Render Blueprint for the QuoteIQ AI Marketing Studio prototype.
+# Deploy: Render Dashboard -> New -> Blueprint -> connect this repo.
+# Then add the OPENAI_API_KEY value in the dashboard (sync:false = set by hand, never in the repo).
+# Render Web Services have no hard short request cap, so 60-120s image calls complete.
+services:
+  - type: web
+    name: quoteiq-ai-marketing-studio
+    runtime: node
+    rootDir: marketing-studio
+    plan: starter
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: IMAGE_MODEL
+        value: gpt-image-2
